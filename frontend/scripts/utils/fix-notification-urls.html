@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fix Notification URLs</title>
+  <script type="module">
+    import { fixNotificationUrls } from '../../src/scripts/fixNotificationUrls.ts';
+    
+    async function runFix() {
+      try {
+        document.getElementById('status').textContent = 'Running fix...';
+        const fixed = await fixNotificationUrls();
+        document.getElementById('status').textContent = `✅ Successfully fixed ${fixed} notification URLs`;
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('status').textContent = `❌ Error: ${error.message}`;
+      }
+    }
+
+    window.runFix = runFix;
+  </script>
+</head>
+<body>
+  <h1>Fix Notification URLs</h1>
+  <p>This tool will update all notification URLs from /complaints/ to /complaint/</p>
+  <button onclick="runFix()">Run Fix</button>
+  <p id="status"></p>
+</body>
+</html>

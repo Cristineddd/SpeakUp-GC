@@ -1,0 +1,748 @@
+/**
+ * Compliance Report Generator Component
+ * UI for generating privacy-compliant reports with configuration options
+ */
+
+import React, { useState } from 'react';
+import {
+  FileText,
+  Calendar,
+  Download,
+  Shield,
+  TrendingUp,
+  BarChart3,
+  Clock,
+  Users,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Label } from '../ui/label';
+import { Switch } from '../ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../ui/dialog';
+import { useToast } from '../../hooks/use-toast';
+import { ComplianceReportService } from '../../services/complianceReportService';
+import {
+  ComplianceReportType,
+  DateRangePreset,
+  ComplianceSummaryReport,
+  REPORT_TYPE_LABELS,
+  DATE_RANGE_LABELS,
+  getDateRangeFromPreset,
+} from '../../types/complianceReport';
+import { format } from 'date-fns';
+
+interface ComplianceReportGeneratorProps {
+  onReportGenerated?: (report: ComplianceSummaryReport) => void;
+}
+
+export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps> = ({
+  onReportGenerated,
+}) => {
+  const [reportType, setReportType] = useState<ComplianceReportType>('monthly_summary');
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>('last_30_days');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [anonymizeData, setAnonymizeData] = useState(true);
+  const [includePersonalData, setIncludePersonalData] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generatedReport, setGeneratedReport] = useState<ComplianceSummaryReport | null>(null);
+  const { toast } = useToast();
+
+  const handleGenerateReport = async () => {
+    try {
+      setGenerating(true);
+
+      // Get date range
+      let startDate: Date, endDate: Date;
+      if (dateRangePreset === 'custom') {
+        if (!customStartDate || !customEndDate) {
+          toast({
+            title: 'Invalid Date Range',
+            description: 'Please select both start and end dates',
+            variant: 'destructive',
+          });
+          return;
+        }
+        startDate = new Date(customStartDate);
+        endDate = new Date(customEndDate);
+      } else {
+        const range = getDateRangeFromPreset(dateRangePreset);
+        startDate = range.start;
+        endDate = range.end;
+      }
+
+      // Generate report
+      const report = await ComplianceReportService.generateComplianceSummaryReport({
+        type: reportType,
+        startDate,
+        endDate,
+        includePersonalData,
+        anonymizeData,
+      });
+
+      setGeneratedReport(report);
+      onReportGenerated?.(report);
+
+      toast({
+        title: 'Report Generated',
+        description: `${REPORT_TYPE_LABELS[reportType]} has been generated successfully`,
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: 'Generation Failed',
+        description: 'Failed to generate report. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Export to PDF
+  const handleExportPDF = () => {
+    if (!generatedReport) return;
+
+    try {
+      const doc = new jsPDF();
+      
+      // Pure white background (default)
+      // No colored header - clean minimalist design
+      
+      // Header - Clean Typography
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(28);
+      doc.setFont('helvetica', 'bold');
+      doc.text('SpeakUp GC', 15, 20);
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Compliance Report', 15, 30);
+      
+      // Thin line separator
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.5);
+      doc.line(15, 35, 195, 35);
+      
+      // Report Type Badge
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(60, 60, 60);
+      doc.text(`${REPORT_TYPE_LABELS[generatedReport.reportType]}`, 15, 42);
+      
+      // Report info - Compact and Clean
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      let yPos = 52;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text('Period:', 15, yPos);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        `${format(generatedReport.period.start, 'MMM dd, yyyy')} - ${format(generatedReport.period.end, 'MMM dd, yyyy')}`,
+        35,
+        yPos
+      );
+      yPos += 5;
+      
+      doc.text('Generated:', 15, yPos);
+      doc.text(format(generatedReport.generatedAt, 'MMM dd, yyyy HH:mm'), 35, yPos);
+      yPos += 5;
+      
+      doc.text('Privacy:', 15, yPos);
+      doc.text(
+        generatedReport.anonymized ? 'Anonymized' : 'Personal Data Included',
+        35,
+        yPos
+      );
+      yPos += 12;
+      
+      // Summary statistics - Clean Table
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Summary Statistics', 15, yPos);
+      yPos += 6;
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      
+      const summaryData = [
+        ['Total Incidents', generatedReport.summary.totalIncidents.toString()],
+        ['Resolved', generatedReport.summary.resolvedIncidents.toString()],
+        ['In Progress', generatedReport.summary.inProgressIncidents.toString()],
+        ['Pending', generatedReport.summary.pendingIncidents.toString()],
+        ['Resolution Rate', `${generatedReport.summary.resolutionRate.toFixed(1)}%`],
+      ];
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value']],
+        body: summaryData,
+        theme: 'plain',
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          textColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [245, 245, 245],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          halign: 'left',
+        },
+        alternateRowStyles: {
+          fillColor: [250, 250, 250],
+        },
+        margin: { left: 15, right: 15 },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+      
+      // Frequency analysis if available
+      if (generatedReport.frequencyAnalysis) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Category Breakdown', 15, yPos);
+        yPos += 6;
+        
+        const categoryData = Object.entries(generatedReport.frequencyAnalysis.byCategory).map(
+          ([category, data]) => [
+            category.replace(/_/g, ' ').toUpperCase(),
+            data.count.toString(),
+            `${data.percentage.toFixed(1)}%`,
+          ]
+        );
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Category', 'Count', 'Percentage']],
+          body: categoryData,
+          theme: 'plain',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: [0, 0, 0],
+          },
+          headStyles: {
+            fillColor: [245, 245, 245],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250],
+          },
+          margin: { left: 15, right: 15 },
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+      
+      // Resolution time analysis if available
+      if (generatedReport.resolutionTimeAnalysis && yPos < 250) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Resolution Time Analysis', 15, yPos);
+        yPos += 6;
+        
+        const resolutionData = [
+          ['Average Resolution Time', `${generatedReport.resolutionTimeAnalysis.averageResolutionTime.toFixed(1)} hours`],
+          ['Median Resolution Time', `${generatedReport.resolutionTimeAnalysis.medianResolutionTime.toFixed(1)} hours`],
+          ['SLA Compliance', `${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA} / ${generatedReport.resolutionTimeAnalysis.slaCompliance.total}`],
+        ];
+        
+        autoTable(doc, {
+          startY: yPos,
+          body: resolutionData,
+          theme: 'plain',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: [0, 0, 0],
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250],
+          },
+          margin: { left: 15, right: 15 },
+        });
+      }
+      
+      // Footer - Minimalist
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text('SpeakUp GC Compliance Report - Confidential', 15, 287);
+        doc.text(`Page ${i} of ${pageCount}`, 185, 287);
+      }
+      
+      doc.save(`compliance-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
+      toast({
+        title: 'Export Successful',
+        description: 'Report exported as PDF',
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export PDF. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    if (!generatedReport) return;
+
+    try {
+      let csvContent = 'data:text/csv;charset=utf-8,';
+      
+      // Header
+      csvContent += `SpeakUp GC Compliance Report\n`;
+      csvContent += `Report Type: ${REPORT_TYPE_LABELS[generatedReport.reportType]}\n`;
+      csvContent += `Period: ${format(generatedReport.period.start, 'yyyy-MM-dd')} to ${format(generatedReport.period.end, 'yyyy-MM-dd')}\n`;
+      csvContent += `Generated: ${format(generatedReport.generatedAt, 'yyyy-MM-dd HH:mm')}\n`;
+      csvContent += `Privacy: ${generatedReport.anonymized ? 'Anonymized' : 'Personal Data Included'}\n\n`;
+      
+      // Summary
+      csvContent += `Summary Statistics\n`;
+      csvContent += `Metric,Value\n`;
+      csvContent += `Total Incidents,${generatedReport.summary.totalIncidents}\n`;
+      csvContent += `Resolved,${generatedReport.summary.resolvedIncidents}\n`;
+      csvContent += `In Progress,${generatedReport.summary.inProgressIncidents}\n`;
+      csvContent += `Pending,${generatedReport.summary.pendingIncidents}\n`;
+      csvContent += `Resolution Rate,${generatedReport.summary.resolutionRate.toFixed(1)}%\n\n`;
+      
+      // Frequency analysis
+      if (generatedReport.frequencyAnalysis) {
+        csvContent += `Frequency Analysis - By Category\n`;
+        csvContent += `Category,Count,Percentage\n`;
+        Object.entries(generatedReport.frequencyAnalysis.byCategory).forEach(([category, data]) => {
+          csvContent += `${category},${data.count},${data.percentage.toFixed(1)}%\n`;
+        });
+        csvContent += `\n`;
+      }
+      
+      // Resolution time
+      if (generatedReport.resolutionTimeAnalysis) {
+        csvContent += `Resolution Time Analysis\n`;
+        csvContent += `Metric,Value\n`;
+        csvContent += `Average Resolution Time,${generatedReport.resolutionTimeAnalysis.averageResolutionTime.toFixed(1)} hours\n`;
+        csvContent += `Median Resolution Time,${generatedReport.resolutionTimeAnalysis.medianResolutionTime.toFixed(1)} hours\n`;
+        csvContent += `SLA Compliance,${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA}/${generatedReport.resolutionTimeAnalysis.slaCompliance.total}\n`;
+      }
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `compliance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: 'Export Successful',
+        description: 'Report exported as CSV',
+      });
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export CSV. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Export to JSON
+  const handleExportJSON = () => {
+    if (!generatedReport) return;
+
+    try {
+      const jsonString = JSON.stringify(generatedReport, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `compliance-report-${format(new Date(), 'yyyy-MM-dd')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Export Successful',
+        description: 'Report exported as JSON',
+      });
+    } catch (error) {
+      console.error('Error exporting JSON:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export JSON. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getReportIcon = (type: ComplianceReportType) => {
+    switch (type) {
+      case 'frequency_analysis':
+      case 'category_breakdown':
+        return <BarChart3 className="h-5 w-5" />;
+      case 'trend_analysis':
+        return <TrendingUp className="h-5 w-5" />;
+      case 'resolution_time':
+        return <Clock className="h-5 w-5" />;
+      case 'handler_performance':
+        return <Users className="h-5 w-5" />;
+      default:
+        return <FileText className="h-5 w-5" />;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Report Configuration Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle>Generate Compliance Report</CardTitle>
+                <CardDescription>
+                  Create privacy-compliant analytics and reports
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-green-50 text-green-700">
+              <Shield className="h-3 w-3 mr-1" />
+              GDPR Compliant
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Report Type Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="report-type">Report Type</Label>
+            <Select value={reportType} onValueChange={(value) => setReportType(value as ComplianceReportType)}>
+              <SelectTrigger id="report-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="frequency_analysis">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Frequency Analysis
+                  </div>
+                </SelectItem>
+                <SelectItem value="trend_analysis">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4" />
+                    Trend Analysis
+                  </div>
+                </SelectItem>
+                <SelectItem value="category_breakdown">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Category Breakdown
+                  </div>
+                </SelectItem>
+                <SelectItem value="resolution_time">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Resolution Time Analysis
+                  </div>
+                </SelectItem>
+                <SelectItem value="handler_performance">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Handler Performance
+                  </div>
+                </SelectItem>
+                <SelectItem value="monthly_summary">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Monthly Summary (Complete)
+                  </div>
+                </SelectItem>
+                <SelectItem value="quarterly_summary">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Quarterly Summary (Complete)
+                  </div>
+                </SelectItem>
+                <SelectItem value="annual_summary">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Annual Summary (Complete)
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date Range Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="date-range">Date Range</Label>
+            <Select value={dateRangePreset} onValueChange={(value) => setDateRangePreset(value as DateRangePreset)}>
+              <SelectTrigger id="date-range">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(DATE_RANGE_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      {label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Custom Date Range (if selected) */}
+          {dateRangePreset === 'custom' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date</Label>
+                <input
+                  id="start-date"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date</Label>
+                <input
+                  id="end-date"
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Privacy Settings */}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Shield className="h-4 w-4 text-blue-600" />
+              Privacy & Compliance Settings
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="anonymize">Anonymize Personal Data</Label>
+                <p className="text-sm text-gray-500">
+                  Replace names and emails with generic identifiers
+                </p>
+              </div>
+              <Switch
+                id="anonymize"
+                checked={anonymizeData}
+                onCheckedChange={setAnonymizeData}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label htmlFor="personal-data">Include Personal Data</Label>
+                <p className="text-sm text-gray-500">
+                  Include names and contact information (requires authorization)
+                </p>
+              </div>
+              <Switch
+                id="personal-data"
+                checked={includePersonalData}
+                onCheckedChange={setIncludePersonalData}
+                disabled={anonymizeData}
+              />
+            </div>
+
+            {includePersonalData && !anonymizeData && (
+              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-yellow-800">
+                  <strong>Warning:</strong> Including personal data requires proper authorization
+                  and must comply with GDPR and data protection regulations.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Generate Button */}
+          <Button
+            onClick={handleGenerateReport}
+            disabled={generating}
+            className="w-full"
+            size="lg"
+          >
+            {generating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Generating Report...
+              </>
+            ) : (
+              <>
+                {getReportIcon(reportType)}
+                <span className="ml-2">Generate {REPORT_TYPE_LABELS[reportType]}</span>
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Generated Report Preview */}
+      {generatedReport && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Report Generated Successfully</CardTitle>
+                <CardDescription>
+                  {format(generatedReport.period.start, 'MMM dd, yyyy')} -{' '}
+                  {format(generatedReport.period.end, 'MMM dd, yyyy')}
+                </CardDescription>
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Export Report</DialogTitle>
+                    <DialogDescription>
+                      Choose a format to download the report
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleExportPDF()}
+                      disabled={!generatedReport}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      PDF Report
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleExportCSV()}
+                      disabled={!generatedReport}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      CSV Data
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={() => handleExportJSON()}
+                      disabled={!generatedReport}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      JSON Data
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="justify-start opacity-50 cursor-not-allowed"
+                      disabled
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Excel (Coming Soon)
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Summary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-900">
+                  {generatedReport.summary.totalIncidents}
+                </div>
+                <div className="text-sm text-blue-600">Total Incidents</div>
+              </div>
+              <div className="p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-900">
+                  {generatedReport.summary.resolvedIncidents}
+                </div>
+                <div className="text-sm text-green-600">Resolved</div>
+              </div>
+              <div className="p-4 bg-yellow-50 rounded-lg">
+                <div className="text-2xl font-bold text-yellow-900">
+                  {generatedReport.summary.inProgressIncidents}
+                </div>
+                <div className="text-sm text-yellow-600">In Progress</div>
+              </div>
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-900">
+                  {generatedReport.summary.resolutionRate.toFixed(1)}%
+                </div>
+                <div className="text-sm text-purple-600">Resolution Rate</div>
+              </div>
+            </div>
+
+            {/* Compliance Badges */}
+            <div className="flex gap-2 mt-4">
+              {generatedReport.dataPrivacyCompliant && (
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Privacy Compliant
+                </Badge>
+              )}
+              {generatedReport.anonymized && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                  Data Anonymized
+                </Badge>
+              )}
+              {!generatedReport.personalDataIncluded && (
+                <Badge variant="outline" className="bg-gray-50 text-gray-700">
+                  No Personal Data
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
