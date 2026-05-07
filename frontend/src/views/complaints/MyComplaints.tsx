@@ -152,7 +152,7 @@ export default function MyComplaints() {
               type: toComplaintType(data.category || "other"), severity: data.severity || "medium",
               incidentDate: safeToDate(data.incidentDate), incidentLocation: data.location || "",
               filingDate: safeToDate(data.reportedAt), stage: toComplaintStage(data.stage || "submitted"),
-              status: toComplaintStatus(data.status || "submitted"), assignedCODI: data.assignedTo ? [data.assignedTo] : [],
+              status: toComplaintStatus(data.status || "submitted"), assignedCODI: (data.assignedTo && data.assignedTo.trim()) ? [data.assignedTo] : [],
               confidentialityLevel: "public" as const, createdAt: safeToDate(data.reportedAt || data.createdAt),
               updatedAt: safeToDate(data.lastUpdated || data.updatedAt),
             };
@@ -180,7 +180,7 @@ export default function MyComplaints() {
               incidentLocation: data.incidentLocation || data.location || "",
               filingDate: safeToDate(data.filingDate || data.createdAt),
               stage: toComplaintStage(data.stage || "submitted"),
-              status: toComplaintStatus(data.status || "submitted"), assignedCODI: data.assignedCODI || [],
+              status: toComplaintStatus(data.status || "submitted"), assignedCODI: (data.assignedTo && data.assignedTo.trim()) ? [data.assignedTo] : (data.assignedCODI || []),
               confidentialityLevel: (data.confidentialityLevel || "public") as any,
               createdAt: safeToDate(data.createdAt), updatedAt: safeToDate(data.updatedAt || data.createdAt),
             };

@@ -410,6 +410,16 @@ const FormalComplaint = () => {
   const navigate = useNavigate();
   const evidenceRef = useRef<HTMLInputElement>(null);
 
+  // Helper function to generate formatted case ID from Firestore hash
+  const formatCaseId = (firestoreId: string): string => {
+    // Take first 8 characters of the hash and convert to uppercase
+    const hashPart = firestoreId.substring(0, 8).toUpperCase();
+    // Get numeric value from hash characters
+    const numericValue = parseInt(hashPart, 36) % 100000; // Modulo to keep it reasonable
+    const paddedNumber = String(numericValue).padStart(5, '0');
+    return `CASE${paddedNumber}`;
+  };
+
   // Get today's date in local timezone and format as YYYY-MM-DD
   const getTodayString = () => {
     const today = new Date();
@@ -634,10 +644,14 @@ const FormalComplaint = () => {
         });
         return step1Valid;
       case 2:
-        const step2Valid = !!(formData.respondentName);
+        const step2Valid = unknownRespondent 
+          ? !!(formData.respondentName && formData.respondentAddress && formData.respondentAddress.trim().length >= 20)
+          : !!formData.respondentName;
         console.log('🔍 Step 2 validation:', {
           step2Valid,
           respondentName: formData.respondentName,
+          unknownRespondent,
+          respondentDescriptionLength: formData.respondentAddress?.trim().length || 0
         });
         return step2Valid;
       case 3:
@@ -880,13 +894,14 @@ const FormalComplaint = () => {
       console.log('📝 Creating complaint document...');
       const complaintRef = await addDoc(collection(db, 'complaints'), complaintData);
       const complaintId = complaintRef.id;
-      console.log('✅ Complaint document created:', complaintId);
+      const formattedCaseId = formatCaseId(complaintId);
+      console.log('✅ Complaint document created:', complaintId, '| Formatted:', formattedCaseId);
       setUploadProgress(30);
 
       // Show immediate feedback to user
       toast({
         title: "Complaint Registered",
-        description: `Your complaint has been registered. Case ID: ${complaintId}. Now uploading files to Cloudinary...`,
+        description: `Your complaint has been registered. Case ID: ${formattedCaseId}. Now uploading files...`,
         duration: 3000,
       });
 
@@ -895,7 +910,7 @@ const FormalComplaint = () => {
 
       try {
         console.log('☁️ Starting Cloudinary file uploads...');
-        setCurrentUploadStage('Uploading files to Cloudinary...');
+        setCurrentUploadStage('Uploading evidence files...');
         setUploadProgress(40);
 
         // Upload evidence files to Cloudinary
@@ -961,7 +976,7 @@ const FormalComplaint = () => {
       
       toast({
         title: "Complaint Submitted Successfully!",
-        description: `Your formal complaint has been filed. Case ID: ${complaintId}`,
+        description: `Your formal complaint has been filed. Case ID: ${formattedCaseId}`,
         duration: 5000,
       });
       
@@ -1228,10 +1243,21 @@ const FormalComplaint = () => {
             )}
 
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
-                Physical description or identifying details
-                {unknownRespondent && <span className="text-red-500 ml-1">*</span>}
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Physical description or identifying details
+                  {unknownRespondent && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {unknownRespondent && (
+                  <span className={`text-xs font-medium ${
+                    formData.respondentAddress.trim().length === 0 ? "text-gray-400" :
+                    formData.respondentAddress.trim().length < 20 ? "text-red-500" :
+                    "text-green-600"
+                  }`}>
+                    {formData.respondentAddress.trim().length} / 20 min
+                  </span>
+                )}
+              </div>
               <Textarea
                 placeholder={
                   unknownRespondent
@@ -1241,11 +1267,21 @@ const FormalComplaint = () => {
                 rows={3}
                 value={formData.respondentAddress}
                 onChange={(e) => handleInputChange("respondentAddress", e.target.value)}
-                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className={`w-full text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  unknownRespondent && formData.respondentAddress.trim().length > 0 && formData.respondentAddress.trim().length < 20
+                    ? "border-red-400"
+                    : "border-gray-300"
+                }`}
               />
               {unknownRespondent && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Since the identity is unknown, please describe any details that may help identify the respondent.
+                <p className={`text-xs mt-1 ${
+                  formData.respondentAddress.trim().length > 0 && formData.respondentAddress.trim().length < 20
+                    ? "text-red-500"
+                    : "text-gray-400"
+                }`}>
+                  {formData.respondentAddress.trim().length < 20
+                    ? "Please provide at least 20 characters of description to help identify the respondent."
+                    : "Since the identity is unknown, please describe any details that may help identify the respondent."}
                 </p>
               )}
             </div>
@@ -1402,7 +1438,7 @@ const FormalComplaint = () => {
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
-                  Location details {locationVicinity === "outside" && <span className="text-red-500">*</span>}
+                  {locationVicinity === "online" ? "Platform" : "Location details"} {locationVicinity === "outside" && <span className="text-red-500">*</span>}
                 </label>
                 <Input
                   value={formData.incidentLocation || ""}
@@ -1413,29 +1449,31 @@ const FormalComplaint = () => {
               </div>
             </div>
 
-            {/* Map */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Pin exact location</span>
-                <span className="text-xs text-gray-400">(optional)</span>
+            {/* Map - Only show when NOT online */}
+            {locationVicinity !== "online" && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700">Pin exact location</span>
+                  <span className="text-xs text-gray-400">(optional)</span>
+                </div>
+                <LocationMapPicker
+                  onLocationSelect={(lat, lng, address) => setMapCoordinates({ lat, lng, address })}
+                  initialLat={mapCoordinates?.lat}
+                  initialLng={mapCoordinates?.lng}
+                  centerLat={selectedCity ? CITY_COORDINATES[selectedCity]?.[0] : undefined}
+                  centerLng={selectedCity ? CITY_COORDINATES[selectedCity]?.[1] : undefined}
+                  selectedCity={selectedCity}
+                  selectedBarangay={selectedBarangay}
+                />
+                {mapCoordinates && (
+                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3 text-green-600" />
+                    Pinned: {mapCoordinates.address}
+                  </p>
+                )}
               </div>
-              <LocationMapPicker
-                onLocationSelect={(lat, lng, address) => setMapCoordinates({ lat, lng, address })}
-                initialLat={mapCoordinates?.lat}
-                initialLng={mapCoordinates?.lng}
-                centerLat={selectedCity ? CITY_COORDINATES[selectedCity]?.[0] : undefined}
-                centerLng={selectedCity ? CITY_COORDINATES[selectedCity]?.[1] : undefined}
-                selectedCity={selectedCity}
-                selectedBarangay={selectedBarangay}
-              />
-              {mapCoordinates && (
-                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3 text-green-600" />
-                  Pinned: {mapCoordinates.address}
-                </p>
-              )}
-            </div>
+            )}
 
             {/* Witnesses + Additional info */}
             <div>
@@ -1584,14 +1622,44 @@ const FormalComplaint = () => {
                 {formData.evidence.length === 0 ? (
                   <p className="text-sm text-gray-400">No files selected</p>
                 ) : (
-                  <ul className="space-y-1">
-                    {formData.evidence.map((file, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-center gap-2">
-                        <FileText className="h-3.5 w-3.5 text-gray-400" />
-                        {file.name}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600 mb-2">{formData.evidence.length} file(s) attached</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {formData.evidence.map((file, index) => {
+                        const isImage = file.type.startsWith('image/');
+                        const isVideo = file.type.startsWith('video/');
+                        const fileUrl = URL.createObjectURL(file);
+                        
+                        return (
+                          <div key={index} className="relative group border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                            {isImage && (
+                              <div className="aspect-square">
+                                <img 
+                                  src={fileUrl} 
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            {isVideo && (
+                              <div className="aspect-square bg-gray-900 relative">
+                                <video 
+                                  src={fileUrl}
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  controls
+                                  preload="metadata"
+                                />
+                              </div>
+                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pointer-events-none">
+                              <p className="text-xs text-white truncate font-medium">{file.name}</p>
+                              <p className="text-xs text-gray-300">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
