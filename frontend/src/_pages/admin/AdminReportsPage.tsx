@@ -185,7 +185,6 @@ const AdminReportsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [escalationFilter, setEscalationFilter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
   const [newNote, setNewNote] = useState('');
@@ -272,7 +271,7 @@ const AdminReportsPage = () => {
   // Apply filters when reports or filter values change
   useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm, statusFilter, categoryFilter, severityFilter, escalationFilter]);
+  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter]);
 
   // DEBUG: Monitor reports changes
   useEffect(() => {
@@ -348,11 +347,6 @@ const AdminReportsPage = () => {
     // Category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(report => safeGet(report, 'category') === categoryFilter);
-    }
-
-    // Severity filter
-    if (severityFilter !== 'all') {
-      filtered = filtered.filter(report => safeGet(report, 'severity') === severityFilter);
     }
 
     // Escalation filter
@@ -488,7 +482,6 @@ const AdminReportsPage = () => {
         safeGet(report, 'id', '').substring(0, 6) + '...',
         safeGet(report, 'title', 'No Title').substring(0, 30) + (safeGet(report, 'title', '').length > 30 ? '...' : ''),
         safeGet(report, 'category', 'N/A'),
-        safeGet(report, 'severity', 'N/A').toUpperCase(),
         safeGet(report, 'status', 'N/A').replace(/([A-Z])/g, ' $1').trim(),
         safeGet(report, 'userName', 'Unknown').substring(0, 15) + (safeGet(report, 'userName', '').length > 15 ? '...' : ''),
         safeGet(report, 'location', 'N/A').substring(0, 20) + (safeGet(report, 'location', '').length > 20 ? '...' : ''),
@@ -501,7 +494,7 @@ const AdminReportsPage = () => {
       autoTable(doc, {
         startY: 32,
         head: [[
-          'ID', 'Title', 'Category', 'Severity', 'Status', 'Reporter', 'Location', 'Incident', 'Reported', 'Escalation'
+          'ID', 'Title', 'Category', 'Status', 'Reporter', 'Location', 'Incident', 'Reported', 'Escalation'
         ]],
         body: tableData,
         theme: 'grid',
@@ -531,15 +524,14 @@ const AdminReportsPage = () => {
         },
         columnStyles: {
           0: { cellWidth: 15, halign: 'center' },  // ID
-          1: { cellWidth: 50, halign: 'left' },    // Title - MAXIMIZED
-          2: { cellWidth: 28, halign: 'left' },    // Category
-          3: { cellWidth: 18, halign: 'center' },  // Severity
-          4: { cellWidth: 22, halign: 'center' },  // Status
-          5: { cellWidth: 28, halign: 'left' },    // Reporter
-          6: { cellWidth: 35, halign: 'left' },    // Location - MAXIMIZED
-          7: { cellWidth: 18, halign: 'center' },  // Incident Date
-          8: { cellWidth: 18, halign: 'center' },  // Reported Date
-          9: { cellWidth: 20, halign: 'center' },  // Escalation
+          1: { cellWidth: 55, halign: 'left' },    // Title - MAXIMIZED
+          2: { cellWidth: 30, halign: 'left' },    // Category
+          3: { cellWidth: 25, halign: 'center' },  // Status
+          4: { cellWidth: 30, halign: 'left' },    // Reporter
+          5: { cellWidth: 40, halign: 'left' },    // Location - MAXIMIZED
+          6: { cellWidth: 20, halign: 'center' },  // Incident Date
+          7: { cellWidth: 20, halign: 'center' },  // Reported Date
+          8: { cellWidth: 25, halign: 'center' },  // Escalation
         },
         margin: { left: 5, right: 5 },  // MINIMAL MARGINS
         tableWidth: 'auto',  // Auto width for centering
@@ -776,12 +768,6 @@ const AdminReportsPage = () => {
                   <p className="text-xs text-gray-600 font-medium">Status</p>
                   <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-xs mt-1`}>
                     {safeGet(selectedReport, 'status', 'pending')}
-                  </Badge>
-                </div>
-                <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 font-medium">Severity</p>
-                  <Badge className={`${getSeverityColor(safeGet(selectedReport, 'severity', 'low'))} text-xs mt-1`}>
-                    {safeGet(selectedReport, 'severity', 'low')}
                   </Badge>
                 </div>
                 <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
@@ -1048,8 +1034,49 @@ const AdminReportsPage = () => {
                                   </Button>
                                 </div>
                               </div>
+                            ) : isVideo ? (
+                              // Video display with thumbnail
+                              <div 
+                                className="relative cursor-pointer"
+                                onClick={() => {
+                                  setSelectedVideoUrl(url);
+                                  setVideoViewerOpen(true);
+                                }}
+                              >
+                                <video 
+                                  src={url} 
+                                  className="w-full h-24 sm:h-32 md:h-40 object-cover rounded-lg border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all"
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-white bg-opacity-90 flex items-center justify-center shadow-lg">
+                                    <svg className="w-6 h-6 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                                <div className="absolute top-1 right-1 sm:top-2 sm:right-2">
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-6 px-1.5 sm:h-7 sm:px-2 opacity-0 group-hover:opacity-100 transition-all shadow-md text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const link = document.createElement('a');
+                                      link.href = url;
+                                      link.download = fileName;
+                                      link.click();
+                                    }}
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 rounded-b-lg pointer-events-none">
+                                  <p className="text-xs text-white truncate font-medium">{fileName}</p>
+                                </div>
+                              </div>
                             ) : (
-                              // File display for non-images
+                              // File display for documents/PDFs
                               <div className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg border-2 border-gray-200 h-24 sm:h-32 md:h-40">
                                 <div className="flex-1 flex flex-col items-center justify-center w-full">
                                   <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400 mb-1" />
@@ -1059,21 +1086,7 @@ const AdminReportsPage = () => {
                                   </Badge>
                                 </div>
                                 <div className="flex gap-1 w-full">
-                                  {isVideo ? (
-                                    // Video: Opens in modal viewer
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 h-7 sm:h-8 text-xs"
-                                      onClick={() => {
-                                        setSelectedVideoUrl(url);
-                                        setVideoViewerOpen(true);
-                                      }}
-                                    >
-                                      <Eye className="h-3 w-3 mr-1" />
-                                      View
-                                    </Button>
-                                  ) : isPDF ? (
+                                  {isPDF ? (
                                     // PDF: Opens in modal viewer
                                     <Button
                                       variant="outline"
@@ -1428,19 +1441,6 @@ const AdminReportsPage = () => {
               </SelectContent>
             </Select>
 
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Severities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* Escalation Filter */}
             <Select value={escalationFilter} onValueChange={setEscalationFilter}>
               <SelectTrigger>
@@ -1481,7 +1481,6 @@ const AdminReportsPage = () => {
                 setSearchTerm('');
                 setStatusFilter('all');
                 setCategoryFilter('all');
-                setSeverityFilter('all');
                 setEscalationFilter('all');
               }}
             >
@@ -1518,7 +1517,6 @@ const AdminReportsPage = () => {
                   {/* Only show Handler column for admins, not for handlers */}
                   {!isHandler && <TableHead>Handler</TableHead>}
                   <TableHead>Escalation</TableHead>
-                  <TableHead>Severity</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Actions</TableHead>
@@ -1580,11 +1578,6 @@ const AdminReportsPage = () => {
                           hoursUnprocessed={report.hoursUnprocessed || 0}
                           slaBreached={report.slaBreached || false}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getSeverityColor(safeGet(report, 'severity', 'low'))}>
-                          {safeGet(report, 'severity', 'low').toUpperCase()}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(safeGet(report, 'status', 'pending'))}>

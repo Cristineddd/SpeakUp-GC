@@ -123,7 +123,7 @@ const Landing = () => {
       <Header />
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-24 pb-20 overflow-hidden bg-white">
+      <section className="relative min-h-screen flex flex-col justify-center pt-32 pb-20 overflow-hidden bg-white">
         {/* Subtle dot grid */}
         <div
           className="absolute inset-0 opacity-40"
@@ -134,12 +134,6 @@ const Landing = () => {
 
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 border border-[#1a7a45]/30 bg-[#e8f5ee] rounded-full px-4 py-1.5 mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1a7a45] animate-pulse" />
-              <span className="text-[#1a7a45] text-xs font-semibold tracking-wide uppercase">Gordon College · DEIU Platform · RA 11313 &amp; RA 7877</span>
-            </div>
-
             {/* Headline */}
             <h1 className="text-[clamp(3rem,8vw,6.5rem)] font-black leading-[0.9] tracking-tight text-gray-900 mb-8">
               Speak up.<br />
