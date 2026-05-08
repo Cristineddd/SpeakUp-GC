@@ -427,16 +427,6 @@ export function AssignHandlerDialog({
             <h4 className="font-semibold">Case Details</h4>
             <p className="text-sm"><strong>Title:</strong> {complaint.title}</p>
             <p className="text-sm"><strong>Category:</strong> {complaint.category}</p>
-            <p className="text-sm">
-              <strong>Severity:</strong>{' '}
-              <Badge variant={
-                complaint.severity === 'critical' ? 'destructive' :
-                complaint.severity === 'high' ? 'default' :
-                'secondary'
-              }>
-                {complaint.severity}
-              </Badge>
-            </p>
             <p className="text-sm"><strong>Submitted:</strong> {new Date(complaint.reportedAt).toLocaleString()}</p>
           </div>
 

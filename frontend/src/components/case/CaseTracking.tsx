@@ -579,18 +579,43 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
   const getStageProgress = () => {
     if (!complaint) return 0;
-    if (complaint.status === ComplaintStatus.RESOLVED) return 100;
-    if (complaint.status === ComplaintStatus.DISMISSED) return 0;
+    
+    // Convert status to string for comparison (admin uses different status values)
+    const statusStr = (complaint.status as any) as string;
+    
+    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved') return 100;
+    if (complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') return 0;
+    
     // Same 5-stage array as MyComplaints list so progress is consistent
     const stages = [
-      ComplaintStage.FILING,
-      ComplaintStage.ACTION_ON_COMPLAINT,
-      ComplaintStage.PRELIMINARY_INVESTIGATION,
-      ComplaintStage.INVESTIGATION_REPORT,
-      ComplaintStage.FINAL_DECISION,
+      'filing',
+      'action_on_complaint',
+      'preliminary_investigation',
+      'investigation_report',
+      'final_decision',
     ];
-    const idx = stages.indexOf(complaint.stage);
-    return idx >= 0 ? ((idx + 1) / stages.length) * 100 : 20;
+    
+    // Get the current stage value (handle both enum and string)
+    const currentStage = (complaint.stage as any) as string;
+    
+    const idx = stages.indexOf(currentStage);
+    
+    // If stage not found, calculate from status (using admin status values)
+    if (idx < 0) {
+      // Admin uses: pending, submitted, inProgress, resolved, dismissed
+      if (statusStr === 'pending' || statusStr === 'submitted' || complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW || complaint.status === ComplaintStatus.REQUIREMENTS_PENDING) {
+        return 20; // Filing stage
+      }
+      if (statusStr === 'inProgress' || complaint.status === ComplaintStatus.VALIDATED || complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE) {
+        return 60; // Investigation stage
+      }
+      if (complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
+        return 80; // Report/Decision stage
+      }
+      return 20;
+    }
+    
+    return ((idx + 1) / stages.length) * 100;
   };
 
   const getStatusConfig = (status: ComplaintStatus) => {

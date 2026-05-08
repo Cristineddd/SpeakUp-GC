@@ -203,18 +203,74 @@ export const updateReportStatus = functions.https.onCall(
       });
 
       // ============================================
-      // 7. LOG SUCCESS
-      // ============================================
-      console.log(`✅ Status transition successful for report ${reportId}:`, {
-        from: currentStatus,
-        to: newStatus,
-        by: updatedByName,
-        collection
-      });
+// ============================================
+// 7. SEND NOTIFICATION TO COMPLAINANT
+// ============================================
+try {
+  const complainantId = reportData?.complainantId || reportData?.userId;
+  const complaintTitle = reportData?.title || reportData?.description || "Your complaint";
 
-      // ============================================
-      // 8. RETURN SUCCESS RESPONSE
-      // ============================================
+  if (complainantId) {
+    const statusMap: Record<string, 'pending' | 'inProgress' | 'resolved' | 'dismissed'> = {
+      pending: 'pending',
+      submitted: 'pending',
+      inProgress: 'inProgress',
+      resolved: 'resolved',
+      dismissed: 'dismissed',
+    };
+
+    const statusMessages = {
+      pending: 'has been marked as pending and is under review',
+      inProgress: 'is now in progress and being handled',
+      resolved: 'has been successfully resolved',
+      dismissed: 'has been dismissed',
+    };
+
+    const statusTitles = {
+      pending: 'Complaint Under Review',
+      inProgress: 'Complaint In Progress 🔍',
+      resolved: 'Complaint Resolved ✅',
+      dismissed: 'Complaint Dismissed',
+    };
+
+    const priorityMap = {
+      pending: 'normal',
+      inProgress: 'high',
+      resolved: 'high',
+      dismissed: 'normal',
+    };
+
+    const mappedStatus = statusMap[newStatus] || 'pending';
+
+    await db.collection('notifications').add({
+      userId: complainantId,
+      type: 'status_update',
+      priority: priorityMap[mappedStatus],
+      status: 'unread',
+      title: statusTitles[mappedStatus],
+      message: `Your complaint "${complaintTitle}" ${statusMessages[mappedStatus]}.${notes ? ` Notes: ${notes}` : ''}`,
+      complaintId: reportId,
+      actionUrl: `/case-tracking/${reportId}`,
+      actionLabel: 'View Details',
+      createdAt: admin.firestore.Timestamp.now(),
+      data: {
+        status: mappedStatus,
+        updatedBy: updatedByName,
+        updatedAt: new Date().toISOString(),
+        ...(notes && { notes }),
+      },
+    });
+
+    console.log(`🔔 Notification sent to complainant ${complainantId} for status: ${newStatus}`);
+  }
+} catch (notifError) {
+  // Non-blocking — log but don't fail the status update
+  console.error('⚠️ Failed to send notification (non-critical):', notifError);
+}
+
+// ============================================
+// 8. LOG SUCCESS  ← (was 7 before)
+// ============================================
       return {
         success: true,
         message: `Report status updated from ${currentStatus} to ${newStatus}`,

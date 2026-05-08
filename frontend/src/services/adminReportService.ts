@@ -874,23 +874,38 @@ export class AdminReportService {
    */
   static async updateReportStatusFromBothCollections(reportId: string, newStatus: string): Promise<void> {
     try {
-      console.log(`🔄 Attempting to update report ${reportId} status to "${newStatus}" from both collections...`);
+      console.log(`🔄 Attempting to update report ${reportId} status to "${newStatus}" in both collections...`);
       
-      // Try to update from reports collection first
+      let updatedReports = false;
+      let updatedComplaints = false;
+      
+      // Try to update reports collection
       try {
         await this.updateReportStatus(reportId, newStatus, 'reports');
         console.log(`✅ Updated ${reportId} status in reports collection`);
-        return;
+        updatedReports = true;
       } catch (error) {
-        console.log(`ℹ️ Report ${reportId} not found in reports collection, trying complaints...`);
+        console.log(`ℹ️ Report ${reportId} not found in reports collection`);
       }
       
-      // If not found in reports, try complaints collection
-      await this.updateReportStatus(reportId, newStatus, 'complaints');
-      console.log(`✅ Updated ${reportId} status in complaints collection`);
+      // Try to update complaints collection
+      try {
+        await this.updateReportStatus(reportId, newStatus, 'complaints');
+        console.log(`✅ Updated ${reportId} status in complaints collection`);
+        updatedComplaints = true;
+      } catch (error) {
+        console.log(`ℹ️ Report ${reportId} not found in complaints collection`);
+      }
+      
+      // If neither collection was updated, throw error
+      if (!updatedReports && !updatedComplaints) {
+        throw new Error(`Report ${reportId} not found in either collection`);
+      }
+      
+      console.log(`✅ Successfully updated ${reportId} in ${updatedReports && updatedComplaints ? 'both' : updatedReports ? 'reports' : 'complaints'} collection(s)`);
       
     } catch (error) {
-      console.error(`❌ Failed to update report ${reportId} status from both collections:`, error);
+      console.error(`❌ Failed to update report ${reportId} status:`, error);
       throw new Error(`Could not update report ${reportId} status. It may not exist in either collection.`);
     }
   }

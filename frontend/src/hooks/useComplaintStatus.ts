@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { doc, updateDoc, getDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './use-toast';
+import { NotificationService } from '../services/notificationService';
 
 export type ComplaintStatus = 'pending' | 'assigned' | 'ongoing' | 'resolved' | 'dismissed';
 
@@ -24,13 +26,13 @@ interface StatusTransitionResult {
   timestamp: string;
 }
 
-// Define valid transitions (must match Firebase Function)
+// Define valid transitions
 const VALID_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   pending: ['assigned'],
   assigned: ['ongoing'],
   ongoing: ['resolved', 'dismissed'],
   resolved: [],
-  dismissed: []
+  dismissed: [],
 };
 
 // Status labels for UI
@@ -39,7 +41,7 @@ export const STATUS_LABELS: Record<ComplaintStatus, string> = {
   assigned: 'Assigned',
   ongoing: 'Ongoing',
   resolved: 'Resolved',
-  dismissed: 'Dismissed'
+  dismissed: 'Dismissed',
 };
 
 // Status colors for badges
@@ -48,7 +50,16 @@ export const STATUS_COLORS: Record<ComplaintStatus, string> = {
   assigned: 'bg-blue-100 text-blue-800 border-blue-200',
   ongoing: 'bg-purple-100 text-purple-800 border-purple-200',
   resolved: 'bg-green-100 text-green-800 border-green-200',
-  dismissed: 'bg-gray-100 text-gray-800 border-gray-200'
+  dismissed: 'bg-gray-100 text-gray-800 border-gray-200',
+};
+
+// Map complaint statuses to NotificationService status types
+const NOTIFICATION_STATUS_MAP: Record<ComplaintStatus, 'pending' | 'inProgress' | 'resolved' | 'dismissed'> = {
+  pending: 'pending',
+  assigned: 'pending',
+  ongoing: 'inProgress',
+  resolved: 'resolved',
+  dismissed: 'dismissed',
 };
 
 export function useComplaintStatus() {
@@ -66,9 +77,11 @@ export function useComplaintStatus() {
   /**
    * Check if a transition is valid
    */
-  const isValidTransition = (currentStatus: ComplaintStatus, newStatus: ComplaintStatus): boolean => {
-    const allowedStatuses = VALID_TRANSITIONS[currentStatus];
-    return allowedStatuses.includes(newStatus);
+  const isValidTransition = (
+    currentStatus: ComplaintStatus,
+    newStatus: ComplaintStatus
+  ): boolean => {
+    return VALID_TRANSITIONS[currentStatus].includes(newStatus);
   };
 
   /**
@@ -79,14 +92,16 @@ export function useComplaintStatus() {
   };
 
   /**
-   * Update complaint status with server-side validation
+   * Update complaint status directly via Firestore + send notification
    */
-  const updateStatus = async (data: StatusTransitionData): Promise<StatusTransitionResult | null> => {
+  const updateStatus = async (
+    data: StatusTransitionData
+  ): Promise<StatusTransitionResult | null> => {
     if (!currentUser) {
       toast({
         title: 'Authentication Required',
         description: 'You must be logged in to update complaint status',
-        variant: 'destructive'
+        variant: 'destructive',
       });
       return null;
     }
@@ -94,45 +109,84 @@ export function useComplaintStatus() {
     setIsUpdating(true);
 
     try {
-      // Call Firebase Function
-      const functions = getFunctions();
-      const updateComplaintStatusFn = httpsCallable<StatusTransitionData, StatusTransitionResult>(
-        functions,
-        'updateComplaintStatus'
-      );
+      const { complaintId, newStatus, notes, assignedTo, assignedToName } = data;
 
-      const result = await updateComplaintStatusFn({
-        ...data,
-        updatedBy: currentUser.uid,
-        updatedByName: currentUser.displayName || currentUser.email || 'Unknown User'
-      });
+      // ── 1. Fetch complaint doc (try 'complaints' first, fallback to 'reports') ──
+      let docRef = doc(db, 'complaints', complaintId);
+      let docSnap = await getDoc(docRef);
 
-      if (result.data.success) {
-        toast({
-          title: 'Status Updated',
-          description: result.data.message,
-          variant: 'default'
-        });
-
-        return result.data;
+      if (!docSnap.exists()) {
+        docRef = doc(db, 'reports', complaintId);
+        docSnap = await getDoc(docRef);
       }
 
-      return null;
+      if (!docSnap.exists()) {
+        throw new Error('Complaint not found in complaints or reports collection');
+      }
 
+      const complaintData = docSnap.data();
+      const previousStatus = complaintData.status as ComplaintStatus;
+      const complaintTitle =
+        complaintData.title || complaintData.description || 'Your complaint';
+      const complainantId = complaintData.complainantId || complaintData.userId;
+
+      // ── 2. Update Firestore ──
+      await updateDoc(docRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+        lastUpdated: serverTimestamp(),
+        ...(notes && { notes }),
+        ...(assignedTo && { assignedTo, handlerId: assignedTo }),
+        ...(assignedToName && { assignedToName }),
+        statusHistory: arrayUnion({
+          status: newStatus,
+          updatedBy: currentUser.uid,
+          updatedByName:
+            currentUser.displayName || currentUser.email || 'Unknown',
+          updatedAt: new Date().toISOString(),
+          ...(notes && { notes }),
+        }),
+      });
+
+      // ── 3. Send notification to complainant (non-blocking) ──
+      if (complainantId) {
+        const mappedStatus = NOTIFICATION_STATUS_MAP[newStatus];
+        try {
+          await NotificationService.sendComplaintStatusNotification(
+            complainantId,
+            complaintId,
+            complaintTitle,
+            mappedStatus,
+            notes
+          );
+          console.log(
+            `🔔 Notification sent to ${complainantId} for status: ${newStatus}`
+          );
+        } catch (notifErr) {
+          // Non-blocking — status update still succeeds even if notif fails
+          console.error('⚠️ Notification failed (non-critical):', notifErr);
+        }
+      }
+
+      toast({
+        title: 'Status Updated',
+        description: `Status changed to ${STATUS_LABELS[newStatus]}`,
+      });
+
+      return {
+        success: true,
+        message: `Status updated to ${STATUS_LABELS[newStatus]}`,
+        complaintId,
+        previousStatus,
+        newStatus,
+        timestamp: new Date().toISOString(),
+      };
     } catch (error: any) {
       console.error('Error updating complaint status:', error);
 
-      // Handle specific error codes
       let errorMessage = 'Failed to update complaint status';
-
-      if (error.code === 'unauthenticated') {
-        errorMessage = 'You must be logged in to perform this action';
-      } else if (error.code === 'failed-precondition') {
-        errorMessage = error.message || 'Invalid status transition';
-      } else if (error.code === 'invalid-argument') {
-        errorMessage = error.message || 'Invalid input provided';
-      } else if (error.code === 'not-found') {
-        errorMessage = 'Complaint not found';
+      if (error.code === 'permission-denied') {
+        errorMessage = 'You do not have permission to update this complaint';
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -140,11 +194,10 @@ export function useComplaintStatus() {
       toast({
         title: 'Update Failed',
         description: errorMessage,
-        variant: 'destructive'
+        variant: 'destructive',
       });
 
       return null;
-
     } finally {
       setIsUpdating(false);
     }
@@ -155,13 +208,12 @@ export function useComplaintStatus() {
    */
   const getTransitionButtons = (currentStatus: ComplaintStatus) => {
     const allowedStatuses = getAllowedNextStatuses(currentStatus);
-
-    return allowedStatuses.map(status => ({
+    return allowedStatuses.map((status) => ({
       status,
       label: STATUS_LABELS[status],
       color: STATUS_COLORS[status],
       requiresAssignment: status === 'assigned',
-      isDestructive: status === 'dismissed'
+      isDestructive: status === 'dismissed',
     }));
   };
 
@@ -178,6 +230,6 @@ export function useComplaintStatus() {
 
     // Constants
     STATUS_LABELS,
-    STATUS_COLORS
+    STATUS_COLORS,
   };
 }

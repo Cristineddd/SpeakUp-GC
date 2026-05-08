@@ -1,4 +1,5 @@
 import React, { useState, useEffect, type JSX } from 'react';
+import { NotificationService } from "../../services/notificationService";
 import { 
   FileText, 
   Clock, 
@@ -379,58 +380,69 @@ const AdminReportsPage = () => {
     }
   };
 
-  const handleUpdateStatus = async () => {
-    if (!selectedReport || !newStatus) return;
+ const handleUpdateStatus = async () => {
+  if (!selectedReport || !newStatus) return;
 
-    try {
-      await AdminReportService.updateReportStatusFromBothCollections(
-        selectedReport.id, 
-        newStatus
-      );
-      
-      toast({
-        title: "Success",
-        description: "Report status updated successfully.",
-      });
-      
-      // Refresh data
-      fetchReports();
-      fetchStats();
-      setSelectedReport(null);
-      setNewNote('');
-      setNewStatus('');
-      
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update report status.",
-        variant: "destructive",
-      });
-    }
-  };
+  try {
+    await AdminReportService.updateReportStatusFromBothCollections(
+      selectedReport.id,
+      newStatus
+    );
 
-  const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['status']) => {
-    try {
-      await AdminReportService.updateReportStatusFromBothCollections(reportId, status);
-      
-      toast({
-        title: "Success",
-        description: `Report status updated to ${status.replace(/([A-Z])/g, ' $1').trim()}.`,
-      });
-      
-      // Refresh data
-      fetchReports();
-      fetchStats();
-      
-    } catch (error) {
-      console.error('Error updating report status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update report status.",
-        variant: "destructive",
-      });
+    const complainantId = selectedReport.userId;
+    if (complainantId) {
+      const statusMap: Record<string, any> = {
+        inProgress: 'inProgress', pending: 'pending',
+        resolved: 'resolved', dismissed: 'dismissed', submitted: 'pending',
+      };
+      await NotificationService.sendComplaintStatusNotification(
+        complainantId,
+        selectedReport.id,
+        selectedReport.title || 'Your complaint',
+        statusMap[newStatus] || 'pending',
+        newNote || undefined
+      ).catch(e => console.error('Notif failed (non-critical):', e));
     }
-  };
+
+    toast({ title: "Success", description: "Report status updated successfully." });
+    fetchReports();
+    fetchStats();
+    setSelectedReport(null);
+    setNewNote('');
+    setNewStatus('');
+  } catch (error) {
+    toast({ title: "Error", description: "Failed to update report status.", variant: "destructive" });
+  }
+};
+      
+
+const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['status']) => {
+  try {
+    await AdminReportService.updateReportStatusFromBothCollections(reportId, status);
+
+    const report = reports.find(r => r.id === reportId);
+    const complainantId = report?.userId;
+    if (complainantId && report) {
+      const statusMap: Record<string, any> = {
+        inProgress: 'inProgress', pending: 'pending',
+        resolved: 'resolved', dismissed: 'dismissed', submitted: 'pending',
+      };
+      await NotificationService.sendComplaintStatusNotification(
+        complainantId,
+        reportId,
+        report.title || 'Your complaint',
+        statusMap[status] || 'pending'
+      ).catch(e => console.error('Notif failed (non-critical):', e));
+    }
+
+    toast({ title: "Success", description: `Status updated to ${status?.replace(/([A-Z])/g, ' $1').trim()}.` });
+    fetchReports();
+    fetchStats();
+  } catch (error) {
+    console.error('Error updating report status:', error);
+    toast({ title: "Error", description: "Failed to update report status.", variant: "destructive" });
+  }
+};
 
   const handleExportConfirmation = () => {
     setExportDialogOpen(true);

@@ -31,6 +31,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageService } from "../../services/messageService";
 import type { ChatRoom } from "../../types/message";
 import ProfileSetupModal from "../../components/ProfileSetupModal";
+import GBVChatbot from "../../components/GBVChatbot";
 
 // ─── Helpers ───
 const safeToDate = (dateValue: any): Date => {
@@ -48,17 +49,28 @@ const safeToDate = (dateValue: any): Date => {
 
 const toComplaintStatus = (status: string): ComplaintStatus => {
   const map: Record<string, ComplaintStatus> = {
-    draft: ComplaintStatus.DRAFT, submitted: ComplaintStatus.SUBMITTED,
+    draft: ComplaintStatus.DRAFT,
+    submitted: ComplaintStatus.SUBMITTED,
     under_review: ComplaintStatus.UNDER_REVIEW,
     requirements_pending: ComplaintStatus.REQUIREMENTS_PENDING,
-    validated: ComplaintStatus.VALIDATED, investigating: ComplaintStatus.INVESTIGATING,
+    validated: ComplaintStatus.VALIDATED,
+    investigating: ComplaintStatus.INVESTIGATING,
     awaiting_response: ComplaintStatus.AWAITING_RESPONSE,
     under_deliberation: ComplaintStatus.UNDER_DELIBERATION,
-    resolved: ComplaintStatus.RESOLVED, dismissed: ComplaintStatus.DISMISSED,
-    withdrawn: ComplaintStatus.WITHDRAWN, pending: ComplaintStatus.SUBMITTED,
-    in_progress: ComplaintStatus.INVESTIGATING, closed: ComplaintStatus.RESOLVED,
+    resolved: ComplaintStatus.RESOLVED,
+    dismissed: ComplaintStatus.DISMISSED,
+    withdrawn: ComplaintStatus.WITHDRAWN,
+    pending: ComplaintStatus.SUBMITTED,
+    in_progress: ComplaintStatus.INVESTIGATING,
+
+    // ✅ ADD THESE — admin may write camelCase or spaced variants
+    inProgress: ComplaintStatus.INVESTIGATING,
+    "in progress": ComplaintStatus.INVESTIGATING,
+    inprogress: ComplaintStatus.INVESTIGATING,
+    closed: ComplaintStatus.RESOLVED,
   };
-  return map[status] || ComplaintStatus.SUBMITTED;
+
+  return map[status] || map[status?.toLowerCase()] || ComplaintStatus.SUBMITTED;
 };
 
 const formatEnum = (v: string) => v.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
@@ -216,13 +228,30 @@ export default function Dashboard() {
 
   // ─── Derived counts ───
   const total = complaints.length;
+  
+  // Helper to check status (handles both enum and string values from admin)
+  const isStatus = (complaint: SimpleComplaint, ...statuses: (string | ComplaintStatus)[]) => {
+    const statusStr = String(complaint.status); // Convert any type to string
+    return statuses.some(s => {
+      const compareStr = String(s); // Convert any type to string
+      return statusStr === compareStr;
+    });
+  };
+  
+  const pending = complaints.filter(
+    (c) =>
+      isStatus(c, 'pending', 'submitted', ComplaintStatus.SUBMITTED, ComplaintStatus.UNDER_REVIEW, ComplaintStatus.REQUIREMENTS_PENDING)
+  ).length;
+  
   const inProgress = complaints.filter(
     (c) =>
-      c.status !== ComplaintStatus.RESOLVED &&
-      c.status !== ComplaintStatus.DISMISSED &&
-      c.status !== ComplaintStatus.WITHDRAWN
+      isStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
-  const resolved = complaints.filter((c) => c.status === ComplaintStatus.RESOLVED).length;
+  
+  const resolved = complaints.filter((c) => 
+    isStatus(c, 'resolved', ComplaintStatus.RESOLVED)
+  ).length;
+  
   const recentComplaints = complaints.slice(0, 4);
 
   // ─── Summary card config ───
@@ -286,7 +315,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: "Total Filed", value: total, icon: FileText, color: "text-gray-700", bg: "bg-gray-100" },
-            { label: "Pending", value: complaints.filter(c => c.status === ComplaintStatus.SUBMITTED || c.status === ComplaintStatus.UNDER_REVIEW).length, icon: Clock, color: "text-yellow-700", bg: "bg-yellow-50" },
+            { label: "Pending", value: pending, icon: Clock, color: "text-yellow-700", bg: "bg-yellow-50" },
             { label: "In Progress", value: inProgress, icon: AlertTriangle, color: "text-blue-700", bg: "bg-blue-50" },
             { label: "Resolved", value: resolved, icon: CheckCircle, color: "text-green-700", bg: "bg-green-50" },
           ].map((stat) => {
@@ -613,6 +642,9 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── GBV Chatbot (Laya) ── */}
+      <GBVChatbot />
     </div>
   );
 }

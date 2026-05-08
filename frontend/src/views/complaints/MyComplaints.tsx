@@ -51,17 +51,28 @@ const toComplaintStage = (stage: string): ComplaintStage => {
 
 const toComplaintStatus = (status: string): ComplaintStatus => {
   const map: Record<string, ComplaintStatus> = {
-    draft: ComplaintStatus.DRAFT, submitted: ComplaintStatus.SUBMITTED,
+    draft: ComplaintStatus.DRAFT,
+    submitted: ComplaintStatus.SUBMITTED,
     under_review: ComplaintStatus.UNDER_REVIEW,
     requirements_pending: ComplaintStatus.REQUIREMENTS_PENDING,
-    validated: ComplaintStatus.VALIDATED, investigating: ComplaintStatus.INVESTIGATING,
+    validated: ComplaintStatus.VALIDATED,
+    investigating: ComplaintStatus.INVESTIGATING,
     awaiting_response: ComplaintStatus.AWAITING_RESPONSE,
     under_deliberation: ComplaintStatus.UNDER_DELIBERATION,
-    resolved: ComplaintStatus.RESOLVED, dismissed: ComplaintStatus.DISMISSED,
-    withdrawn: ComplaintStatus.WITHDRAWN, pending: ComplaintStatus.SUBMITTED,
-    in_progress: ComplaintStatus.INVESTIGATING, closed: ComplaintStatus.RESOLVED,
+    resolved: ComplaintStatus.RESOLVED,
+    dismissed: ComplaintStatus.DISMISSED,
+    withdrawn: ComplaintStatus.WITHDRAWN,
+    pending: ComplaintStatus.SUBMITTED,
+    in_progress: ComplaintStatus.INVESTIGATING,
+    closed: ComplaintStatus.RESOLVED,
+
+    // ✅ ADD THESE
+    inProgress: ComplaintStatus.INVESTIGATING,
+    "in progress": ComplaintStatus.INVESTIGATING,
+    inprogress: ComplaintStatus.INVESTIGATING,
   };
-  return map[status] || ComplaintStatus.SUBMITTED;
+
+  return map[status] || map[status?.toLowerCase()] || ComplaintStatus.SUBMITTED;
 };
 
 const toComplaintType = (type: string): ComplaintType => {
@@ -203,11 +214,18 @@ export default function MyComplaints() {
 
   // ─── Summary counts ───
   const total = complaints.length;
+  
+  // Helper to check status (handles both enum and string values from admin)
+  const hasStatus = (complaint: Complaint, ...statuses: (string | ComplaintStatus)[]) => {
+    const statusStr = String(complaint.status);
+    return statuses.some(s => statusStr === String(s));
+  };
+  
   const inProgress = complaints.filter(
-    (c) => c.status !== ComplaintStatus.RESOLVED && c.status !== ComplaintStatus.DISMISSED && c.status !== ComplaintStatus.WITHDRAWN
+    (c) => hasStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
-  const resolved = complaints.filter((c) => c.status === ComplaintStatus.RESOLVED).length;
-  const dismissed = complaints.filter((c) => c.status === ComplaintStatus.DISMISSED).length;
+  const resolved = complaints.filter((c) => hasStatus(c, 'resolved', ComplaintStatus.RESOLVED)).length;
+  const dismissed = complaints.filter((c) => hasStatus(c, 'dismissed', ComplaintStatus.DISMISSED)).length;
 
   if (loading) {
     return (
