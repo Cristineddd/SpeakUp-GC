@@ -794,21 +794,6 @@ const AdminReportsPage = () => {
                       <div className="space-y-1 text-xs">
                         <div><strong>Title:</strong> {safeGet(selectedReport, 'title', 'No title')}</div>
                         <div><strong>Location:</strong> {safeGet(selectedReport, 'location', 'No location')}</div>
-                        {(safeGet(selectedReport, 'latitude') || safeGet(selectedReport, 'longitude')) && (
-                          <div>
-                            <strong>Coordinates:</strong> {
-                              (() => {
-                                const lat = safeGet(selectedReport, 'latitude');
-                                const lng = safeGet(selectedReport, 'longitude');
-                                const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
-                                const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
-                                return (!isNaN(latNum) && !isNaN(lngNum)) 
-                                  ? `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`
-                                  : 'N/A';
-                              })()
-                            }
-                          </div>
-                        )}
                         {safeGet(selectedReport, 'mapAddress') && (
                           <div><strong>Map Address:</strong> {safeGet(selectedReport, 'mapAddress')}</div>
                         )}
@@ -827,21 +812,6 @@ const AdminReportsPage = () => {
                       <div className="space-y-1 text-xs">
                         <div><strong>Title:</strong> {safeGet(selectedReport, 'title', 'No title')}</div>
                         <div><strong>Location:</strong> {safeGet(selectedReport, 'location', 'No location')}</div>
-                        {(safeGet(selectedReport, 'latitude') || safeGet(selectedReport, 'longitude')) && (
-                          <div>
-                            <strong>Coordinates:</strong> {
-                              (() => {
-                                const lat = safeGet(selectedReport, 'latitude');
-                                const lng = safeGet(selectedReport, 'longitude');
-                                const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
-                                const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
-                                return (!isNaN(latNum) && !isNaN(lngNum)) 
-                                  ? `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`
-                                  : 'N/A';
-                              })()
-                            }
-                          </div>
-                        )}
                         {safeGet(selectedReport, 'mapAddress') && (
                           <div><strong>Map Address:</strong> {safeGet(selectedReport, 'mapAddress')}</div>
                         )}
@@ -952,6 +922,7 @@ const AdminReportsPage = () => {
                           centerLng={lngNum}
                           selectedCity=""
                           selectedBarangay=""
+                          readOnly={true}
                         />
                       </div>
                       {safeGet(selectedReport, 'mapAddress') && (

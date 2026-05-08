@@ -9,6 +9,7 @@ interface LocationMapPickerProps {
   centerLng?: number;
   selectedCity?: string;
   selectedBarangay?: string;
+  readOnly?: boolean;
 }
 
 // Load Leaflet only on the client — prevents "Map container already initialized"

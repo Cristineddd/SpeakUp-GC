@@ -34,24 +34,27 @@ interface LeafletMapProps {
   centerLng?: number;
   selectedCity?: string;
   selectedBarangay?: string;
+  readOnly?: boolean;
 }
 
 function LocationMarker({
   position,
   setPosition,
+  readOnly,
 }: {
   position: [number, number] | null;
   setPosition: (pos: [number, number]) => void;
+  readOnly?: boolean;
 }) {
   const [isDragging, setIsDragging] = useState(false);
   useMapEvents({
     dragstart() { setIsDragging(true); },
     dragend() { setTimeout(() => setIsDragging(false), 100); },
     click(e) {
-      if (!isDragging) setPosition([e.latlng.lat, e.latlng.lng]);
+      if (!isDragging && !readOnly) setPosition([e.latlng.lat, e.latlng.lng]);
     },
   });
-  return position ? <Marker position={position} /> : null;
+  return position ? <Marker position={position} draggable={!readOnly} /> : null;
 }
 
 function MapCenterController({ center }: { center: [number, number] }) {
@@ -70,6 +73,7 @@ export default function LeafletMap({
   centerLng,
   selectedCity,
   selectedBarangay,
+  readOnly = false,
 }: LeafletMapProps) {
   const mapCenter: [number, number] =
     centerLat && centerLng ? [centerLat, centerLng] : defaultCenter;
@@ -103,24 +107,26 @@ export default function LeafletMap({
 
   return (
     <div className="w-full h-[300px] rounded-lg overflow-hidden border-2 border-gray-300 relative z-0">
-      <div className="bg-blue-50 p-2 border-b border-blue-200">
-        <p className="text-xs text-blue-800 flex items-center gap-1">
-          <MapPin className="h-3 w-3" />
-          {selectedCity && selectedBarangay
-            ? `Location pinned in ${selectedBarangay}, ${selectedCity}. Click to adjust.`
-            : 'Click on the map to pin the exact location of the incident.'}
-        </p>
-      </div>
+      {!readOnly && (
+        <div className="bg-blue-50 p-2 border-b border-blue-200">
+          <p className="text-xs text-blue-800 flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            {selectedCity && selectedBarangay
+              ? `Location pinned in ${selectedBarangay}, ${selectedCity}. Click to adjust.`
+              : 'Click on the map to pin the exact location of the incident.'}
+          </p>
+        </div>
+      )}
       {/* The ref div wraps MapContainer so we can clear _leaflet_id on unmount */}
-      <div ref={containerRef} style={{ height: 'calc(100% - 36px)', width: '100%' }}>
+      <div ref={containerRef} style={{ height: readOnly ? '100%' : 'calc(100% - 36px)', width: '100%' }}>
         <MapContainer
           center={mapCenter}
           zoom={17}
-          scrollWheelZoom
-          doubleClickZoom
-          touchZoom
-          dragging
-          zoomControl
+          scrollWheelZoom={!readOnly}
+          doubleClickZoom={!readOnly}
+          touchZoom={!readOnly}
+          dragging={!readOnly}
+          zoomControl={!readOnly}
           style={{ height: '100%', width: '100%' }}
           maxBounds={[[14.8260, 120.2790], [14.8310, 120.2840]]}
           maxBoundsViscosity={1.0}
@@ -134,7 +140,7 @@ export default function LeafletMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapCenterController center={mapCenter} />
-          <LocationMarker position={position} setPosition={setPosition} />
+          <LocationMarker position={position} setPosition={setPosition} readOnly={readOnly} />
         </MapContainer>
       </div>
       {position && (
