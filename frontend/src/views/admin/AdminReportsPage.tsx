@@ -185,7 +185,6 @@ const AdminReportsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [escalationFilter, setEscalationFilter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
   const [newNote, setNewNote] = useState('');
@@ -272,7 +271,7 @@ const AdminReportsPage = () => {
   // Apply filters when reports or filter values change
   useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm, statusFilter, categoryFilter, severityFilter, escalationFilter]);
+  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter]);
 
   // DEBUG: Monitor reports changes
   useEffect(() => {
@@ -348,11 +347,6 @@ const AdminReportsPage = () => {
     // Category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(report => safeGet(report, 'category') === categoryFilter);
-    }
-
-    // Severity filter
-    if (severityFilter !== 'all') {
-      filtered = filtered.filter(report => safeGet(report, 'severity') === severityFilter);
     }
 
     // Escalation filter
@@ -488,7 +482,6 @@ const AdminReportsPage = () => {
         safeGet(report, 'id', '').substring(0, 6) + '...',
         safeGet(report, 'title', 'No Title').substring(0, 30) + (safeGet(report, 'title', '').length > 30 ? '...' : ''),
         safeGet(report, 'category', 'N/A'),
-        safeGet(report, 'severity', 'N/A').toUpperCase(),
         safeGet(report, 'status', 'N/A').replace(/([A-Z])/g, ' $1').trim(),
         safeGet(report, 'userName', 'Unknown').substring(0, 15) + (safeGet(report, 'userName', '').length > 15 ? '...' : ''),
         safeGet(report, 'location', 'N/A').substring(0, 20) + (safeGet(report, 'location', '').length > 20 ? '...' : ''),
@@ -501,7 +494,7 @@ const AdminReportsPage = () => {
       autoTable(doc, {
         startY: 32,
         head: [[
-          'ID', 'Title', 'Category', 'Severity', 'Status', 'Reporter', 'Location', 'Incident', 'Reported', 'Escalation'
+          'ID', 'Title', 'Category', 'Status', 'Reporter', 'Location', 'Incident', 'Reported', 'Escalation'
         ]],
         body: tableData,
         theme: 'grid',
@@ -533,13 +526,12 @@ const AdminReportsPage = () => {
           0: { cellWidth: 15, halign: 'center' },  // ID
           1: { cellWidth: 50, halign: 'left' },    // Title - MAXIMIZED
           2: { cellWidth: 28, halign: 'left' },    // Category
-          3: { cellWidth: 18, halign: 'center' },  // Severity
-          4: { cellWidth: 22, halign: 'center' },  // Status
-          5: { cellWidth: 28, halign: 'left' },    // Reporter
-          6: { cellWidth: 35, halign: 'left' },    // Location - MAXIMIZED
-          7: { cellWidth: 18, halign: 'center' },  // Incident Date
-          8: { cellWidth: 18, halign: 'center' },  // Reported Date
-          9: { cellWidth: 20, halign: 'center' },  // Escalation
+          3: { cellWidth: 22, halign: 'center' },  // Status
+          4: { cellWidth: 28, halign: 'left' },    // Reporter
+          5: { cellWidth: 35, halign: 'left' },    // Location - MAXIMIZED
+          6: { cellWidth: 18, halign: 'center' },  // Incident Date
+          7: { cellWidth: 18, halign: 'center' },  // Reported Date
+          8: { cellWidth: 20, halign: 'center' },  // Escalation
         },
         margin: { left: 5, right: 5 },  // MINIMAL MARGINS
         tableWidth: 'auto',  // Auto width for centering
@@ -776,12 +768,6 @@ const AdminReportsPage = () => {
                   <p className="text-xs text-gray-600 font-medium">Status</p>
                   <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-xs mt-1`}>
                     {safeGet(selectedReport, 'status', 'pending')}
-                  </Badge>
-                </div>
-                <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 font-medium">Severity</p>
-                  <Badge className={`${getSeverityColor(safeGet(selectedReport, 'severity', 'low'))} text-xs mt-1`}>
-                    {safeGet(selectedReport, 'severity', 'low')}
                   </Badge>
                 </div>
                 <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
@@ -1428,19 +1414,6 @@ const AdminReportsPage = () => {
               </SelectContent>
             </Select>
 
-            <Select value={severityFilter} onValueChange={setSeverityFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Severities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Severities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* Escalation Filter */}
             <Select value={escalationFilter} onValueChange={setEscalationFilter}>
               <SelectTrigger>
@@ -1481,7 +1454,6 @@ const AdminReportsPage = () => {
                 setSearchTerm('');
                 setStatusFilter('all');
                 setCategoryFilter('all');
-                setSeverityFilter('all');
                 setEscalationFilter('all');
               }}
             >
@@ -1518,7 +1490,6 @@ const AdminReportsPage = () => {
                   {/* Only show Handler column for admins, not for handlers */}
                   {!isHandler && <TableHead>Handler</TableHead>}
                   <TableHead>Escalation</TableHead>
-                  <TableHead>Severity</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Actions</TableHead>
@@ -1580,11 +1551,6 @@ const AdminReportsPage = () => {
                           hoursUnprocessed={report.hoursUnprocessed || 0}
                           slaBreached={report.slaBreached || false}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getSeverityColor(safeGet(report, 'severity', 'low'))}>
-                          {safeGet(report, 'severity', 'low').toUpperCase()}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(safeGet(report, 'status', 'pending'))}>
