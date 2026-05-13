@@ -24,7 +24,6 @@ import {
   ComplaintStage,
   ComplaintStatus,
   ComplaintType,
-  Severity,
   Deadline,
   CaseTimeline,
   CaseTimelineEvent,
@@ -112,7 +111,6 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 description: data.description || '',
                 statementOfFacts: data.statementOfFacts || data.additionalInfo || data.description || '',
                 type: data.type || data.category || 'other',
-                severity: data.severity || 'medium',
                 incidentDate: safeToDate(data.incidentDate),
                 incidentLocation: data.incidentLocation || data.location || '',
                 locationVicinity: data.locationVicinity || '', // 'inside' or 'outside'
@@ -161,8 +159,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             });
 
             // Add status history events if available
-            if (complaint.statusHistory && Array.isArray(complaint.statusHistory)) {
-              complaint.statusHistory.forEach((historyEntry: any, index: number) => {
+            const statusHistory = (complaint as any).statusHistory;
+            if (statusHistory && Array.isArray(statusHistory)) {
+              statusHistory.forEach((historyEntry: any, index: number) => {
                 const statusLabel = historyEntry.status === 'inProgress' ? 'In Progress' :
                                   historyEntry.status === 'resolved' ? 'Resolved' :
                                   historyEntry.status === 'dismissed' ? 'Dismissed' :
@@ -940,10 +939,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
         <TabsContent value="details" className="mt-4 space-y-4">
 
           {/* Quick info row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { label: "Type", value: complaint.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: FileText },
-              { label: "Severity", value: complaint.severity.replace(/\b\w/g, l => l.toUpperCase()), icon: AlertTriangle },
               { label: "Filed", value: format(complaint.filingDate, "MMM d, yyyy"), icon: Calendar },
               { label: "Handler", value: complaint.assignedCODI?.[0] !== 'Not yet assigned' ? complaint.assignedCODI?.[0] || '—' : 'Pending', icon: User },
             ].map(item => (

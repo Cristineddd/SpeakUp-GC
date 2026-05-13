@@ -124,7 +124,7 @@ export default function DashboardRouter() {
     resolvedRole === 'coordinator' ||
     resolvedRole === 'disciplining_authority'
   ) return <Spinner />;
-  if (repRole === 'admin' || repRole === 'dean' || repRole === 'coordinator') return <Spinner />;
+  if (repRole === 'admin') return <Spinner />;
 
   // ── Role-specific dashboard render ────────────────────────────────────────
 

@@ -44,15 +44,19 @@ export class RepresentativeService {
         email,
         displayName: displayName || email.split('@')[0],
         role: 'admin' as RepresentativeRole,
-        permissions: {
-          canViewReports: true,
-          canEditReports: true,
-          canDeleteReports: true,
-          canManageUsers: true,
-          canManageRepresentatives: true,
-          canAccessAnalytics: true,
-          canManageSettings: true
-        }
+        department: 'Administration',
+        position: 'System Administrator',
+        permissions: [
+          'view_cases',
+          'assign_cases',
+          'update_status',
+          'escalate_cases',
+          'resolve_cases',
+          'view_evidence',
+          'send_messages',
+          'view_analytics',
+          'manage_representatives'
+        ]
       };
 
       await this.create(representativeData);

@@ -416,16 +416,12 @@ const UsersManagement = () => {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dean">Dean (View Only)</SelectItem>
-                  <SelectItem value="coordinator">Coordinator (View Only)</SelectItem>
                   <SelectItem value="handler">Case Handler</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500 mt-1">
-                {roleFormData.role === 'dean' || roleFormData.role === 'coordinator'
-                  ? '📊 Can view analytics and reports only'
-                  : roleFormData.role === 'handler'
+                {roleFormData.role === 'handler'
                   ? '⚙️ Can be assigned to process complaints'
                   : roleFormData.role === 'admin'
                   ? '🔧 Full administrative access'

@@ -60,5 +60,6 @@ export function useRepresentativeRole() {
     loading,
     isHandler: role === 'handler',
     isAdmin: role === 'admin',
+    isDeanOrCoordinator: false, // Dean/Coordinator roles not implemented yet
   };
 }
