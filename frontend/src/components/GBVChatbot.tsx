@@ -64,7 +64,7 @@ async function callGemini(messages: Message[]): Promise<string> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
     }),
   });
 

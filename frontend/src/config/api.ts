@@ -4,7 +4,7 @@ export const config = {
     model: 'gemini-2.5-flash',
     apiVersion: 'v1beta',
     endpoint: 'https://generativelanguage.googleapis.com',
-    projectId: 'gen-lang-client-0132708958',
-    projectNumber: '331591296578'
+    projectId: 'gen-lang-client-0894198249',
+    projectNumber: '331591298'
   }
 };

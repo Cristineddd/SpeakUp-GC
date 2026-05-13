@@ -453,8 +453,8 @@ export default function CommunityFeed() {
             {/* Page title row */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-xl font-medium text-gray-900">Community Feed</h1>
-                <p className="text-sm text-gray-400 mt-0.5">
+                <h1 className="text-2xl font-semibold text-gray-900">Community Feed</h1>
+                <p className="text-sm text-gray-400 mt-1">
                   Share concerns, read community updates, and stay informed.
                 </p>
               </div>

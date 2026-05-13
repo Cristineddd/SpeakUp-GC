@@ -1,5 +1,3 @@
-export type ComplaintSeverity = 'low' | 'medium' | 'high';
-
 export type ComplaintStatus = 'open' | 'in_review' | 'resolved' | 'dismissed';
 
 export interface ComplaintLocation {
@@ -18,7 +16,6 @@ export interface Complaint {
   description: string;
   reportedUserId?: string | null;
   location?: ComplaintLocation;
-  severity: ComplaintSeverity;
   status: ComplaintStatus;
   assignedTo?: string | null;
   attachments?: string[];

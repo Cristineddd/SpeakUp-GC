@@ -1,172 +1,101 @@
-import styled from 'styled-components'
 import { useNavigate } from '../compat/router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Shield, Lock, Heart, ArrowRight } from 'lucide-react'
+import { Button } from '../components/ui/button'
 
 const Mission = () => {
   const navigate = useNavigate()
 
+  const keyPoints = [
+    {
+      icon: Lock,
+      title: "Confidential, secure reporting with clear next steps",
+      color: "from-green-500 to-emerald-600"
+    },
+    {
+      icon: Shield,
+      title: "Evidence-based resources for prevention and recovery",
+      color: "from-emerald-500 to-teal-600"
+    },
+    {
+      icon: Heart,
+      title: "Warm, human support available when you need it most",
+      color: "from-teal-500 to-cyan-600"
+    }
+  ]
+
   return (
-    <MissionContainer>
-      <BackButton onClick={() => navigate(-1)}>
-        <ArrowLeft size={20} />
-        <span>Back</span>
-      </BackButton>
-      <MissionContent>
-        <Title>Our Mission</Title>
-        <MainMission>
-          Empower individuals to speak up safely and get the help they need. We provide confidential reporting tools, connect you with trained professionals, and share knowledge to prevent misconduct and promote well‑being.
-        </MainMission>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/50">
+      {/* Back Button */}
+      <div className="absolute top-6 left-6 z-10">
+        <Button
+          variant="outline"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 bg-white/80 backdrop-blur-sm hover:bg-white border-gray-200 hover:border-green-500 transition-all"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back</span>
+        </Button>
+      </div>
 
-        <KeyPoints>
-          <Point>
-            <PointText>Confidential, secure reporting with clear next steps</PointText>
-          </Point>
-          <Point>
-            <PointText>Evidence‑based resources for prevention and recovery</PointText>
-          </Point>
-          <Point>
-            <PointText>Warm, human support available when you need it most</PointText>
-          </Point>
-        </KeyPoints>
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 mb-6 shadow-lg shadow-green-500/30">
+            <Shield className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+            Our Mission
+          </h1>
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-4xl mx-auto">
+            Empower individuals to speak up safely and get the help they need. We provide confidential reporting tools, connect you with trained professionals, and share knowledge to prevent misconduct and promote well-being.
+          </p>
+        </div>
 
-        <NavigationButtons>
-          <NavButton onClick={() => navigate('/privacy')}>
+        {/* Key Points */}
+        <div className="grid gap-6 mt-16">
+          {keyPoints.map((point, index) => {
+            const Icon = point.icon
+            return (
+              <div
+                key={index}
+                className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-green-200"
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${point.color} flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-800 leading-relaxed pt-2">
+                    {point.title}
+                  </h3>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-end mt-16 pt-8 border-t border-gray-200">
+          <Button
+            onClick={() => navigate('/privacy')}
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+          >
             <span>Privacy Policy</span>
-            <span style={{ marginLeft: '0.5rem' }}>→</span>
-          </NavButton>
-          <NavButton onClick={() => navigate('/terms')}>
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          <Button
+            onClick={() => navigate('/terms')}
+            variant="outline"
+            className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+          >
             <span>Terms & Conditions</span>
-            <span style={{ marginLeft: '0.5rem' }}>→</span>
-          </NavButton>
-        </NavigationButtons>
-      </MissionContent>
-    </MissionContainer>
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   )
 }
-
-const MissionContainer = styled.div`
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4rem;
-  background: #f5f5f5;
-  overflow: hidden;
-  position: relative;
-`
-
-const BackButton = styled.button`
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  color: #333;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 10;
-
-  &:hover {
-    background: #f8f8f8;
-    border-color: #666;
-    transform: translateX(-3px);
-  }
-`
-
-const MissionContent = styled.div`
-  max-width: 1200px;
-  width: 100%;
-  text-align: center;
-`
-
-const Title = styled.h1`
-  font-size: 4.5rem;
-  color: #333;
-  margin-bottom: 3rem;
-  font-weight: 700;
-`
-
-const MainMission = styled.p`
-  font-size: 2rem;
-  line-height: 1.6;
-  color: #555;
-  margin-bottom: 4rem;
-  padding: 0 2rem;
-`
-
-const KeyPoints = styled.div`
-  display: grid;
-  gap: 2rem;
-  margin-top: 3rem;
-`
-
-const Point = styled.div`
-  background: white;
-  padding: 1.5rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-  transition: transform 0.3s ease;
-
-  &:hover {
-    transform: translateY(-3px);
-  }
-`
-
-const PointText = styled.h3`
-  color: #444;
-  font-size: 1.4rem;
-  font-weight: 600;
-  line-height: 1.5;
-`
-
-const NavigationButtons = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 1.5rem;
-  margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e0e0e0;
-
-  @media (max-width: 768px) {
-    justify-content: center;
-    flex-direction: column;
-  }
-`
-
-const NavButton = styled.button`
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: center;
-  }
-`
 
 export default Mission

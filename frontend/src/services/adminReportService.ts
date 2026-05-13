@@ -870,29 +870,42 @@ export class AdminReportService {
   }
 
   /**
-   * Update report status by trying both collections
+   * Update report status with client-side notifications (FREE - no Cloud Functions)
    */
-  static async updateReportStatusFromBothCollections(reportId: string, newStatus: string): Promise<void> {
+  static async updateReportStatusFromBothCollections(reportId: string, newStatus: string, notes?: string): Promise<void> {
     try {
-      console.log(`🔄 Attempting to update report ${reportId} status to "${newStatus}" in both collections...`);
+      console.log(`🔄 Updating report ${reportId} status to "${newStatus}" (client-side)...`);
       
       let updatedReports = false;
       let updatedComplaints = false;
+      let reportData: any = null;
       
       // Try to update reports collection
       try {
-        await this.updateReportStatus(reportId, newStatus, 'reports');
-        console.log(`✅ Updated ${reportId} status in reports collection`);
-        updatedReports = true;
+        const reportRef = doc(db, 'reports', reportId);
+        const reportSnap = await getDoc(reportRef);
+        
+        if (reportSnap.exists()) {
+          reportData = reportSnap.data();
+          await this.updateReportStatus(reportId, newStatus, 'reports');
+          console.log(`✅ Updated ${reportId} status in reports collection`);
+          updatedReports = true;
+        }
       } catch (error) {
         console.log(`ℹ️ Report ${reportId} not found in reports collection`);
       }
       
       // Try to update complaints collection
       try {
-        await this.updateReportStatus(reportId, newStatus, 'complaints');
-        console.log(`✅ Updated ${reportId} status in complaints collection`);
-        updatedComplaints = true;
+        const complaintRef = doc(db, 'complaints', reportId);
+        const complaintSnap = await getDoc(complaintRef);
+        
+        if (complaintSnap.exists()) {
+          if (!reportData) reportData = complaintSnap.data();
+          await this.updateReportStatus(reportId, newStatus, 'complaints');
+          console.log(`✅ Updated ${reportId} status in complaints collection`);
+          updatedComplaints = true;
+        }
       } catch (error) {
         console.log(`ℹ️ Report ${reportId} not found in complaints collection`);
       }
@@ -902,7 +915,29 @@ export class AdminReportService {
         throw new Error(`Report ${reportId} not found in either collection`);
       }
       
-      console.log(`✅ Successfully updated ${reportId} in ${updatedReports && updatedComplaints ? 'both' : updatedReports ? 'reports' : 'complaints'} collection(s)`);
+      console.log(`✅ Successfully updated ${reportId} status to "${newStatus}"`);
+      
+      // Send notification to complainant (client-side)
+      if (reportData) {
+        try {
+          const complainantId = reportData.userId || reportData.complainantId;
+          const complaintTitle = reportData.title || reportData.description || 'Your complaint';
+          
+          if (complainantId) {
+            await NotificationService.sendStatusUpdateNotification(
+              complainantId,
+              reportId,
+              complaintTitle,
+              newStatus,
+              notes
+            );
+            console.log(`✅ Notification sent to complainant ${complainantId}`);
+          }
+        } catch (notifError) {
+          console.warn('⚠️ Failed to send notification (non-critical):', notifError);
+          // Don't fail the status update if notification fails
+        }
+      }
       
     } catch (error) {
       console.error(`❌ Failed to update report ${reportId} status:`, error);

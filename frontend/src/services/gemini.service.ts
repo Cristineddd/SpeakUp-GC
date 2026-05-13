@@ -102,9 +102,9 @@ const extractTextFromResponse = (data: any): string => {
   return rawText.trim();
 };
 
-// Enhanced retry logic with exponential backoff
-const MAX_RETRIES = 3;
-const BASE_DELAY = 1000; // 1 second
+// Enhanced retry logic with exponential backoff (reduced for faster fallback)
+const MAX_RETRIES = 1; // Reduced from 3 to fail faster
+const BASE_DELAY = 500; // Reduced from 1000ms for quicker response
 
 async function generateAIResponseWithRetry(
   message: string,
@@ -209,11 +209,6 @@ COMPLAINT TYPES SPEAKUP GC HANDLES:
 - Bullying or Harassment
 - Misconduct by staff or students
 - Other safety concerns
-
-SEVERITY LEVELS:
-- Low: Minor incident, no immediate danger
-- Medium: Serious concern, recurring pattern
-- High: Urgent safety issue, needs immediate action
 
 KEY FACTS:
 - Account creation is required (for security)
@@ -485,65 +480,164 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
   }
 }
 
-// Fallback responses for when API is completely unavailable
+// Enhanced fallback responses for when API is unavailable
 const FALLBACK_RESPONSES: { [key: string]: string } = {
   'quotes': `I understand you're going through something difficult. Here are some supportive thoughts:
 
-- "You are stronger than you think"
-- "It's okay not to be okay"
-- "You are not alone"
-- "Your feelings are valid"
-- "Small steps still move you forward"
-- "Be gentle with yourself"
+💚 "You are stronger than you think"
+💚 "It's okay not to be okay"  
+💚 "You are not alone"
+💚 "Your feelings are valid"
+💚 "Small steps still move you forward"
+💚 "Be gentle with yourself"
 
 If you're ready, I can help guide you through reporting this incident on SpeakUp GC. Your voice matters.`,
 
-  'report': `I hear you. Since you're already logged in, here's EXACTLY how to file your complaint:
+  'report': `I hear you. Here's EXACTLY how to file your complaint:
 
-STEP 1: Go to Your Dashboard
-→ You're already in SpeakUp GC
+**STEP 1: Go to Your Dashboard**
+→ You're already logged in to SpeakUp GC
 
-STEP 2: Click "Complaints" Tab
-→ In your Dashboard sidebar
+**STEP 2: Click "Complaints" Tab**
+→ Find it in your Dashboard sidebar
 
-STEP 3: Click "File Your First Complaint"
-→ Start the form
+**STEP 3: Click "File Your First Complaint"**
+→ This starts the secure complaint form
 
-STEP 4: Fill Your Information
-→ Incident date & location
-→ Respondent info (name or description)
-→ What happened (detailed description)
-→ Evidence files (REQUIRED - at least 1 file)
+**STEP 4: Fill in Incident Details**
+→ Date and time of incident
+→ Location where it occurred
+→ Respondent information (name or description)
+→ Detailed description of what happened
 
-STEP 5: Choose Submission Options
+**STEP 5: Submit Evidence**
+→ Upload files OR provide external links
+→ For large files (>50MB), use Google Drive/Dropbox links
+→ At least one piece of evidence is recommended
+
+**STEP 6: Choose Privacy Options**
 → Check "Submit Anonymously" if you prefer
-→ Click Submit
+→ Your identity will be protected from the respondent
 
-RESULT: Get your Case ID → Track progress in Dashboard
+**STEP 7: Submit & Track**
+→ Click Submit to file your complaint
+→ You'll receive a Case ID
+→ Track progress in real-time on your Dashboard
 
-⚡ QUICK TIP: You can also click the "File Complaint" button in this chat header to jump directly to the form!
+⚡ **QUICK TIP:** Click the "File Complaint" button in this chat header to jump directly to the form!
 
-Which step would you like help with?`,
+Need help with a specific step? Just ask!`,
 
-  'default': `I'm here to support you with SpeakUp GC. I can help with:
+  'evidence': `**Evidence Submission Guide:**
 
-- Creating your account and logging in
-- Walking through the complaint filing process
-- Explaining anonymity options
-- Joining and using group chats
-- Answering questions about SpeakUp GC
-- Providing emotional support
+You can submit evidence in two ways:
 
-What would you like help with? Remember, the "File Complaint" button in this chat can take you directly to the form!`
+**Option 1: Direct Upload (Files under 50MB)**
+→ Photos, videos, screenshots
+→ Documents, PDFs, emails
+→ Upload directly in the complaint form
+
+**Option 2: External Links (For large files)**
+→ Google Drive links
+→ Dropbox links  
+→ OneDrive links
+→ Any cloud storage link
+
+**Why external links?**
+Files over 50MB may fail to upload. Using external links ensures your evidence is always accessible and won't cause system issues.
+
+**Best Practices:**
+✓ Make sure links are set to "Anyone with link can view"
+✓ Include multiple pieces of evidence if possible
+✓ Add descriptions to help investigators understand context
+
+Need more help? Let me know!`,
+
+  'anonymous': `**Anonymous Reporting - How It Works:**
+
+**Your Privacy is Protected:**
+✓ Your identity is kept confidential from the respondent
+✓ Only DEIU administrators can see your information
+✓ All communications are encrypted
+✓ Case tracking uses your Case ID, not your name
+
+**What Stays Anonymous:**
+→ Your name (to the respondent)
+→ Your contact details
+→ Your student ID
+
+**What DEIU Sees:**
+→ Your identity (for verification only)
+→ Your contact info (to reach you if needed)
+→ Your complaint details
+
+**Can I Change My Mind?**
+Yes! You can choose to reveal your identity later during the investigation if you wish.
+
+**Important:** Anonymous complaints are taken just as seriously as identified ones. Your safety and confidentiality are our top priorities.
+
+Ready to file? Click "File Complaint" above!`,
+
+  'default': `**Welcome to SpeakUp GC Support!**
+
+I'm here to help you with:
+
+📝 **Filing a Complaint**
+→ Step-by-step guidance through the process
+→ Understanding what information you need
+→ Evidence submission help
+
+🔒 **Privacy & Anonymity**
+→ How anonymous reporting works
+→ What information is protected
+→ Your rights under RA 11313 & RA 7877
+
+📊 **Case Tracking**
+→ How to check your case status
+→ Understanding the investigation process
+→ Timeline expectations
+
+💬 **Getting Support**
+→ Emotional support resources
+→ Crisis hotlines
+→ DEIU contact information
+
+**Quick Actions:**
+• Type "how to report" for filing instructions
+• Type "anonymous" to learn about privacy
+• Type "evidence" for submission help
+• Click "File Complaint" button to start now
+
+What would you like help with?`
 };
 
 function getFallbackResponse(message: string): string {
   const lowerMessage = message.toLowerCase();
   
-  if (lowerMessage.includes('quote') || lowerMessage.includes('sad') || lowerMessage.includes('tired') || lowerMessage.includes('exhausted') || lowerMessage.includes('difficult') || lowerMessage.includes('stressed')) {
+  // Emotional support
+  if (lowerMessage.includes('quote') || lowerMessage.includes('sad') || lowerMessage.includes('tired') || 
+      lowerMessage.includes('exhausted') || lowerMessage.includes('difficult') || lowerMessage.includes('stressed') ||
+      lowerMessage.includes('scared') || lowerMessage.includes('afraid') || lowerMessage.includes('worried')) {
     return FALLBACK_RESPONSES.quotes;
   }
-  if (lowerMessage.includes('report') || lowerMessage.includes('how') || lowerMessage.includes('pano') || lowerMessage.includes('how to') || lowerMessage.includes('file') || lowerMessage.includes('submit') || lowerMessage.includes('step')) {
+  
+  // Evidence help
+  if (lowerMessage.includes('evidence') || lowerMessage.includes('proof') || lowerMessage.includes('upload') ||
+      lowerMessage.includes('file size') || lowerMessage.includes('large file') || lowerMessage.includes('link')) {
+    return FALLBACK_RESPONSES.evidence;
+  }
+  
+  // Anonymous reporting
+  if (lowerMessage.includes('anonymous') || lowerMessage.includes('confidential') || lowerMessage.includes('privacy') ||
+      lowerMessage.includes('secret') || lowerMessage.includes('hide') || lowerMessage.includes('identity')) {
+    return FALLBACK_RESPONSES.anonymous;
+  }
+  
+  // How to report
+  if (lowerMessage.includes('report') || lowerMessage.includes('how') || lowerMessage.includes('pano') || 
+      lowerMessage.includes('how to') || lowerMessage.includes('file') || lowerMessage.includes('submit') || 
+      lowerMessage.includes('step') || lowerMessage.includes('guide') || lowerMessage.includes('process') ||
+      lowerMessage.includes('complaint') || lowerMessage.includes('paano')) {
     return FALLBACK_RESPONSES.report;
   }
   

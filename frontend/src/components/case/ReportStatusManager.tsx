@@ -159,14 +159,32 @@ export function ReportStatusManager({
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="font-semibold">
+                  {selectedStatus === 'resolved' 
+                    ? 'Resolution Details & Investigation Summary *' 
+                    : selectedStatus === 'inProgress'
+                    ? 'Investigation Notes (Optional)'
+                    : 'Notes (Optional)'}
+                </Label>
                 <Textarea
                   id="notes"
-                  placeholder="Add any notes about this status change..."
+                  placeholder={
+                    selectedStatus === 'resolved'
+                      ? 'Describe the investigation conducted and resolution actions taken...'
+                      : selectedStatus === 'inProgress'
+                      ? 'Describe the investigation steps being taken...'
+                      : 'Add any notes about this status change...'
+                  }
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
+                  rows={selectedStatus === 'resolved' ? 5 : 3}
+                  className={selectedStatus === 'resolved' && !notes.trim() ? 'border-amber-400' : ''}
                 />
+                {selectedStatus === 'resolved' && (
+                  <p className="text-xs text-amber-600 font-medium">
+                    ⚠️ Required: Please provide investigation summary and resolution details for transparency.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -266,14 +284,32 @@ export function ReportStatusManager({
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="font-semibold">
+                  {selectedStatus === 'resolved' 
+                    ? 'Resolution Details & Investigation Summary *' 
+                    : selectedStatus === 'inProgress'
+                    ? 'Investigation Notes (Optional)'
+                    : 'Notes (Optional)'}
+                </Label>
                 <Textarea
                   id="notes"
-                  placeholder="Add any notes about this status change..."
+                  placeholder={
+                    selectedStatus === 'resolved'
+                      ? 'Describe the investigation conducted and resolution actions taken...'
+                      : selectedStatus === 'inProgress'
+                      ? 'Describe the investigation steps being taken...'
+                      : 'Add any notes about this status change...'
+                  }
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
+                  rows={selectedStatus === 'resolved' ? 5 : 3}
+                  className={selectedStatus === 'resolved' && !notes.trim() ? 'border-amber-400' : ''}
                 />
+                {selectedStatus === 'resolved' && (
+                  <p className="text-xs text-amber-600 font-medium">
+                    ⚠️ Required: Please provide investigation summary and resolution details for transparency.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -317,16 +353,27 @@ export function ReportStatusManager({
 
         {/* Transition Buttons */}
         {transitionButtons.length > 0 && (
-          <div className="space-y-2">
-            <span className="text-sm text-gray-500">Available Actions:</span>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-3 mt-4">
+            <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Available Actions:</span>
+            <div className="flex flex-wrap gap-3">
               {transitionButtons.map((btn) => (
                 <Button
                   key={btn.status}
                   onClick={() => handleStatusClick(btn.status)}
                   disabled={isUpdating}
-                  variant="outline"
-                  size="sm"
+                  variant={btn.status === 'inProgress' ? 'default' : 'outline'}
+                  size="lg"
+                  className={`
+                    font-semibold shadow-md transition-all
+                    ${btn.status === 'inProgress' 
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-700' 
+                      : btn.status === 'resolved'
+                      ? 'border-2 border-blue-500 text-blue-700 hover:bg-blue-50'
+                      : btn.status === 'dismissed'
+                      ? 'border-2 border-red-500 text-red-700 hover:bg-red-50'
+                      : 'border-2 border-gray-400 hover:bg-gray-50'
+                    }
+                  `}
                 >
                   {getStatusIcon(btn.status)}
                   <span className="ml-2">Move to {btn.label}</span>
@@ -356,14 +403,32 @@ export function ReportStatusManager({
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="notes" className="font-semibold">
+                {selectedStatus === 'resolved' 
+                  ? 'Resolution Details & Investigation Summary *' 
+                  : selectedStatus === 'inProgress'
+                  ? 'Investigation Notes (Optional)'
+                  : 'Notes (Optional)'}
+              </Label>
               <Textarea
                 id="notes"
-                placeholder="Add any notes about this status change..."
+                placeholder={
+                  selectedStatus === 'resolved'
+                    ? 'Describe the investigation conducted and resolution actions taken...'
+                    : selectedStatus === 'inProgress'
+                    ? 'Describe the investigation steps being taken...'
+                    : 'Add any notes about this status change...'
+                }
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={3}
+                rows={selectedStatus === 'resolved' ? 5 : 3}
+                className={selectedStatus === 'resolved' && !notes.trim() ? 'border-amber-400' : ''}
               />
+              {selectedStatus === 'resolved' && (
+                <p className="text-xs text-amber-600 font-medium">
+                  ⚠️ Required: Please provide investigation summary and resolution details for transparency.
+                </p>
+              )}
             </div>
           </div>
 

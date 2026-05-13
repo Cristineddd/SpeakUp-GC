@@ -1,6 +1,6 @@
 /**
  * Representative Service
- * Manages case handlers: Dean, Coordinator, Investigator, etc.
+ * Manages case handlers and administrators
  */
 
 import {
@@ -31,6 +31,37 @@ import type {
 
 export class RepresentativeService {
   private static readonly COLLECTION = 'representatives';
+
+  /**
+   * Auto-register current user as admin (for development/setup)
+   */
+  static async autoRegisterAsAdmin(userId: string, email: string, displayName?: string): Promise<void> {
+    try {
+      console.log('🔧 Auto-registering user as admin:', email);
+      
+      const representativeData: CreateRepresentativeData = {
+        userId,
+        email,
+        displayName: displayName || email.split('@')[0],
+        role: 'admin' as RepresentativeRole,
+        permissions: {
+          canViewReports: true,
+          canEditReports: true,
+          canDeleteReports: true,
+          canManageUsers: true,
+          canManageRepresentatives: true,
+          canAccessAnalytics: true,
+          canManageSettings: true
+        }
+      };
+
+      await this.create(representativeData);
+      console.log('✅ User registered as admin successfully');
+    } catch (error) {
+      console.error('❌ Error auto-registering user:', error);
+      throw error;
+    }
+  }
 
   /**
    * Get all representatives

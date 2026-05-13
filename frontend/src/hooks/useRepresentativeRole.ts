@@ -5,7 +5,7 @@ import { RepresentativeRole } from '../types/representative';
 
 /**
  * Hook to get the current user's representative role
- * Returns the role if the user is a representative (dean, coordinator, handler)
+ * Returns the role if the user is a representative (admin, handler)
  * Returns null if not a representative
  */
 export function useRepresentativeRole() {
@@ -58,10 +58,7 @@ export function useRepresentativeRole() {
     role,
     representativeData,
     loading,
-    isDean: role === 'dean',
-    isCoordinator: role === 'coordinator',
     isHandler: role === 'handler',
     isAdmin: role === 'admin',
-    isDeanOrCoordinator: role === 'dean' || role === 'coordinator',
   };
 }

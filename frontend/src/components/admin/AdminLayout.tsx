@@ -9,9 +9,7 @@ import {
   Shield,
   LogOut,
   UserPlus,
-  Eye,
-  FileCheck,
-  Video
+  FileCheck
 } from 'lucide-react';
 const gcLogo = '/gclogo.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -37,18 +35,8 @@ interface AdminLayoutProps {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
-  const { role, isDeanOrCoordinator } = useRepresentativeRole();
+  const { role } = useRepresentativeRole();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-
-  // Navigation for Dean/Coordinator (View Only) - Clean header nav
-  const deanCoordinatorNav = [
-    { 
-      label: 'Dashboard Overview', 
-      icon: Eye, 
-      href: '/admin/dean-coordinator',
-      description: 'View analytics and reports summary'
-    },
-  ];
 
   // Navigation for Handlers (Case Management Only)
   const handlerNav = [
@@ -114,80 +102,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   // Choose navigation based on role
   let navigationItems = fullAdminNav;
-  let showHeaderNav = false;
   
-  if (isDeanOrCoordinator) {
-    navigationItems = deanCoordinatorNav;
-    showHeaderNav = true;
-  } else if (role === 'handler' && !isAdmin) {
+  if (role === 'handler' && !isAdmin) {
     navigationItems = handlerNav;
   }
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Conditional Layout based on role */}
-      {showHeaderNav ? (
-        // Clean Header Navigation for Dean/Coordinator
-        <div className="flex flex-col">
-          {/* Header */}
-          <header className="bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-8 py-4">
-              <div className="flex items-center justify-between">
-                {/* Logo and Brand */}
-                <div className="flex items-center gap-3">
-                  <img
-                    src={gcLogo}
-                    alt="SpeakUp GC Logo"
-                    className="h-10 w-10 object-contain"
-                    onError={(e) => {
-                      console.error('Failed to load logo:', e);
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
-                    }}
-                  />
-                  <div>
-                    <span className="text-xl font-semibold text-gray-900">SpeakUp GC</span>
-                    <Badge variant="outline" className="ml-3 text-xs">
-                      <Eye className="h-3 w-3 mr-1" />
-                      View-Only Access
-                    </Badge>
-                  </div>
-                </div>
-
-                {/* User Actions */}
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center h-10">
-                    <NotificationBell />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {user?.displayName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {user?.email}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowLogoutDialog(true)}
-                    className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          {/* Main Content */}
-          <main className="py-6 px-8">
-            {children}
-          </main>
-        </div>
-      ) : (
-        // Original Sidebar Layout for other roles
-        <>
+      {/* Sidebar Layout */}
+      <>
           {/* Sidebar */}
           <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
             <div className="flex flex-col h-full">
@@ -282,7 +205,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </main>
           </div>
         </>
-      )}
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

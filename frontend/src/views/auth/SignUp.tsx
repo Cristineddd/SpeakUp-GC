@@ -321,7 +321,7 @@ export default function SignUp() {
           <div><h3 className="font-semibold mb-2">Intellectual Property</h3><p className="text-muted-foreground">All content, features, and functionality on SpeakUp GC are owned by us and protected by copyright, trademark, and other laws. Unauthorized use is prohibited.</p></div>
           <div><h3 className="font-semibold mb-2">Limitation of Liability</h3><p className="text-muted-foreground">SpeakUp GC provides tools and resources to support you, but we are not liable for any direct, indirect, or consequential damages arising from your use of the platform.</p></div>
           <div><h3 className="font-semibold mb-2">Changes to Terms</h3><p className="text-muted-foreground">We reserve the right to modify these terms at any time. Continued use of SpeakUp GC after changes constitutes acceptance of the revised terms.</p></div>
-          <p className="text-sm text-muted-foreground italic">Last updated: November 7, 2025</p>
+          <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
 
@@ -335,7 +335,7 @@ export default function SignUp() {
           <div><h3 className="font-semibold mb-2">Your Rights</h3><p className="text-muted-foreground">You have the right to access, update, or delete your personal information at any time. You can also request a copy of your data or withdraw consent for data processing.</p></div>
           <div><h3 className="font-semibold mb-2">Confidential Reporting</h3><p className="text-muted-foreground">All reports submitted through SpeakUp GC are treated with strict confidentiality. Access is limited to authorized personnel directly involved in case resolution.</p></div>
           <div><h3 className="font-semibold mb-2">Contact Us</h3><p className="text-muted-foreground">If you have questions about our privacy practices or wish to exercise your privacy rights, please contact us at privacy@speakupgc.com.</p></div>
-          <p className="text-sm text-muted-foreground italic">Last updated: November 7, 2025</p>
+          <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
     </div>

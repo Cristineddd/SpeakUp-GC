@@ -122,6 +122,48 @@ export function useReportStatus(
 
       await updateDoc(reportRef, statusUpdate);
 
+      // Send notification to complainant about status change
+      try {
+        const { getDoc } = await import('firebase/firestore');
+        const reportSnapshot = await getDoc(reportRef);
+        
+        if (reportSnapshot.exists()) {
+          const reportData = reportSnapshot.data();
+          const complainantId = reportData.userId;
+          
+          if (complainantId) {
+            const { NotificationService } = await import('../services/notificationService');
+            
+            // Send different notifications based on status
+            if (newStatus === 'inProgress') {
+              await NotificationService.sendComplaintInProgressNotification(
+                complainantId,
+                reportId,
+                reportData.title || 'Your complaint',
+                'Your complaint is now being reviewed and processed by our team.'
+              );
+            } else if (newStatus === 'resolved') {
+              await NotificationService.sendComplaintResolvedNotification(
+                complainantId,
+                reportId,
+                reportData.title || 'Your complaint',
+                'Your complaint has been resolved. Please check the resolution details.'
+              );
+            } else if (newStatus === 'dismissed') {
+              await NotificationService.sendComplaintDismissedNotification(
+                complainantId,
+                reportId,
+                reportData.title || 'Your complaint',
+                'Your complaint has been reviewed and dismissed. Please check the details for more information.'
+              );
+            }
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to send status update notification:', notifError);
+        // Don't fail the status update if notification fails
+      }
+
       toast({
         title: 'Status Updated',
         description: `Report status changed to ${getStatusLabel(newStatus)}`,

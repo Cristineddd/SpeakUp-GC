@@ -24,22 +24,22 @@ interface Hotline { name:string; number:string; dialable:string|null; available:
 interface ReportingStep { step:number; title:string; description:string; tips:string[]; }
 
 const LEGAL_ACTS: LegalAct[] = [
-  { acronym:"Safe Spaces Act", raNumber:"RA 11313", title:"Republic Act No. 11313", color:"emerald", icon:ShieldCheck,
+  { acronym:"Safe Spaces Act", raNumber:"RA 11313", title:"Republic Act No. 11313", color:"green", icon:ShieldCheck,
     summary:"Enacted in 2019, the Safe Spaces Act expands the definition of sexual harassment to cover gender-based sexual harassment committed in streets, public spaces, online, workplaces, and educational institutions. It expressly covers all genders including women, men, and LGBTQIA+ persons.",
     keyProvisions:["Prohibits gender-based sexual harassment in streets, public spaces, online, workplaces, and schools.","Covers catcalling, wolf-whistling, unwanted sexual remarks, unsolicited sexual invitations, misogynistic and homophobic slurs.","Schools must adopt a Code of Conduct and create mechanisms to receive, investigate, and act on complaints.","Mandates at least one (1) anti-sexual harassment focal person per institution.","Prohibits retaliation against complainants and witnesses.","Online sexual harassment includes offensive communications, uploading content without consent, and cyberstalking."],
     penalties:"1–6 months imprisonment and/or fines of ₱10,000–₱500,000 depending on the offense. Institutions face suspension or closure for non-compliance.",
     whoItProtects:"All persons regardless of sex, gender, or sexual orientation — including students, faculty, staff, and visitors in educational settings." },
-  { acronym:"Anti-Sexual Harassment Act", raNumber:"RA 7877", title:"Republic Act No. 7877", color:"blue", icon:Ban,
+  { acronym:"Anti-Sexual Harassment Act", raNumber:"RA 7877", title:"Republic Act No. 7877", color:"green", icon:Ban,
     summary:"The Anti-Sexual Harassment Act of 1995 was the first Philippine law addressing sexual harassment in work and educational environments. It holds employers, educators, and trainers directly liable for failing to prevent or address sexual harassment.",
     keyProvisions:["Defines sexual harassment as an act committed by a person in a position of authority, influence, or moral ascendancy.","Covers workplaces, educational institutions, and training environments.","Requires all institutions to create a written anti-sexual harassment policy.","Mandates the creation of a Committee on Decorum and Investigation (CODI).","Expressly holds superior officers liable if they fail to act on known incidents.","Complainant may file both criminal and administrative cases simultaneously."],
     penalties:"Imprisonment of 1–6 months and/or fine of ₱10,000–₱20,000. Administrative sanctions include dismissal, suspension, or demotion.",
     whoItProtects:"Employees, students, and trainees subjected to sexual harassment by a person with authority, influence, or moral ascendancy over them." },
-  { acronym:"VAWC Act", raNumber:"RA 9262", title:"Republic Act No. 9262", color:"rose", icon:Heart,
+  { acronym:"VAWC Act", raNumber:"RA 9262", title:"Republic Act No. 9262", color:"green", icon:Heart,
     summary:"RA 9262 defines and criminalizes violence against women and their children committed by intimate partners. It covers physical, sexual, psychological, and economic abuse.",
     keyProvisions:["Covers physical violence (assault, battery), sexual violence, and psychological violence (emotional abuse, harassment).","Includes economic abuse such as controlling finances or depriving victims of resources.","Temporary and Permanent Protection Orders (TPO/PPO) can be issued within 24 hours.","Barangay Protection Orders (BPO) can be issued immediately by barangay officials.","Covers children who are victims or who witness the abuse.","DSWD, LGUs, and schools must provide assistance and referral to victims."],
     penalties:"Prision correccional to reclusion perpetua depending on the gravity of the offense. Mandatory psychological counseling for the offender.",
     whoItProtects:"Women and their children in intimate partner or family relationships." },
-  { acronym:"Data Privacy Act", raNumber:"RA 10173", title:"Republic Act No. 10173", color:"violet", icon:Lock,
+  { acronym:"Data Privacy Act", raNumber:"RA 10173", title:"Republic Act No. 10173", color:"green", icon:Lock,
     summary:"The Data Privacy Act protects the privacy and security of personal information. In GBV complaints, it ensures that your identity and case details remain strictly confidential.",
     keyProvisions:["Personal data must be processed lawfully and only for its stated purpose.","Data collected must be proportionate — only what is necessary for the complaint.","Complainants have the right to access, correct, and request erasure of their data.","Data must be protected from unauthorized access through adequate security measures.","Unauthorized disclosure of a complainant's identity is a criminal offense.","The National Privacy Commission (NPC) oversees compliance and receives complaints."],
     penalties:"Imprisonment of 1–6 years and fines of ₱500,000–₱4,000,000 for unauthorized processing, access, or disclosure of personal information.",
@@ -81,12 +81,12 @@ const HOTLINES: Hotline[] = [
 ];
 
 const WELLNESS_RESOURCES = [
-  { icon:Heart, title:"Psychological First Aid", color:"rose", description:"If you just experienced an incident, grounding yourself is important. Focus on your breathing. You are safe right now. The DEIU and Guidance Office can provide immediate psychological support." },
-  { icon:Users, title:"Peer Support & Community", color:"blue", description:"You are not alone. Many survivors find strength in connecting with others. Gordon College's wellness programs offer peer support circles and group sessions for students affected by GBV." },
-  { icon:BookOpen, title:"Self-Care & Coping Resources", color:"amber", description:"Healing is non-linear. Journaling, physical activity, creative expression, and mindfulness can help manage stress and trauma responses. The Guidance Office can recommend programs tailored to your needs." },
-  { icon:Eye, title:"Safety Planning", color:"violet", description:"If you are concerned about your ongoing safety — especially involving someone on campus — the DEIU and Guidance Office can work with you to create a confidential safety plan." },
-  { icon:Handshake, title:"Academic Accommodations", color:"emerald", description:"If a GBV incident is affecting your studies, you may request academic accommodations including deadline extensions, section transfers, or modified attendance. Contact the DEIU with your request." },
-  { icon:Lock, title:"Your Rights During Recovery", color:"gray", description:"You have the right to recover at your own pace. You are not obligated to disclose your experience publicly. You may withdraw from the formal complaint process without affecting your access to support." },
+  { icon:Heart, title:"Psychological First Aid", color:"green", description:"If you just experienced an incident, grounding yourself is important. Focus on your breathing. You are safe right now. The DEIU and Guidance Office can provide immediate psychological support." },
+  { icon:Users, title:"Peer Support & Community", color:"green", description:"You are not alone. Many survivors find strength in connecting with others. Gordon College's wellness programs offer peer support circles and group sessions for students affected by GBV." },
+  { icon:BookOpen, title:"Self-Care & Coping Resources", color:"green", description:"Healing is non-linear. Journaling, physical activity, creative expression, and mindfulness can help manage stress and trauma responses. The Guidance Office can recommend programs tailored to your needs." },
+  { icon:Eye, title:"Safety Planning", color:"green", description:"If you are concerned about your ongoing safety — especially involving someone on campus — the DEIU and Guidance Office can work with you to create a confidential safety plan." },
+  { icon:Handshake, title:"Academic Accommodations", color:"green", description:"If a GBV incident is affecting your studies, you may request academic accommodations including deadline extensions, section transfers, or modified attendance. Contact the DEIU with your request." },
+  { icon:Lock, title:"Your Rights During Recovery", color:"green", description:"You have the right to recover at your own pace. You are not obligated to disclose your experience publicly. You may withdraw from the formal complaint process without affecting your access to support." },
 ];
 
 const POLICY_ITEMS = [
@@ -98,6 +98,7 @@ const POLICY_ITEMS = [
 // ─── Color maps ──────────────────────────────────────────────────────────────
 
 const WELL_COLORS: Record<string, { bg:string; border:string; icon:string }> = {
+  green:   { bg:"bg-green-50",   border:"border-green-200",   icon:"text-[#16A34A]"   },
   rose:    { bg:"bg-rose-50",    border:"border-rose-200",    icon:"text-rose-600"    },
   blue:    { bg:"bg-blue-50",    border:"border-blue-200",    icon:"text-blue-600"    },
   amber:   { bg:"bg-amber-50",   border:"border-amber-200",   icon:"text-amber-600"   },
@@ -107,6 +108,7 @@ const WELL_COLORS: Record<string, { bg:string; border:string; icon:string }> = {
 };
 
 const ACT_COLORS: Record<string, { card:string; badge:string; icon:string; toggle:string }> = {
+  green:   { card:"bg-green-50 border-green-200",     badge:"bg-[#16A34A] text-white",   icon:"bg-green-100 text-[#16A34A]",     toggle:"text-[#16A34A] bg-green-100 hover:bg-green-200"      },
   emerald: { card:"bg-emerald-50 border-emerald-200", badge:"bg-emerald-600 text-white", icon:"bg-emerald-100 text-emerald-700", toggle:"text-emerald-700 bg-emerald-100 hover:bg-emerald-200" },
   blue:    { card:"bg-blue-50 border-blue-200",       badge:"bg-blue-600 text-white",    icon:"bg-blue-100 text-blue-700",       toggle:"text-blue-700 bg-blue-100 hover:bg-blue-200"         },
   rose:    { card:"bg-rose-50 border-rose-200",       badge:"bg-rose-600 text-white",    icon:"bg-rose-100 text-rose-700",       toggle:"text-rose-700 bg-rose-100 hover:bg-rose-200"         },
@@ -122,13 +124,54 @@ const HOTLINE_CONFIG = {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function LegalActCard({ act }: { act: LegalAct }) {
-  const [expanded, setExpanded] = useState(false);
+function LegalActsGrid({ acts }: { acts: LegalAct[] }) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-4">
+      {acts.map((act, i) => {
+        const isExpanded = expandedIndex === i;
+        const isFullWidth = isExpanded;
+
+        return (
+          <div key={i} className={isFullWidth ? "w-full" : ""}>
+            {isFullWidth ? (
+              <LegalActCard 
+                act={act} 
+                expanded={isExpanded}
+                onToggle={() => setExpandedIndex(isExpanded ? null : i)}
+              />
+            ) : null}
+          </div>
+        );
+      })}
+      
+      {/* Grid for collapsed cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {acts.map((act, i) => {
+          const isExpanded = expandedIndex === i;
+          if (isExpanded) return null;
+          
+          return (
+            <LegalActCard 
+              key={i}
+              act={act} 
+              expanded={false}
+              onToggle={() => setExpandedIndex(i)}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LegalActCard({ act, expanded, onToggle }: { act: LegalAct; expanded: boolean; onToggle: () => void }) {
   const Icon = act.icon;
   const c = ACT_COLORS[act.color];
   return (
-    <div className={cn("rounded-2xl border-2 overflow-hidden transition-all", c.card)}>
-      <div className="p-5">
+    <div className={cn("rounded-2xl border-2 overflow-hidden transition-all flex flex-col", c.card)}>
+      <div className="p-5 flex flex-col">
         <div className="flex items-start gap-4">
           <div className={cn("w-13 h-13 w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0", c.icon)}>
             <Icon className="h-6 w-6" />
@@ -143,10 +186,12 @@ function LegalActCard({ act }: { act: LegalAct }) {
           </div>
         </div>
         {/* Lighter description text */}
-        <p className="text-sm text-gray-500 leading-relaxed mt-3">{act.summary}</p>
+        <div className="flex-1">
+          <p className="text-sm text-gray-500 leading-relaxed mt-3">{act.summary}</p>
+        </div>
         {/* Friendlier CTA button */}
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={onToggle}
           className={cn("mt-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full transition-colors", c.toggle)}
         >
           {expanded
@@ -314,14 +359,14 @@ export default function GBVAwarenessHub() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 -mx-4 md:-mx-8 lg:-mx-10 xl:-mx-12 2xl:-mx-16">
+    <div className="min-h-full w-full">
 
       {/* Hero */}
-      <div className="bg-gradient-to-br from-[#0f2d1a] via-[#163d25] to-[#1e5c38] px-6 pt-7 pb-8 relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#0f2d1a] via-[#163d25] to-[#1e5c38] px-6 py-8 relative overflow-hidden rounded-2xl mb-6 w-full">
         <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
           <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 w-56 h-56 text-white" strokeWidth={1} />
         </div>
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto w-full">
           {/* Top row: badge */}
           <div className="flex items-center mb-4">
             <div className="flex items-center gap-2">
@@ -382,7 +427,7 @@ export default function GBVAwarenessHub() {
       </div>
 
       {/* Tab content */}
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
         {/* LEGAL RIGHTS */}
         {activeTab === "laws" && (
@@ -399,9 +444,7 @@ export default function GBVAwarenessHub() {
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {LEGAL_ACTS.map((act, i) => <LegalActCard key={i} act={act} />)}
-            </div>
+            <LegalActsGrid acts={LEGAL_ACTS} />
           </div>
         )}
 
@@ -552,13 +595,13 @@ export default function GBVAwarenessHub() {
       </div>
 
       {/* Footer CTA */}
-      <div className="border-t-2 border-gray-100 bg-white px-5 py-10 mt-4">
+      <div className="px-5 py-10 mt-8">
         <div className="max-w-5xl mx-auto text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#F0FDF4] border-2 border-[#16A34A]/20 flex items-center justify-center mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-white/90 border-2 border-[#16A34A]/30 flex items-center justify-center mx-auto shadow-sm">
             <ShieldCheck className="h-8 w-8 text-[#16A34A]" />
           </div>
           <h2 className="text-xl font-extrabold text-gray-900">Ready to Speak Up?</h2>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+          <p className="text-sm text-gray-600 max-w-sm mx-auto leading-relaxed">
             You have the right to a safe, respectful environment. The DEIU is here to listen, support, and act —
             with full confidentiality and care.
           </p>
@@ -566,11 +609,11 @@ export default function GBVAwarenessHub() {
             <button onClick={() => navigate("/complaints/new")} className="flex items-center justify-center gap-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-bold px-7 py-3.5 rounded-xl transition-colors shadow-md">
               <FileText className="h-4 w-4" />File a Complaint
             </button>
-            <button onClick={() => navigate("/complaints")} className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-7 py-3.5 rounded-xl border-2 border-gray-200 transition-colors">
+            <button onClick={() => navigate("/complaints")} className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-7 py-3.5 rounded-xl border-2 border-gray-200 transition-colors shadow-sm">
               Track My Cases
             </button>
           </div>
-          <p className="text-xs text-gray-400 pt-2">
+          <p className="text-xs text-gray-500 pt-2">
             All information is for educational and guidance purposes only. Aligned with Philippine law as of May 2026.
           </p>
         </div>

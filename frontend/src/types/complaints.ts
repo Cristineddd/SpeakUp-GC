@@ -36,12 +36,6 @@ export enum ComplaintType {
   OTHER = 'other'
 }
 
-export enum Severity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical'
-}
 
 // Core Complaint Interface
 export interface Complaint {
@@ -56,7 +50,6 @@ export interface Complaint {
   description: string;
   statementOfFacts: string;
   type: ComplaintType;
-  severity: Severity;
   
   // Timing and Location
   incidentDate: Date;
@@ -243,7 +236,6 @@ export interface ComplaintFormData {
   description: string;
   statementOfFacts: string;
   type: ComplaintType;
-  severity: Severity;
   incidentDate: string;
   incidentTime?: string;
   incidentLocation: string;

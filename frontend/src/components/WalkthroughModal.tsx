@@ -683,7 +683,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
           <div><h3 className="font-semibold mb-2">Information We Collect</h3><p className="text-muted-foreground">We collect only essential information needed to provide our services.</p></div>
           <div><h3 className="font-semibold mb-2">Data Security</h3><p className="text-muted-foreground">We implement industry-standard security measures including encryption and secure servers.</p></div>
           <div><h3 className="font-semibold mb-2">Your Rights</h3><p className="text-muted-foreground">You have the right to access, update, or delete your personal information at any time.</p></div>
-          <p className="text-sm text-muted-foreground italic">Last updated: November 7, 2025</p>
+          <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
     </>

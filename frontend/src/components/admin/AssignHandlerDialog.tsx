@@ -69,9 +69,10 @@ export function AssignHandlerDialog({
       }, {});
       console.log('📊 Representatives by role:', roleBreakdown);
       
-      // Filter only handlers and admins (exclude dean and coordinator)
+      // Filter only handlers (exclude admin, dean and coordinator)
+      // Admins can assign cases but cannot be assigned cases themselves
       const caseHandlers = reps.filter(rep => 
-        rep.role === 'handler' || rep.role === 'admin'
+        rep.role === 'handler'
       );
       
       console.log('👥 Filtered case handlers:', caseHandlers);
@@ -80,7 +81,7 @@ export function AssignHandlerDialog({
       if (caseHandlers.length === 0) {
         console.warn('⚠️ NO CASE HANDLERS FOUND!');
         console.warn('💡 Tip: Go to Admin > Representatives Management to add handlers');
-        console.warn('💡 Make sure representatives have role "handler" or "admin"');
+        console.warn('💡 Make sure representatives have role "handler"');
         console.warn('💡 Make sure representatives have isActive: true');
       }
       
@@ -417,7 +418,7 @@ export function AssignHandlerDialog({
         <DialogHeader>
           <DialogTitle>Assign Case Handler</DialogTitle>
           <DialogDescription>
-            Assign this case to a case handler or administrator for processing.
+            Assign this case to a case handler for processing. Only users with "Handler" role can be assigned cases.
           </DialogDescription>
         </DialogHeader>
 
@@ -462,18 +463,19 @@ export function AssignHandlerDialog({
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
                 <p className="text-sm font-medium text-amber-900">⚠️ No Case Handlers Available</p>
                 <p className="text-xs text-amber-700">
-                  No active case handlers found. Please add handlers with "Handler" or "Admin" role.
+                  No active case handlers found. Please add representatives with "Handler" role.
                 </p>
                 <ul className="text-xs text-amber-700 list-disc list-inside space-y-1">
                   <li>Go to <strong>Admin → Representatives Management</strong></li>
-                  <li>Add representatives with role <strong>"Handler"</strong> or <strong>"Admin"</strong></li>
+                  <li>Add representatives with role <strong>"Handler"</strong></li>
                   <li>Make sure they are marked as <strong>Active</strong></li>
+                  <li><em>Note: Administrators cannot be assigned cases</em></li>
                 </ul>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="text-xs text-muted-foreground p-2 bg-blue-50 rounded">
-                  <strong>Available Roles:</strong> Handler (case handling) • Admin (full access)
+                  <strong>Showing:</strong> Case Handlers only (Administrators manage but are not assigned cases)
                 </div>
                 <div className="grid gap-2 max-h-60 overflow-y-auto">
                   {representatives.map((rep) => (

@@ -147,21 +147,6 @@ export const getFormSuggestions = (
       };
     }
 
-    if (fieldName === 'severity' && fieldValue.length > 0) {
-      if (fieldValue === 'high') {
-        return {
-          fieldName,
-          message: 'High severity cases may be escalated. Make sure this reflects the actual urgency.',
-          type: 'warning'
-        };
-      }
-      return {
-        fieldName,
-        message: 'Severity level recorded.',
-        type: 'success'
-      };
-    }
-
     if (fieldName === 'incidentDate' && fieldValue.length > 0) {
       return { fieldName, message: 'Incident date recorded.', type: 'success' };
     }

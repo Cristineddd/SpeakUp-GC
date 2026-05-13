@@ -160,6 +160,27 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               details: `Complaint filed regarding ${complaint.type.replace('_', ' ')} incident. Case is now under review by the appropriate authority.`
             });
 
+            // Add status history events if available
+            if (complaint.statusHistory && Array.isArray(complaint.statusHistory)) {
+              complaint.statusHistory.forEach((historyEntry: any, index: number) => {
+                const statusLabel = historyEntry.status === 'inProgress' ? 'In Progress' :
+                                  historyEntry.status === 'resolved' ? 'Resolved' :
+                                  historyEntry.status === 'dismissed' ? 'Dismissed' :
+                                  historyEntry.status;
+                
+                events.push({
+                  id: `status_${index}`,
+                  stage: ComplaintStage.ACTION_ON_COMPLAINT,
+                  status: historyEntry.status,
+                  description: `Status updated to ${statusLabel}`,
+                  actor: historyEntry.updatedByName || 'Case Handler',
+                  timestamp: historyEntry.updatedAt?.toDate ? historyEntry.updatedAt.toDate() : new Date(historyEntry.updatedAt),
+                  attachments: [],
+                  details: historyEntry.notes || `The case status has been changed to ${statusLabel}.`
+                });
+              });
+            }
+
             // Handler Assignment Event - Add when CODI investigators are assigned
             if (complaint.assignedCODI && complaint.assignedCODI.length > 0 && complaint.assignedCODI[0] !== 'Not yet assigned') {
               const assignmentDate = complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : new Date(complaint.filingDate.getTime() + 48 * 60 * 60 * 1000); // Assume assignment happens after filing

@@ -1,6 +1,6 @@
 /**
  * Representatives Management Page
- * Admin page to manage case handlers (Dean, Coordinator, etc.)
+ * Admin page to manage case handlers and administrators
  */
 
 import { useState, useEffect } from 'react';
@@ -44,7 +44,7 @@ const RepresentativesManagement = () => {
     userId: '',
     email: '',
     displayName: '',
-    role: 'coordinator',
+    role: 'handler',
     department: '',
     position: '',
     phone: ''
@@ -187,7 +187,7 @@ const RepresentativesManagement = () => {
       userId: '',
       email: '',
       displayName: '',
-      role: 'coordinator',
+      role: 'handler',
       department: '',
       position: '',
       phone: ''
@@ -210,10 +210,10 @@ const RepresentativesManagement = () => {
         <div>
           <h1 className="text-lg sm:text-2xl md:text-3xl font-bold">Staff Management</h1>
           <p className="text-gray-600 mt-1">
-            Manage system access for Dean, Coordinators, and Case Handlers
+            Manage system access for Administrators and Case Handlers
           </p>
           <div className="mt-2 text-sm text-gray-500">
-            <p>• <strong>Dean/Coordinator:</strong> View-only access to analytics and reports</p>
+            <p>• <strong>Admin:</strong> Full system access including case assignment</p>
             <p>• <strong>Handler:</strong> Can be assigned to process complaints</p>
           </div>
         </div>
@@ -247,7 +247,7 @@ const RepresentativesManagement = () => {
                   <li>The representative can then log in at /admin/login</li>
                 </ol>
                 <p className="mt-2 text-xs">
-                  Dean/Coordinator will automatically see a view-only dashboard when they log in.
+                  Handlers will see only their assigned cases when they log in.
                 </p>
               </AlertDescription>
             </Alert>
@@ -296,14 +296,13 @@ const RepresentativesManagement = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="dean">Dean (View Only)</SelectItem>
-                      <SelectItem value="coordinator">Coordinator (View Only)</SelectItem>
                       <SelectItem value="handler">Case Handler</SelectItem>
+                      <SelectItem value="admin">Administrator</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formData.role === 'dean' || formData.role === 'coordinator' 
-                      ? 'Can view analytics and reports only' 
+                    {formData.role === 'admin' 
+                      ? 'Full system access including case assignment' 
                       : 'Can be assigned to process complaints'}
                   </p>
                 </div>
@@ -372,7 +371,7 @@ const RepresentativesManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">
-                  {representatives.filter(r => r.role === 'handler' || r.role === 'admin').length}
+                  {representatives.filter(r => r.role === 'handler').length}
                 </p>
                 <p className="text-sm text-gray-600">Case Handlers</p>
               </div>
@@ -386,9 +385,9 @@ const RepresentativesManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-2xl font-bold">
-                  {representatives.filter(r => r.role === 'dean' || r.role === 'coordinator').length}
+                  {representatives.filter(r => r.role === 'admin').length}
                 </p>
-                <p className="text-sm text-gray-600">Supervisors</p>
+                <p className="text-sm text-gray-600">Administrators</p>
               </div>
               <CheckCircle className="h-8 w-8 text-purple-500" />
             </div>
@@ -447,16 +446,10 @@ const RepresentativesManagement = () => {
                           <Briefcase className="h-4 w-4" />
                           {rep.position}, {rep.department}
                         </div>
-                        {/* Only show case stats for Handlers and Admins */}
-                        {(rep.role === 'handler' || rep.role === 'admin') && (
+                        {/* Show case stats only for handlers, not admins */}
+                        {rep.role === 'handler' && (
                           <div>
                             <strong>Active Cases:</strong> {rep.activeCases} | <strong>Resolved:</strong> {rep.resolvedCases}
-                          </div>
-                        )}
-                        {/* Show view-only indicator for Dean/Coordinator */}
-                        {(rep.role === 'dean' || rep.role === 'coordinator') && (
-                          <div className="text-blue-600">
-                            <strong>Access:</strong> View-Only (Analytics & Reports)
                           </div>
                         )}
                       </div>

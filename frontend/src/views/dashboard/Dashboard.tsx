@@ -62,8 +62,6 @@ const toComplaintStatus = (status: string): ComplaintStatus => {
     withdrawn: ComplaintStatus.WITHDRAWN,
     pending: ComplaintStatus.SUBMITTED,
     in_progress: ComplaintStatus.INVESTIGATING,
-
-    // ✅ ADD THESE — admin may write camelCase or spaced variants
     inProgress: ComplaintStatus.INVESTIGATING,
     "in progress": ComplaintStatus.INVESTIGATING,
     inprogress: ComplaintStatus.INVESTIGATING,
@@ -228,57 +226,48 @@ export default function Dashboard() {
 
   // ─── Derived counts ───
   const total = complaints.length;
-  
-  // Helper to check status (handles both enum and string values from admin)
+
   const isStatus = (complaint: SimpleComplaint, ...statuses: (string | ComplaintStatus)[]) => {
-    const statusStr = String(complaint.status); // Convert any type to string
-    return statuses.some(s => {
-      const compareStr = String(s); // Convert any type to string
-      return statusStr === compareStr;
-    });
+    const statusStr = String(complaint.status);
+    return statuses.some(s => String(s) === statusStr);
   };
-  
+
   const pending = complaints.filter(
-    (c) =>
-      isStatus(c, 'pending', 'submitted', ComplaintStatus.SUBMITTED, ComplaintStatus.UNDER_REVIEW, ComplaintStatus.REQUIREMENTS_PENDING)
+    (c) => isStatus(c, 'pending', 'submitted', ComplaintStatus.SUBMITTED, ComplaintStatus.UNDER_REVIEW, ComplaintStatus.REQUIREMENTS_PENDING)
   ).length;
-  
+
   const inProgress = complaints.filter(
-    (c) =>
-      isStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
+    (c) => isStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
-  
-  const resolved = complaints.filter((c) => 
+
+  const resolved = complaints.filter((c) =>
     isStatus(c, 'resolved', ComplaintStatus.RESOLVED)
   ).length;
-  
-  const recentComplaints = complaints.slice(0, 4);
 
-  // ─── Summary card config ───
+  const recentComplaints = complaints.slice(0, 4);
 
   const getStatusBadge = (status: ComplaintStatus) => {
     switch (status) {
       case ComplaintStatus.RESOLVED:
-        return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Resolved</Badge>;
+        return <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>;
       case ComplaintStatus.DISMISSED:
-        return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">Dismissed</Badge>;
+        return <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Dismissed</Badge>;
       case ComplaintStatus.INVESTIGATING:
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs">Investigating</Badge>;
+        return <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Investigating</Badge>;
       case ComplaintStatus.UNDER_REVIEW:
-        return <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Under Review</Badge>;
+        return <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">Under Review</Badge>;
       case ComplaintStatus.AWAITING_RESPONSE:
-        return <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">Awaiting Response</Badge>;
+        return <Badge className="bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium">Awaiting Response</Badge>;
       default:
-        return <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">{formatEnum(status)}</Badge>;
+        return <Badge className="bg-purple-50 text-purple-700 border border-purple-200 text-xs font-medium">{formatEnum(status)}</Badge>;
     }
   };
 
-  // Is this a brand-new user (no cases, no notifications, no messages)?
   const isNewUser = !loading && total === 0 && notifications.length === 0 && chatRooms.length === 0;
 
   return (
-    <div className="min-h-full bg-gray-50">
-      {/* ── Profile Setup Modal (first-time users) ── */}
+    // ─── Page background: light green-tinted (applied at layout level) ───
+    <div className="min-h-full">
       <ProfileSetupModal
         isOpen={showProfileSetup}
         onComplete={(completedAlias?: string) => {
@@ -286,24 +275,28 @@ export default function Dashboard() {
           setShowProfileSetup(false);
         }}
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-6">
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-5">
 
         {/* ─── Welcome Header ─── */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, <span className="text-[#16A34A]">{userName}</span> 👋
+            Welcome back, <span className="text-[#16A34A]">{userName}</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Here's what's happening with your cases today.</p>
+          <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
         </div>
 
-        {/* ─── Privacy Notice — top placement for new-user reassurance ─── */}
-        <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#F0FDF4] border border-[#16A34A]/30">
-          <div className="bg-[#16A34A]/10 rounded-lg p-2 shrink-0">
+        {/* ─── Privacy Notice ─── */}
+        <div
+          className="flex items-start gap-3 p-4 rounded-2xl"
+          style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
+        >
+          <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
             <Lock className="h-4 w-4 text-[#16A34A]" />
           </div>
           <div>
             <p className="text-sm font-semibold text-[#15803D]">Your privacy is protected</p>
-            <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
               All complaints are handled with strict confidentiality by the DEIU office.
               Your identity is <strong>never disclosed</strong> to respondents without your consent.
               You may also file anonymously.
@@ -312,51 +305,61 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Stats Row ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: "Total Filed", value: total, icon: FileText, color: "text-gray-700", bg: "bg-gray-100" },
-            { label: "Pending", value: pending, icon: Clock, color: "text-yellow-700", bg: "bg-yellow-50" },
-            { label: "In Progress", value: inProgress, icon: AlertTriangle, color: "text-blue-700", bg: "bg-blue-50" },
-            { label: "Resolved", value: resolved, icon: CheckCircle, color: "text-green-700", bg: "bg-green-50" },
+            { label: "Total Filed",  value: total,      icon: FileText,      iconColor: "text-gray-500",   bg: "#F3F4F6" },
+            { label: "Pending",      value: pending,    icon: Clock,         iconColor: "text-yellow-600", bg: "#FEFCE8" },
+            { label: "In Progress",  value: inProgress, icon: AlertTriangle, iconColor: "text-blue-600",   bg: "#EFF6FF" },
+            { label: "Resolved",     value: resolved,   icon: CheckCircle,   iconColor: "text-[#16A34A]",  bg: "#DCFCE7" },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
-              <Card key={stat.label} className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-5 flex items-center gap-4">
-                  <div className={`${stat.bg} rounded-xl p-3 shrink-0`}>
-                    <Icon className={`h-5 w-5 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div
+                key={stat.label}
+                className="flex items-center gap-3 p-4 rounded-2xl"
+                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+              >
+                <div className="rounded-xl p-2.5 shrink-0" style={{ background: stat.bg }}>
+                  <Icon className={`h-5 w-5 ${stat.iconColor}`} />
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-gray-900">{loading ? "–" : stat.value}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{stat.label}</p>
+                </div>
+              </div>
             );
           })}
         </div>
 
         {/* ─── Main Grid ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* ── Recent Cases (left, 2/3 width) ── */}
+          {/* ── Recent Cases ── */}
           <div className="lg:col-span-2">
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
-                <CardTitle className="text-base font-semibold">Recent Cases</CardTitle>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-3.5"
+                style={{ borderBottom: "0.5px solid #e8f4ea" }}
+              >
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  Recent Cases
+                </p>
                 {total > 0 && (
                   <button
                     type="button"
                     onClick={() => navigate("/complaints")}
-                    className="text-sm text-[#16A34A] hover:text-[#15803D] font-medium flex items-center gap-1"
+                    className="text-xs text-[#16A34A] hover:text-[#15803D] font-medium flex items-center gap-1"
                   >
                     View all <ArrowRight className="h-3 w-3" />
                   </button>
                 )}
-              </CardHeader>
+              </div>
 
-              {/* Pre-sized container so it never collapses even when empty */}
-              <CardContent className="pt-4 min-h-[240px]">
+              <div className="p-4 min-h-[240px]">
                 {loading ? (
                   <div className="flex items-center justify-center h-full py-16">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16A34A]" />
@@ -367,12 +370,15 @@ export default function Dashboard() {
                       <button
                         key={complaint.id}
                         type="button"
-                        className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100"
+                        className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                        style={{ border: "0.5px solid transparent" }}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = "#86EFAC")}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
                         onClick={() => navigate(`/case-tracking/${complaint.id}`)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="bg-gray-100 rounded-lg p-2 shrink-0">
-                            <FileText className="h-4 w-4 text-gray-500" />
+                          <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
+                            <FileText className="h-4 w-4 text-[#16A34A]" />
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">{complaint.title}</p>
@@ -383,11 +389,11 @@ export default function Dashboard() {
                         </div>
                         <div className="shrink-0">
                           {complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW ? (
-                            <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs">Pending</Badge>
+                            <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Pending</Badge>
                           ) : complaint.status === ComplaintStatus.INVESTIGATING ? (
-                            <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">In Progress</Badge>
+                            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">In Progress</Badge>
                           ) : complaint.status === ComplaintStatus.RESOLVED ? (
-                            <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Resolved</Badge>
+                            <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>
                           ) : (
                             getStatusBadge(complaint.status)
                           )}
@@ -396,13 +402,15 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  /* ── Actionable empty state ── */
                   <div className="flex flex-col items-center justify-center h-full py-10 text-center px-6">
-                    <div className="bg-green-50 rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <div
+                      className="rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+                      style={{ background: "#DCFCE7" }}
+                    >
                       <Shield className="h-8 w-8 text-[#16A34A]" />
                     </div>
                     <p className="text-gray-800 font-semibold text-sm">You're all set — we're here when you need us</p>
-                    <p className="text-xs text-gray-500 mt-2 max-w-xs leading-relaxed">
+                    <p className="text-xs text-gray-400 mt-2 max-w-xs leading-relaxed">
                       If you've experienced harassment, bullying, or any misconduct, you can file a complaint confidentially.
                       Once submitted, a case handler will review and update you every step of the way.
                     </p>
@@ -418,81 +426,70 @@ export default function Dashboard() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
           {/* ── Right Column ── */}
-          <div className="space-y-5">
+          <div className="space-y-4">
 
             {isNewUser ? (
-              /* ── Onboarding checklist for brand-new users ── */
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="pb-3 border-b">
-                  <CardTitle className="text-base font-semibold">Getting Started</CardTitle>
-                  <p className="text-xs text-gray-500 mt-0.5">Follow these steps to get the most out of SpeakUp GC</p>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3">
+              /* ── Onboarding checklist ── */
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+              >
+                <div className="px-5 py-3.5" style={{ borderBottom: "0.5px solid #e8f4ea" }}>
+                  <p className="text-sm font-semibold text-gray-800">Getting Started</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Follow these steps to get the most out of SpeakUp GC</p>
+                </div>
+                <div className="p-4 space-y-2">
                   {[
-                    {
-                      step: 1,
-                      label: "Complete your profile",
-                      desc: "Add your details so we can contact you if needed",
-                      link: "/account",
-                      icon: User,
-                      done: false,
-                    },
-                    {
-                      step: 2,
-                      label: "File your first complaint",
-                      desc: "Submit a case — it only takes a few minutes",
-                      link: "/complaints/new",
-                      icon: Plus,
-                      done: false,
-                    },
-                    {
-                      step: 3,
-                      label: "Track its status",
-                      desc: "Once filed, monitor updates in My Cases",
-                      link: "/complaints",
-                      icon: CheckCircle,
-                      done: false,
-                    },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.step}
-                        type="button"
-                        onClick={() => navigate(item.link)}
-                        className="w-full text-left flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors"
+                    { step: 1, label: "Complete your profile",      desc: "Add your details so we can contact you if needed", link: "/account" },
+                    { step: 2, label: "File your first complaint",   desc: "Submit a case — it only takes a few minutes",       link: "/complaints/new" },
+                    { step: 3, label: "Track its status",           desc: "Once filed, monitor updates in My Cases",           link: "/complaints" },
+                  ].map((item) => (
+                    <button
+                      key={item.step}
+                      type="button"
+                      onClick={() => navigate(item.link)}
+                      className="w-full text-left flex items-start gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                      style={{ border: "0.5px solid #e2f0e5" }}
+                    >
+                      <div
+                        className="rounded-full w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold"
+                        style={{ background: "#DCFCE7", color: "#16A34A" }}
                       >
-                        <div className="bg-[#16A34A]/10 text-[#16A34A] rounded-full w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold">
-                          {item.step}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-800">{item.label}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
-                        </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-gray-300 shrink-0 mt-1" />
-                      </button>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                        {item.step}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800">{item.label}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 text-gray-300 shrink-0 mt-1" />
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : (
-              /* ── Notifications (returning users) ── */
-              <Card className="bg-white border-0 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-gray-500" />
+              /* ── Notifications ── */
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+              >
+                <div
+                  className="flex items-center justify-between px-5 py-3.5"
+                  style={{ borderBottom: "0.5px solid #e8f4ea" }}
+                >
+                  <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-gray-400" />
                     Notifications
                     {unreadCount > 0 && (
                       <span className="bg-[#16A34A] text-white text-xs rounded-full px-2 py-0.5 font-medium">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
-                  </CardTitle>
+                  </p>
                   <button
                     type="button"
                     onClick={() => navigate("/notifications")}
@@ -500,11 +497,11 @@ export default function Dashboard() {
                   >
                     See all
                   </button>
-                </CardHeader>
-                <CardContent className="pt-3 space-y-2">
+                </div>
+                <div className="p-4 space-y-2">
                   {topNotifications.length === 0 ? (
                     <div className="py-6 text-center">
-                      <Bell className="h-7 w-7 text-gray-300 mx-auto mb-1" />
+                      <Bell className="h-7 w-7 text-gray-200 mx-auto mb-1" />
                       <p className="text-xs text-gray-400">You're all caught up.</p>
                     </div>
                   ) : (
@@ -515,13 +512,18 @@ export default function Dashboard() {
                         <button
                           key={n.id}
                           type="button"
-                          className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                            isUnread ? "bg-[#F0FDF4] border-[#16A34A]/20 hover:bg-[#E9FBEF]" : "bg-gray-50 border-gray-100 hover:bg-gray-100"
-                          }`}
+                          className="w-full text-left p-3 rounded-xl transition-colors"
+                          style={{
+                            background: isUnread ? "#F0FDF4" : "#F9FAFB",
+                            border: `0.5px solid ${isUnread ? "#86EFAC" : "#e2f0e5"}`,
+                          }}
                           onClick={() => onNotificationClick(n)}
                         >
                           <div className="flex items-start gap-2">
-                            <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isUnread ? "bg-[#16A34A]" : "bg-gray-300"}`} />
+                            <div
+                              className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                              style={{ background: isUnread ? "#16A34A" : "#D1D5DB" }}
+                            />
                             <div className="min-w-0">
                               <p className="text-xs font-medium text-gray-800 leading-snug">{n.message || n.title}</p>
                               {!!time && <p className="text-xs text-gray-400 mt-0.5">{time}</p>}
@@ -531,17 +533,23 @@ export default function Dashboard() {
                       );
                     })
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
-            {/* Messages */}
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-gray-500" />
+            {/* ── Messages ── */}
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-3.5"
+                style={{ borderBottom: "0.5px solid #e8f4ea" }}
+              >
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-gray-400" />
                   Messages
-                </CardTitle>
+                </p>
                 <button
                   type="button"
                   onClick={() => navigate("/chat")}
@@ -549,11 +557,11 @@ export default function Dashboard() {
                 >
                   See all
                 </button>
-              </CardHeader>
-              <CardContent className="pt-3">
+              </div>
+              <div className="p-4">
                 {chatRooms.length === 0 ? (
                   <div className="text-center py-5">
-                    <MessageSquare className="h-7 w-7 text-gray-300 mx-auto mb-1" />
+                    <MessageSquare className="h-7 w-7 text-gray-200 mx-auto mb-1" />
                     <p className="text-xs text-gray-400">Messages with your case handler will appear here once a case is filed.</p>
                   </div>
                 ) : (
@@ -564,13 +572,14 @@ export default function Dashboard() {
                       <button
                         key={room.id}
                         type="button"
-                        className="w-full text-left p-3 rounded-xl border bg-gray-50 border-gray-100 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                        style={{ background: "#F9FFF9", border: "0.5px solid #e2f0e5" }}
                         onClick={() => navigate(`/case-chat/${room.complaintId}`)}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-gray-800 truncate">{room.complaintTitle || "Case Chat"}</p>
-                            <p className="text-xs text-gray-500 mt-0.5 truncate">{preview}</p>
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">{preview}</p>
                           </div>
                           {unread > 0 && (
                             <span className="bg-[#16A34A] text-white text-xs rounded-full px-1.5 py-0.5 font-medium shrink-0">
@@ -582,15 +591,18 @@ export default function Dashboard() {
                     );
                   })
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            {/* Quick actions — contextual shortcuts */}
-            <Card className="bg-white border-0 shadow-sm">
-              <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-3 space-y-2">
+            {/* ── Quick Actions ── */}
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+            >
+              <div className="px-5 py-3.5" style={{ borderBottom: "0.5px solid #e8f4ea" }}>
+                <p className="text-sm font-semibold text-gray-800">Quick Actions</p>
+              </div>
+              <div className="p-4 space-y-2">
                 <button
                   type="button"
                   onClick={() => navigate("/complaints/new")}
@@ -599,45 +611,31 @@ export default function Dashboard() {
                   <Plus className="h-4 w-4 shrink-0" />
                   <span className="text-sm font-medium">File a Complaint</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/complaints")}
-                  className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                >
-                  <FileText className="h-4 w-4 text-gray-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700">My Cases</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/notifications")}
-                  className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                >
-                  <Bell className="h-4 w-4 text-gray-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700">Notifications</span>
-                  {unreadCount > 0 && (
-                    <span className="ml-auto bg-[#16A34A] text-white text-xs rounded-full px-1.5 py-0.5 font-medium">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/chat")}
-                  className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                >
-                  <MessageSquare className="h-4 w-4 text-gray-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700">Messages</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/account")}
-                  className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                >
-                  <User className="h-4 w-4 text-gray-500 shrink-0" />
-                  <span className="text-sm font-medium text-gray-700">My Profile</span>
-                </button>
-              </CardContent>
-            </Card>
+
+                {[
+                  { label: "My Cases",       icon: FileText,      path: "/complaints" },
+                  { label: "Notifications",  icon: Bell,          path: "/notifications", badge: unreadCount },
+                  { label: "Messages",       icon: MessageSquare, path: "/chat" },
+                  { label: "My Profile",     icon: User,          path: "/account" },
+                ].map(({ label, icon: Icon, path, badge }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => navigate(path)}
+                    className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                    style={{ background: "#F9FFF9", border: "0.5px solid #e2f0e5" }}
+                  >
+                    <Icon className="h-4 w-4 text-[#16A34A] shrink-0" />
+                    <span className="text-sm font-medium text-gray-700">{label}</span>
+                    {badge != null && badge > 0 && (
+                      <span className="ml-auto bg-[#16A34A] text-white text-xs rounded-full px-1.5 py-0.5 font-medium">
+                        {badge > 9 ? "9+" : badge}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
           </div>
         </div>

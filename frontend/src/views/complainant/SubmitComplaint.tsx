@@ -10,7 +10,6 @@ export default function SubmitComplaint() {
   const [form, setForm] = useState<Partial<Complaint>>({
     title: '',
     description: '',
-    severity: 'low',
     anonymous: false,
     location: { city: 'Olongapo' },
   });
@@ -40,7 +39,6 @@ export default function SubmitComplaint() {
         anonymous: form.anonymous || false,
         title: form.title!,
         description: form.description!,
-        severity: form.severity || 'low',
         location: {
           city: form.location?.city || 'Olongapo',
           building: form.location?.building,
@@ -80,14 +78,6 @@ export default function SubmitComplaint() {
         <label className="block mb-2">
           <span className="text-sm">Description *</span>
           <textarea className="w-full mt-1 h-32" value={form.description || ''} onChange={(e) => setForm(s => ({ ...s, description: e.target.value }))} />
-        </label>
-        <label className="block mb-2">
-          <span className="text-sm">Severity</span>
-          <select className="w-full mt-1" value={form.severity} onChange={(e) => setForm(s => ({ ...s, severity: e.target.value as any }))}>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
         </label>
         <label className="block mb-4">
           <span className="text-sm">Attachments (optional)</span>

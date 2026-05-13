@@ -3,14 +3,15 @@
  *
  * Shown once on first login. Guides the user through:
  *   1. Alias / Pseudonym
- *   2. Notification Preference
- *   3. Privacy Notice acceptance
+ *   2. Privacy Notice acceptance
+ *
+ * Notification preference is automatically set to "both" (email + in-app).
  *
  * An AI assistant (persona: "Laya") walks the user through each step
  * with warm, reassuring messages — no Gemini API call needed here,
  * the prompts are scripted for reliability and speed.
  *
- * On completion, writes { alias, notificationPreference, profileSetupComplete: true }
+ * On completion, writes { alias, notificationPreference: "both", profileSetupComplete: true }
  * to Firestore users/{uid} and closes the modal.
  */
 import React, { useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Step = "alias" | "notification" | "privacy" | "done";
+type Step = "alias" | "privacy" | "done";
 type NotifPref = "email" | "in-app" | "both";
 
 interface ProfileSetupModalProps {
@@ -34,10 +35,8 @@ interface ProfileSetupModalProps {
 const STEP_MESSAGES: Record<Step, string> = {
   alias:
     "Hi! I'm Laya, your SpeakUp GC guide. 👋\n\nFirst, let's set up your alias — a pseudonym that will be used to protect your identity in any complaint case. It doesn't have to be your real name. You can use something like \"BlueStar22\" or any name that feels comfortable to you.\n\nYou can change this anytime from My Profile.",
-  notification:
-    "Great alias! 🎉\n\nNext, how would you like to receive updates about your cases? You can choose:\n• Email — updates sent to your registered email\n• In-app — notifications inside SpeakUp GC\n• Both — email + in-app\n\nWhich works best for you?",
   privacy:
-    "Almost done! Just one more thing — please read our privacy notice below.\n\nSpeakUp GC handles all complaints with strict confidentiality, in compliance with Republic Act No. 11313 (Safe Spaces Act) and the Gordon College CODI. Your identity will never be disclosed without your consent.\n\nPlease confirm that you've read and understood this before we proceed.",
+    "Great alias! 🎉\n\nNow, please read our privacy notice below.\n\nSpeakUp GC handles all complaints with strict confidentiality, in compliance with Republic Act No. 11313 (Safe Spaces Act) and the Gordon College CODI. Your identity will never be disclosed without your consent.\n\nYou'll receive case updates via both email and in-app notifications to keep you informed.\n\nPlease confirm that you've read and understood this before we proceed.",
   done: "You're all set! 🌟\n\nWelcome to SpeakUp GC. Your profile is ready and your privacy is protected. You can now access your dashboard anytime.\n\nRemember: you are not alone, and it's safe to speak up.",
 };
 
@@ -48,7 +47,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
   const [step, setStep] = useState<Step>("alias");
   const [alias, setAlias] = useState("");
   const [aliasError, setAliasError] = useState("");
-  const [notifPref, setNotifPref] = useState<NotifPref | null>(null);
+  const notifPref: NotifPref = "both"; // Always set to "both"
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -89,12 +88,11 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
   if (!isOpen) return null;
 
   // ── Step progress ───────────────────────────────────────────────────────────
-  const steps: Step[] = ["alias", "notification", "privacy", "done"];
+  const steps: Step[] = ["alias", "privacy", "done"];
   const stepIndex = steps.indexOf(step);
 
   const stepMeta = [
     { icon: User,        label: "Alias"         },
-    { icon: Bell,        label: "Notifications" },
     { icon: Shield,      label: "Privacy"       },
     { icon: CheckCircle2,label: "Done"          },
   ];
@@ -106,11 +104,6 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
     if (trimmed.length < 3) { setAliasError("Your alias must be at least 3 characters."); return; }
     if (trimmed.length > 30) { setAliasError("Your alias must be 30 characters or fewer."); return; }
     setAliasError("");
-    setStep("notification");
-  };
-
-  const handleNotifNext = () => {
-    if (!notifPref) return;
     setStep("privacy");
   };
 
@@ -226,44 +219,6 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
               <Button
                 onClick={handleAliasNext}
                 className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
-              >
-                Continue <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          )}
-
-          {/* ── NOTIFICATION PREFERENCE ── */}
-          {step === "notification" && (
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700 block">
-                How would you like to receive case updates?
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                {([
-                  { value: "email",  label: "Email only",         desc: "Updates sent to your registered email" },
-                  { value: "in-app", label: "In-app only",        desc: "Notifications inside SpeakUp GC" },
-                  { value: "both",   label: "Both (recommended)", desc: "Email + in-app notifications" },
-                ] as { value: NotifPref; label: string; desc: string }[]).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setNotifPref(opt.value)}
-                    className={cn(
-                      "w-full text-left px-4 py-3 rounded-xl border text-sm transition-all",
-                      notifPref === opt.value
-                        ? "border-[#16A34A] bg-[#F0FDF4] text-[#15803D]"
-                        : "border-gray-200 hover:border-gray-300 text-gray-700"
-                    )}
-                  >
-                    <span className="font-medium">{opt.label}</span>
-                    <span className="block text-xs text-gray-400 mt-0.5">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-              <Button
-                onClick={handleNotifNext}
-                disabled={!notifPref}
-                className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl disabled:opacity-50"
               >
                 Continue <ArrowRight className="h-4 w-4 ml-1" />
               </Button>

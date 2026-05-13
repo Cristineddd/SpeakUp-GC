@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Key, User, Bell, Shield, CheckCircle2, Loader2, Pencil } from "lucide-react";
+import { Mail, Key, User, Bell, Shield, CheckCircle2, Loader2, Pencil, LogOut } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { useToast } from "../hooks/use-toast";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "../compat/router";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,8 +34,10 @@ const NOTIF_OPTIONS: { value: NotifPref; label: string; desc: string }[] = [
 
 const Account = () => {
   const { toast } = useToast();
-  const { user, currentUser } = useAuth();
+  const { user, currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
   // ── Profile data from Firestore ──────────────────────────────────────────
@@ -124,6 +127,17 @@ const Account = () => {
     } finally {
       setSavingNotif(false);
     }
+  };
+
+  // ── Logout ───────────────────────────────────────────────────────────────
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+    setShowLogoutDialog(false);
+    toast({
+      title: "Logged Out",
+      description: "You have been safely logged out of your account.",
+    });
   };
 
   // ── Reset password ───────────────────────────────────────────────────────
@@ -395,6 +409,34 @@ const Account = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* ── Sign Out Section ── */}
+            <Card className="border-red-200 bg-red-50/30">
+              <CardHeader className="pb-3 border-b border-red-100">
+                <CardTitle className="text-base font-semibold flex items-center gap-2 text-red-700">
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </CardTitle>
+                <CardDescription className="text-xs">Log out of your SpeakUp GC account.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">End your session</p>
+                    <p className="text-xs text-gray-500 mt-0.5">You can log back in anytime</p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => setShowLogoutDialog(true)} 
+                    className="rounded-lg bg-red-600 hover:bg-red-700"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </>
         )}
 
@@ -412,6 +454,24 @@ const Account = () => {
               <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleResetPassword} disabled={isResetting}>
                 {isResetting ? "Sending..." : "Send Reset Link"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* ── Logout Confirmation Dialog ── */}
+        <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will be safely logged out of your SpeakUp GC account. You can log back in anytime.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700">
+                Yes, Sign Out
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

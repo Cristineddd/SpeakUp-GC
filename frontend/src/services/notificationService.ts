@@ -162,6 +162,25 @@ export class NotificationService {
   }
 
   /**
+   * Alias for sendComplaintStatusNotification (for compatibility)
+   */
+  static async sendStatusUpdateNotification(
+    userId: string,
+    complaintId: string,
+    complaintTitle: string,
+    newStatus: string,
+    notes?: string
+  ): Promise<string> {
+    return this.sendComplaintStatusNotification(
+      userId,
+      complaintId,
+      complaintTitle,
+      newStatus as 'pending' | 'inProgress' | 'resolved' | 'dismissed',
+      notes
+    );
+  }
+
+  /**
    * Send notification when a comment is added to complaint
    */
   static async sendCommentAddedNotification(
@@ -184,6 +203,37 @@ export class NotificationService {
         data: {
           commentBy: commentBy,
           commentPreview: commentText.substring(0, 100) + (commentText.length > 100 ? '...' : '')
+        }
+      }
+    );
+  }
+
+  /**
+   * Send notification when an internal case note is added
+   */
+  static async sendCaseNoteNotification(
+    userId: string,
+    caseId: string,
+    caseTitle: string,
+    noteBy: string,
+    noteByRole: 'admin' | 'handler',
+    noteText: string
+  ): Promise<string> {
+    const roleLabel = noteByRole === 'admin' ? 'Admin' : 'Case Handler';
+    return await this.createNotification(
+      userId,
+      'case_note' as NotificationType,
+      `New Internal Note from ${roleLabel}`,
+      `${noteBy}: "${noteText.substring(0, 100)}${noteText.length > 100 ? '...' : ''}"`,
+      {
+        priority: 'normal',
+        complaintId: caseId,
+        actionUrl: `/admin/reports?id=${caseId}`,
+        actionLabel: 'View Case',
+        data: {
+          noteBy: noteBy,
+          noteByRole: noteByRole,
+          notePreview: noteText.substring(0, 200)
         }
       }
     );

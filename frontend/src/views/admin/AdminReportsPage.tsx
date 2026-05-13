@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type JSX } from 'react';
 import { NotificationService } from "../../services/notificationService";
+import { InternalNotesSection } from "../../components/admin/InternalNotesSection";
 import { 
   FileText, 
   Clock, 
@@ -213,18 +214,19 @@ const AdminReportsPage = () => {
   // Get representative ID for handlers (use representativeData from hook)
   useEffect(() => {
     if (isHandler && representativeData) {
-      console.log('✅ Handler representative found:', representativeData);
-      console.log('👤 Handler ID:', representativeData.id);
-      console.log('📧 Handler email:', representativeData.email);
-      console.log('📛 Handler name:', representativeData.displayName);
+      console.log('✅ Handler representative found:', {
+        repId: representativeData.id,
+        email: representativeData.email,
+        name: representativeData.displayName,
+        userId: representativeData.userId,
+        currentUserId: currentUser?.uid
+      });
       setRepresentativeId(representativeData.id);
     } else if (isHandler && !representativeData) {
       console.warn('⚠️ Handler but no representative data found');
       console.warn('💡 User ID:', currentUser?.uid);
       console.warn('💡 Make sure this user has a representative entry in Firestore');
       setRepresentativeId(null);
-    } else {
-      console.log('ℹ️ Not a handler', { isHandler, hasRepData: !!representativeData });
     }
   }, [isHandler, representativeData, currentUser]);
 
@@ -242,10 +244,31 @@ const AdminReportsPage = () => {
       
       if (isHandler && representativeId) {
         console.log('🔍 Filtering reports for handler:', representativeId);
+        console.log('🔍 Handler info:', {
+          representativeId,
+          representativeEmail: representativeData?.email,
+          representativeName: representativeData?.displayName
+        });
+        
+        // Show all assigned cases for debugging
+        const allAssignedCases = fetchedReports.filter(r => r.assignedTo);
+        console.log('📋 All assigned cases:', allAssignedCases.map(r => ({
+          id: r.id,
+          title: r.title,
+          assignedTo: r.assignedTo,
+          assignedToName: r.assignedToName,
+          matches: r.assignedTo === representativeId
+        })));
+        
         displayReports = fetchedReports.filter(report => 
           report.assignedTo === representativeId
         );
-        console.log(`📊 Handler has ${displayReports.length} assigned cases`);
+        console.log(`📊 Handler has ${displayReports.length} assigned cases out of ${fetchedReports.length} total`);
+        
+        if (displayReports.length === 0 && allAssignedCases.length > 0) {
+          console.warn('⚠️ MISMATCH: Cases are assigned but not to this handler ID');
+          console.warn('💡 Check if representative ID matches the assigned handler ID');
+        }
       }
       
       // DEBUG: Log assignment info
@@ -763,169 +786,217 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           </Button>
         </DialogTrigger>
         <DialogContent className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
-          <DialogHeader className="border-b pb-3">
-            <DialogTitle className="text-lg sm:text-xl">
+          <DialogHeader className="border-b pb-4">
+            <DialogTitle className="text-xl sm:text-2xl font-bold">
               {isAdmin ? "Full Report Details" : "Case Details"}
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              ID: <span className="font-mono text-xs break-all">{safeGet(report, 'id', 'N/A')}</span>
+            <DialogDescription className="text-sm">
+              Report ID: <span className="font-mono text-sm break-all">{safeGet(report, 'id', 'N/A')}</span>
             </DialogDescription>
           </DialogHeader>
           
           {selectedReport && (
             <div className="overflow-y-auto max-h-[calc(90vh-140px)] sm:max-h-[calc(85vh-140px)] pr-2 sm:pr-3 space-y-4">
               {/* Quick Info Cards - Responsive Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-                <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 font-medium">Status</p>
-                  <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-xs mt-1`}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
+                  <p className="text-sm text-gray-600 font-medium mb-2">Status</p>
+                  <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-sm`}>
                     {safeGet(selectedReport, 'status', 'pending')}
                   </Badge>
                 </div>
-                <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 font-medium">Category</p>
-                  <p className="text-xs sm:text-sm font-medium mt-1 truncate">{safeGet(selectedReport, 'category', 'N/A')}</p>
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
+                  <p className="text-sm text-gray-600 font-medium mb-2">Category</p>
+                  <p className="text-sm font-semibold">{safeGet(selectedReport, 'category', 'N/A')}</p>
                 </div>
-                <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 font-medium">Handler</p>
-                  <p className="text-xs font-medium mt-1 truncate">{safeGet(selectedReport, 'assignedToName', 'Unassigned')}</p>
+                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
+                  <p className="text-sm text-gray-600 font-medium mb-2">Handler</p>
+                  <p className="text-sm font-semibold">{safeGet(selectedReport, 'assignedToName', 'Unassigned')}</p>
                 </div>
               </div>
 
-              {/* Compact Grid Layout - Responsive */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-                {/* Left Column */}
-                <div className="space-y-3">
-                  {/* Report Info - Different views for Admin and Handler */}
-                  {isAdmin ? (
-                    <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                      <h4 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-1">
-                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        Case Information
-                      </h4>
-                      <div className="space-y-1 text-xs">
-                        <div><strong>Title:</strong> {safeGet(selectedReport, 'title', 'No title')}</div>
-                        <div><strong>Location:</strong> {safeGet(selectedReport, 'location', 'No location')}</div>
-                        {safeGet(selectedReport, 'mapAddress') && (
-                          <div><strong>Map Address:</strong> {safeGet(selectedReport, 'mapAddress')}</div>
-                        )}
-                        <div><strong>Incident Date:</strong> {safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</div>
-                        <div><strong>Reporter:</strong> {safeGet(selectedReport, 'userName', 'Unknown')}</div>
-                        <div><strong>Email:</strong> {safeGet(selectedReport, 'userEmail', 'N/A')}</div>
-                        <div><strong>Reported On:</strong> {safeFormat(safeGet(selectedReport, 'reportedAt'), 'MMM dd, h:mm a')}</div>
+              {/* Main Content - Single Column for Better Readability */}
+              <div className="space-y-4">
+                {/* Report Info - Different views for Admin and Handler */}
+                {isAdmin ? (
+                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                    <h4 className="font-bold text-base mb-4 flex items-center gap-2 text-blue-700">
+                      <FileText className="h-5 w-5" />
+                      Case Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Title</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'title', 'No title')}</p>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                      <h4 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-1">
-                        <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        Report Info
-                      </h4>
-                      <div className="space-y-1 text-xs">
-                        <div><strong>Title:</strong> {safeGet(selectedReport, 'title', 'No title')}</div>
-                        <div><strong>Location:</strong> {safeGet(selectedReport, 'location', 'No location')}</div>
-                        {safeGet(selectedReport, 'mapAddress') && (
-                          <div><strong>Map Address:</strong> {safeGet(selectedReport, 'mapAddress')}</div>
-                        )}
-                        <div><strong>Date:</strong> {safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</div>
-                        <p className="mt-2 text-gray-500">Contact admin for reporter details</p>
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Location</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'location', 'No location')}</p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Where It Happened - Location Details */}
-                  {(() => {
-                    const vicinity = safeGet(selectedReport, 'locationVicinity');
-                    
-                    return (
-                      <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-100">
-                        <h4 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-1 text-blue-700">
-                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          Where It Happened
-                        </h4>
-                        <div className="space-y-2 text-xs">
-                          <div>
-                            <strong>Location Details:</strong>{' '}
-                            {vicinity === 'inside' 
-                              ? 'Inside College Vicinity' 
-                              : vicinity === 'outside' 
-                              ? 'Outside College Vicinity' 
-                              : vicinity && vicinity !== 'N/A'
-                              ? vicinity
-                              : 'Not specified'}
+                      {(() => {
+                        const location = safeGet(selectedReport, 'location', '').toLowerCase();
+                        const locationVicinity = safeGet(selectedReport, 'locationVicinity', '').toLowerCase();
+                        const isOnline = location === 'online' || locationVicinity === 'online';
+                        const mapAddress = safeGet(selectedReport, 'mapAddress');
+                        return !isOnline && mapAddress && (
+                          <div className="pb-3 border-b">
+                            <p className="text-sm text-gray-600 mb-1 font-medium">Map Address</p>
+                            <p className="text-base font-semibold">{mapAddress}</p>
                           </div>
-                        </div>
+                        );
+                      })()}
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Incident Date</p>
+                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</p>
                       </div>
-                    );
-                  })()}
-
-                  {/* Respondent Information */}
-                  {(safeGet(selectedReport, 'respondentName') || safeGet(selectedReport, 'respondentAddress')) && (
-                    <div className="bg-orange-50 p-2 sm:p-3 rounded-lg border border-orange-100">
-                      <h4 className="font-semibold text-xs sm:text-sm mb-2 text-orange-700">Respondent</h4>
-                      <div className="space-y-1 text-xs">
-                        {safeGet(selectedReport, 'respondentName') && (
-                          <div><strong>Name:</strong> {safeGet(selectedReport, 'respondentName')}</div>
-                        )}
-                        {safeGet(selectedReport, 'respondentAddress') && (
-                          <div>
-                            <strong>
-                              {safeGet(selectedReport, 'respondentName') === 'Unknown/Not Disclosed' 
-                                ? 'Physical Description:' 
-                                : 'Address:'}
-                            </strong> {safeGet(selectedReport, 'respondentAddress')}
-                          </div>
-                        )}
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Reporter</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'userName', 'Unknown')}</p>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-3 sm:space-y-4">
-                  {/* Description */}
-                  <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                    <h4 className="font-semibold text-xs sm:text-sm mb-2">Description</h4>
-                    <div className="text-xs bg-white p-2 rounded border max-h-24 overflow-y-auto">
-                      {safeGet(selectedReport, 'description', 'No description provided')}
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Email</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'userEmail', 'N/A')}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Reported On</p>
+                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'reportedAt'), 'MMM dd, h:mm a')}</p>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Additional Info */}
-                  {(safeGet(selectedReport, 'witnesses') || safeGet(selectedReport, 'additionalInfo')) && (
-                    <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                      <h4 className="font-semibold text-xs sm:text-sm mb-2 text-gray-700">Additional Information</h4>
-                      <div className="space-y-2 text-xs">
-                        {safeGet(selectedReport, 'witnesses') && (
-                          <div><strong>Witnesses:</strong> {safeGet(selectedReport, 'witnesses')}</div>
-                        )}
-                        {safeGet(selectedReport, 'additionalInfo') && (
-                          <div className="bg-slate-50 p-2 rounded border">
-                            {safeGet(selectedReport, 'additionalInfo')}
+                ) : (
+                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                    <h4 className="font-bold text-base mb-4 flex items-center gap-2 text-blue-700">
+                      <FileText className="h-5 w-5" />
+                      Report Information
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Title</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'title', 'No title')}</p>
+                      </div>
+                      <div className="pb-3 border-b">
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Location</p>
+                        <p className="text-base font-semibold">{safeGet(selectedReport, 'location', 'No location')}</p>
+                      </div>
+                      {(() => {
+                        const location = safeGet(selectedReport, 'location', '').toLowerCase();
+                        const locationVicinity = safeGet(selectedReport, 'locationVicinity', '').toLowerCase();
+                        const isOnline = location === 'online' || locationVicinity === 'online';
+                        const mapAddress = safeGet(selectedReport, 'mapAddress');
+                        return !isOnline && mapAddress && (
+                          <div className="pb-3 border-b">
+                            <p className="text-sm text-gray-600 mb-1 font-medium">Map Address</p>
+                            <p className="text-base font-semibold">{mapAddress}</p>
                           </div>
-                        )}
+                        );
+                      })()}
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Incident Date</p>
+                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</p>
+                      </div>
+                      <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-3 rounded">Contact admin for reporter details</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Where It Happened - Location Details */}
+                {(() => {
+                  const vicinity = safeGet(selectedReport, 'locationVicinity');
+                  
+                  return (
+                    <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                      <h4 className="font-bold text-base mb-3 flex items-center gap-2 text-blue-700">
+                        <MapPin className="h-5 w-5" />
+                        Where It Happened
+                      </h4>
+                      <div>
+                        <p className="text-sm text-gray-700 mb-1 font-medium">Location Details:</p>
+                        <p className="text-base font-semibold text-gray-900">
+                        {vicinity === 'inside' 
+                          ? 'Inside College Vicinity' 
+                          : vicinity === 'outside' 
+                          ? 'Outside College Vicinity' 
+                          : vicinity && vicinity !== 'N/A'
+                          ? vicinity
+                          : 'Not specified'}</p>
                       </div>
                     </div>
-                  )}
+                  );
+                })()}
+
+                {/* Respondent Information */}
+                {(safeGet(selectedReport, 'respondentName') || safeGet(selectedReport, 'respondentAddress')) && (
+                  <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
+                    <h4 className="font-bold text-base mb-3 text-orange-700">Respondent Information</h4>
+                    <div className="space-y-2">
+                      {safeGet(selectedReport, 'respondentName') && (
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-700">Name:</span> 
+                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'respondentName')}</span>
+                        </div>
+                      )}
+                      {safeGet(selectedReport, 'respondentAddress') && (
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-700">
+                            {safeGet(selectedReport, 'respondentName') === 'Unknown/Not Disclosed' 
+                              ? 'Physical Description:' 
+                              : 'Address:'}
+                          </span>
+                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'respondentAddress')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                  <h4 className="font-bold text-base mb-3 text-gray-700">What Happened</h4>
+                  <div className="text-sm bg-gray-50 p-3 rounded border max-h-32 overflow-y-auto leading-relaxed">
+                    {safeGet(selectedReport, 'description', 'No description provided')}
+                  </div>
                 </div>
+
+                {/* Additional Info */}
+                {(safeGet(selectedReport, 'witnesses') || safeGet(selectedReport, 'additionalInfo')) && (
+                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                    <h4 className="font-bold text-base mb-3 text-gray-700">Additional Information</h4>
+                    <div className="space-y-3">
+                      {safeGet(selectedReport, 'witnesses') && (
+                        <div className="text-sm">
+                          <span className="font-medium text-gray-700">Witnesses:</span>
+                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'witnesses')}</span>
+                        </div>
+                      )}
+                      {safeGet(selectedReport, 'additionalInfo') && (
+                        <div className="bg-gray-50 p-3 rounded border text-sm leading-relaxed">
+                          {safeGet(selectedReport, 'additionalInfo')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Location Map - Display if coordinates exist and are valid numbers */}
+              {/* Location Map - Display if coordinates exist, are valid, AND location is not online */}
               {(() => {
                 const lat = safeGet(selectedReport, 'latitude');
                 const lng = safeGet(selectedReport, 'longitude');
+                const location = safeGet(selectedReport, 'location', '').toLowerCase();
+                const locationVicinity = safeGet(selectedReport, 'locationVicinity', '').toLowerCase();
                 const latNum = typeof lat === 'number' ? lat : parseFloat(lat);
                 const lngNum = typeof lng === 'number' ? lng : parseFloat(lng);
                 const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum);
+                const isOnline = location === 'online' || locationVicinity === 'online';
                 
-                return hasValidCoords && (
-                  <div className="col-span-1 md:col-span-2">
-                    <div className="bg-slate-50 p-2 sm:p-3 rounded-lg border">
-                      <h4 className="font-semibold text-xs sm:text-sm mb-2 flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                return hasValidCoords && !isOnline && (
+                  <div>
+                    <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                      <h4 className="font-bold text-base mb-3 flex items-center gap-2 text-green-700">
+                        <MapPin className="h-5 w-5" />
                         Incident Location Map
                       </h4>
-                      <div className="rounded-lg overflow-hidden border max-h-60 sm:max-h-80">
+                      <div className="rounded-lg overflow-hidden border-2 max-h-80">
                         <LocationMapPicker
                           onLocationSelect={() => {}} // Read-only, so no selection needed
                           initialLat={latNum}
@@ -937,11 +1008,6 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           readOnly={true}
                         />
                       </div>
-                      {safeGet(selectedReport, 'mapAddress') && (
-                        <p className="text-xs text-gray-600 mt-2">
-                          <strong>Address:</strong> {safeGet(selectedReport, 'mapAddress')}
-                        </p>
-                      )}
                     </div>
                   </div>
                 );
@@ -949,30 +1015,46 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
               {/* Admin Notes */}
               {safeGet(selectedReport, 'adminNotes') && (
-                <div className="bg-indigo-50 p-2 sm:p-3 rounded-lg border border-indigo-100">
-                  <h4 className="font-semibold text-xs sm:text-sm mb-2 text-indigo-700">Admin Notes</h4>
-                  <div className="text-xs bg-white p-2 rounded border max-h-16 overflow-y-auto">
+                <div className="bg-indigo-50 p-4 rounded-lg border-2 border-indigo-200">
+                  <h4 className="font-bold text-base mb-3 text-indigo-700">Admin Notes</h4>
+                  <div className="text-sm bg-white p-3 rounded border max-h-24 overflow-y-auto leading-relaxed">
                     {safeGet(selectedReport, 'adminNotes')}
                   </div>
                 </div>
               )}
 
               {/* Attachments/Evidence */}
-              <div>
-                <h4 className="font-medium text-xs sm:text-sm mb-2">Attachments</h4>
+              <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
+                <h4 className="font-bold text-base mb-3 text-purple-700">Attachments & Evidence</h4>
                 
                 {(() => {
                   // Use cached version to avoid repetitive processing
                   const evidenceUrls = getCachedEvidenceUrls(selectedReport);
+                  const externalLinks = safeGet(selectedReport, 'evidenceExternalLinks', []);
+                  const hasExternalLinks = Array.isArray(externalLinks) && externalLinks.length > 0;
                   
-                  if (evidenceUrls.length === 0) {
+                  // Debug logging
+                  console.log('📎 Evidence Debug:', {
+                    evidenceUrls: evidenceUrls.length,
+                    externalLinks: externalLinks,
+                    hasExternalLinks: hasExternalLinks,
+                    reportId: selectedReport?.id
+                  });
+                  
+                  if (evidenceUrls.length === 0 && !hasExternalLinks) {
                     return (
-                      <p className="text-xs sm:text-sm text-gray-500">No attachments found</p>
+                      <p className="text-sm text-gray-500 italic">No attachments found</p>
                     );
                   }
                   
                   return (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                    <div className="space-y-6">
+                      {evidenceUrls.length > 0 && (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700 mb-3">
+                            📎 {evidenceUrls.length} File{evidenceUrls.length !== 1 ? 's' : ''} Uploaded
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                       {evidenceUrls.map((url: string, index: number) => {
                         const fileName = url.split('/').pop() || `evidence_${index + 1}`;
                         const fileType = getFileType(url);
@@ -1089,6 +1171,51 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           </div>
                         );
                       })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* External Links */}
+                      {hasExternalLinks && (
+                        <div className={evidenceUrls.length > 0 ? "pt-4 border-t-2 border-gray-200" : ""}>
+                          <p className="text-base font-bold text-blue-700 mb-4 flex items-center gap-2">
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                            External Links ({externalLinks.length})
+                          </p>
+                          <div className="space-y-3">
+                            {externalLinks.map((link: string, index: number) => (
+                              <div key={index} className="flex items-center gap-3 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg hover:bg-blue-100 transition-colors">
+                                <svg className="h-6 w-6 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                                <a 
+                                  href={link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-base text-blue-700 hover:text-blue-900 underline font-medium flex-1 break-all"
+                                >
+                                  {link}
+                                </a>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="h-9 px-4 text-sm bg-blue-600 hover:bg-blue-700 flex-shrink-0"
+                                  onClick={() => {
+                                    window.open(link, '_blank');
+                                  }}
+                                >
+                                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                  Open
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1118,6 +1245,16 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   />
                 </div>
               )}
+
+              {/* Internal Notes Section - Only visible to Admin and Case Handler */}
+              <div className="border-t pt-6 mt-6">
+                <InternalNotesSection
+                  caseId={selectedReport.id}
+                  caseTitle={selectedReport.title || 'Case'}
+                  assignedToId={selectedReport.assignedTo}
+                  assignedToRole={selectedReport.assignedToRole as 'admin' | 'handler'}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
@@ -1210,8 +1347,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         </div>
       )}
 
-      {/* Handler Dashboard Stats */}
-      {isHandler && (
+      {/* Handler Dashboard Stats - ONLY for handlers, NOT for admins */}
+      {!isAdmin && isHandler && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

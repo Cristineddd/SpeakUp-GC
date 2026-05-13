@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from '../../compat/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
+import RepresentativeService from '../../services/representativeService';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
@@ -18,14 +19,36 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (currentUser && !roleLoading) {
-      // Allow access if user is admin OR has any representative role (dean, coordinator, handler)
-      if (isAdmin || role) {
-        navigate('/admin');
-      } else {
-        setError('Access denied. You must be an administrator, dean, coordinator, or case handler to access this area.');
+    const checkAndRegisterAdmin = async () => {
+      if (currentUser && !roleLoading) {
+        // If user is admin but not in representatives collection, auto-register them
+        if (isAdmin && !role) {
+          console.log('🔧 Admin user not in representatives collection, auto-registering...');
+          try {
+            await RepresentativeService.autoRegisterAsAdmin(
+              currentUser.uid,
+              currentUser.email || '',
+              currentUser.displayName || undefined
+            );
+            console.log('✅ Admin auto-registered successfully, refreshing...');
+            // Refresh to load the new role
+            window.location.reload();
+            return;
+          } catch (error) {
+            console.error('❌ Error auto-registering admin:', error);
+          }
+        }
+
+        // Allow access if user is admin OR has any representative role (admin, handler)
+        if (isAdmin || role) {
+          navigate('/admin');
+        } else {
+          setError('Access denied. You must be an administrator or case handler to access this area.');
+        }
       }
-    }
+    };
+
+    checkAndRegisterAdmin();
   }, [currentUser, isAdmin, role, roleLoading, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +101,7 @@ export default function AdminLogin() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">Admin Panel</h1>
           <p className="text-sm text-[#b5bac1]">Sign in to access the admin dashboard</p>
-          <p className="text-[11px] text-[#72767d] mt-1">Admin • Case Handlers • Deans • Coordinators</p>
+          <p className="text-[11px] text-[#72767d] mt-1">Admin • Case Handlers</p>
         </div>
 
         <div className="px-8 pb-8 pt-4">

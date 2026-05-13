@@ -1,12 +1,10 @@
 /**
  * Representative Types
- * For Case Handlers: Dean, Coordinator, Investigator, etc.
+ * For Case Handlers and Administrators only
  */
 
 export type RepresentativeRole = 
   | 'admin'        // Full system control
-  | 'dean'         // View-only: Analytics & reports overview
-  | 'coordinator'  // View-only: Analytics & reports overview
   | 'handler';     // Case handler: Can be assigned to process complaints
 
 export type RepresentativeStatus = 'online' | 'offline' | 'away';
@@ -158,16 +156,12 @@ export interface UpdateRepresentativeData {
 // Role display names
 export const ROLE_LABELS: Record<RepresentativeRole, string> = {
   admin: 'Administrator',
-  dean: 'Dean (View Only)',
-  coordinator: 'Coordinator (View Only)',
   handler: 'Case Handler'
 };
 
 // Role colors for badges
 export const ROLE_COLORS: Record<RepresentativeRole, string> = {
   admin: 'bg-purple-100 text-purple-800',
-  dean: 'bg-blue-100 text-blue-800',
-  coordinator: 'bg-green-100 text-green-800',
   handler: 'bg-orange-100 text-orange-800'
 };
 
@@ -183,14 +177,6 @@ export const DEFAULT_PERMISSIONS: Record<RepresentativeRole, RepresentativePermi
     'send_messages',
     'view_analytics',
     'manage_representatives'
-  ],
-  dean: [
-    'view_cases',
-    'view_analytics'
-  ],
-  coordinator: [
-    'view_cases',
-    'view_analytics'
   ],
   handler: [
     'view_cases',

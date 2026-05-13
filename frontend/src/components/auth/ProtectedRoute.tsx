@@ -71,10 +71,10 @@ const ProtectedRoute = ({
       loopDetectedRef.current = false;
     }
 
-    // Detect potential loop
-    if (redirectCountRef.current > 2) {
+    // Detect potential loop (increased threshold to 5 to reduce false positives)
+    if (redirectCountRef.current > 5) {
       loopDetectedRef.current = true;
-      console.error('🚨 ProtectedRoute: Potential redirect loop detected!', {
+      console.warn('⚠️ ProtectedRoute: Potential redirect loop detected', {
         currentPath,
         redirectCount: redirectCountRef.current,
         profileComplete,

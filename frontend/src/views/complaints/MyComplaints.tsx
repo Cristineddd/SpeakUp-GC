@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Progress } from "../../components/ui/progress";
 import { Input } from "../../components/ui/input";
 import {
-  Complaint, ComplaintType, Severity, ComplaintStage, ComplaintStatus
+  Complaint, ComplaintType, ComplaintStage, ComplaintStatus
 } from "../../types/complaints";
 import { useNavigate, useSearchParams } from "../../compat/router";
 import { format } from "date-fns";
@@ -252,14 +252,14 @@ export default function MyComplaints() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-full">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Complaints</h1>
-            <p className="text-sm text-gray-500 mt-1">Track and manage all your filed complaints</p>
+            <h1 className="text-2xl font-bold text-gray-900">My Cases</h1>
+            <p className="text-sm text-gray-400 mt-1">Track and manage all your filed complaints</p>
           </div>
           <Button
             onClick={() => navigate("/complaints/new")}

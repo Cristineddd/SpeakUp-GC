@@ -123,57 +123,140 @@ const Landing = () => {
       <Header />
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-32 pb-20 overflow-hidden bg-white">
-        {/* Subtle dot grid */}
+      <section className="relative min-h-screen flex flex-col justify-center pt-32 pb-20 overflow-hidden bg-gradient-to-br from-white via-green-50/30 to-white">
+        {/* Enhanced dot grid with animation */}
         <div
-          className="absolute inset-0 opacity-40"
-          style={{ backgroundImage: "radial-gradient(circle, #d1e8db 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+          className="absolute inset-0 opacity-40 animate-pulse"
+          style={{ 
+            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundSize: "32px 32px",
+            animationDuration: "4s"
+          }}
         />
-        {/* Soft green glow top-left */}
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1a7a45]/8 blur-[120px] pointer-events-none" />
-
+        {/* Multiple green glows for depth */}
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1a7a45]/10 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/8 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
+        
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            {/* Headline */}
-            <h1 className="text-[clamp(3rem,8vw,6.5rem)] font-black leading-[0.9] tracking-tight text-gray-900 mb-8">
-              Speak up.<br />
-              <span className="text-[#1a7a45]">Be heard.</span><br />
-              <span className="text-gray-400">Be safe.</span>
-            </h1>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text Content */}
+            <div className="max-w-xl">
+              {/* Headline with staggered animation */}
+              <h1 className="text-[clamp(3rem,8vw,5rem)] font-black leading-[0.9] tracking-tight text-gray-900 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <span className="inline-block animate-in fade-in slide-in-from-left-4 duration-700">Speak up.</span><br />
+                <span className="text-[#1a7a45] inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-150">Be heard.</span><br />
+                <span className="text-gray-600 inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-300">Be safe.</span>
+              </h1>
 
-            <p className="text-lg sm:text-xl text-gray-500 leading-relaxed max-w-xl mb-10">
-              A confidential platform for Gordon College students to file complaints under the <span className="font-semibold text-gray-700">Safe Spaces Act (RA 11313)</span> and the <span className="font-semibold text-gray-700">Anti-Sexual Harassment Act (RA 7877)</span> — track cases, and communicate directly with DEIU, anonymously if you choose.
-            </p>
+              <p className="text-lg sm:text-xl text-gray-500 leading-relaxed mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+                A confidential platform for Gordon College students to file complaints, track cases, and communicate directly with DEIU — anonymously if you choose. Protected under Philippine law.
+              </p>
+              <a href="#about" className="inline-flex items-center gap-1 text-sm font-medium text-[#1a7a45] hover:text-[#155f36] mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
+                Learn more about your rights
+                <ArrowRight className="w-4 h-4" />
+              </a>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-14">
-              <button
-                onClick={() => setShowWalkthrough(true)}
-                className="group inline-flex items-center justify-center gap-2.5 bg-[#1a7a45] hover:bg-[#155f36] text-white font-semibold text-base px-8 py-4 rounded-2xl transition-all duration-200 shadow-sm"
-              >
-                Get Started — It's Free
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-              <button
-                onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
-                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-medium text-base px-8 py-4 rounded-2xl transition-all duration-200 shadow-sm"
-              >
-                Log In
-              </button>
+              {/* CTAs with hover effects */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
+                <button
+                  onClick={() => setShowWalkthrough(true)}
+                  className="group inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#1a7a45] to-emerald-600 hover:from-[#155f36] hover:to-emerald-700 text-white font-semibold text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                >
+                  Get Started 
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                </button>
+                <button
+                  onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
+                  className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-green-50 border-2 border-gray-300 hover:border-[#1a7a45] text-gray-700 hover:text-[#1a7a45] font-medium text-base px-8 py-4 rounded-2xl transition-all duration-300"
+                >
+                  Log In
+                </button>
+              </div>
+
+              {/* Trust pills */}
+              <div className="flex flex-wrap gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-900">
+                {[
+                  { icon: <ShieldCheck className="w-4 h-4" />, label: "End-to-end encrypted" },
+                  { icon: <EyeOff className="w-4 h-4" />,      label: "Anonymous filing" },
+                  { icon: <Users className="w-4 h-4" />,        label: "DEIU managed" },
+                ].map((t) => (
+                  <span key={t.label} className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                    <span className="text-[#1a7a45]">{t.icon}</span>
+                    {t.label}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* Trust pills */}
-            <div className="flex flex-wrap gap-4">
-              {[
-                { icon: <ShieldCheck className="w-4 h-4" />, label: "End-to-end encrypted" },
-                { icon: <EyeOff className="w-4 h-4" />,      label: "Anonymous filing" },
-                { icon: <Users className="w-4 h-4" />,        label: "DEIU managed" },
-              ].map((t) => (
-                <span key={t.label} className="flex items-center gap-1.5 text-sm text-gray-400">
-                  <span className="text-[#1a7a45]">{t.icon}</span>
-                  {t.label}
-                </span>
-              ))}
+            {/* Right: Dashboard Illustration */}
+            <div className="relative hidden lg:block animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
+              <div className="relative">
+                {/* Main dashboard card with elevated shadow */}
+                <div className="bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] border border-gray-200 p-8 space-y-6">
+                  {/* Success notification - attached to card */}
+                  <div className="-mt-8 -mx-8 mb-4 bg-green-50 border-2 border-green-200 rounded-t-3xl p-4 flex items-start gap-3">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">Complaint Filed!</p>
+                      <p className="text-xs text-gray-600">CASE-002 is now active</p>
+                    </div>
+                  </div>
+
+                  {/* Active case card */}
+                  <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-wide">Active Case</p>
+                        <p className="text-2xl font-black text-gray-900 mt-1">CASE-002</p>
+                        <p className="text-xs text-gray-500 mt-1">Verbal harassment in classroom</p>
+                      </div>
+                      <div className="bg-[#1a7a45] rounded-xl px-4 py-2">
+                        <p className="text-xs text-white font-bold">Anonymous Mode</p>
+                      </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-900">Complaint Filed</p>
+                          <p className="text-xs text-gray-500">Jan 14, 2026</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-gray-900">Under Review</p>
+                          <p className="text-xs text-gray-500">Jan 15, 2026</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-[#1a7a45] rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-[#1a7a45]">Mediation Ongoing</p>
+                          <p className="text-xs text-green-600 font-medium">In progress</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 opacity-40">
+                        <div className="w-6 h-6 bg-gray-200 rounded-full flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-400">Resolution Pending</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -186,7 +269,15 @@ const Landing = () => {
       </section>
 
       {/* ── Features Bento ───────────────────────────────────────────── */}
-      <section id="features" className="bg-white py-28 lg:py-36 border-t border-gray-100">
+      <section id="features" className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{ 
+            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundSize: "32px 32px"
+          }}
+        />
         <div
           ref={featuresRef.ref as React.RefObject<HTMLDivElement>}
           className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
@@ -199,48 +290,49 @@ const Landing = () => {
             </h2>
           </div>
 
-          {/* Bento grid — consistent card language */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* Bento grid — uniform card styling */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Large card */}
-            <div className={`lg:row-span-2 bg-gray-50 border border-gray-200 rounded-3xl p-8 flex flex-col justify-between min-h-[300px] transition-all duration-700 delay-100 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>                <div>
-                <div className="w-11 h-11 bg-[#1a7a45] rounded-2xl flex items-center justify-center mb-6">
-                  <ClipboardList className="w-5 h-5 text-white" />
+            {/* Large card with enhanced hover */}
+            <div className={`lg:row-span-2 bg-gradient-to-br from-green-50 to-emerald-50/50 border-2 border-[#1a7a45]/30 hover:border-[#1a7a45] rounded-3xl p-8 flex flex-col justify-between transition-all duration-700 delay-100 hover:shadow-xl hover:scale-[1.02] ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+              <div>
+                <div className="w-12 h-12 bg-gradient-to-br from-[#1a7a45] to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                  <ClipboardList className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-3">File a Complaint</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">Submit securely and confidentially under <span className="font-semibold text-gray-700">RA 11313 (Safe Spaces Act)</span> or <span className="font-semibold text-gray-700">RA 7877 (Anti-Sexual Harassment Act)</span>. Stay anonymous or identify yourself — the choice is always yours.</p>
+                <p className="text-gray-600 text-sm leading-relaxed">Submit securely and confidentially under <span className="font-semibold text-gray-700">RA 11313 (Safe Spaces Act)</span> or <span className="font-semibold text-gray-700">RA 7877 (Anti-Sexual Harassment Act)</span>. Stay anonymous or identify yourself — the choice is always yours.</p>
               </div>
               <ul className="mt-8 space-y-2.5">
                 {["Anonymous or identified", "Secure document upload", "Evidence attachment"].map((b) => (
-                  <li key={b} className="flex items-center gap-2 text-sm text-gray-500">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#1a7a45] flex-shrink-0" /> {b}
+                  <li key={b} className="flex items-center gap-2 text-sm text-gray-600">
+                    <CheckCircle2 className="w-4 h-4 text-[#1a7a45] flex-shrink-0" /> {b}
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Standard cards — same background, same border, same radius */}
+            {/* Standard cards — uniform height and styling */}
             {[
               {
-                icon: <Activity className="w-5 h-5 text-[#1a7a45]" />,
+                icon: <Activity className="w-6 h-6 text-[#1a7a45]" />,
                 title: "Real-Time Tracker",
                 desc: "Monitor your case status live. Get notified at every milestone.",
                 delay: "delay-150",
               },
               {
-                icon: <MessageCircle className="w-5 h-5 text-[#1a7a45]" />,
+                icon: <MessageCircle className="w-6 h-6 text-[#1a7a45]" />,
                 title: "Direct Messaging",
                 desc: "Communicate securely with DEIU administrators — encrypted and private.",
                 delay: "delay-200",
               },
               {
-                icon: <Lock className="w-5 h-5 text-[#1a7a45]" />,
+                icon: <Lock className="w-6 h-6 text-[#1a7a45]" />,
                 title: "Privacy First",
                 desc: "End-to-end encryption. Your data is yours alone.",
                 delay: "delay-250",
               },
               {
-                icon: <BookOpen className="w-5 h-5 text-[#1a7a45]" />,
+                icon: <BookOpen className="w-6 h-6 text-[#1a7a45]" />,
                 title: "Resources Hub",
                 desc: "Policy guides on RA 11313 and RA 7877, FAQs, and support articles to help you navigate your rights and the complaint process.",
                 delay: "delay-300",
@@ -248,13 +340,13 @@ const Landing = () => {
             ].map((card, i) => (
               <div
                 key={i}
-                className={`bg-gray-50 border border-gray-200 rounded-3xl p-7 transition-all duration-700 ${card.delay} ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                className={`bg-white border-2 border-[#1a7a45]/30 hover:border-[#1a7a45] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 hover:shadow-xl hover:scale-[1.02] ${card.delay} ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
               >
-                <div className="w-11 h-11 bg-white border border-gray-200 rounded-2xl flex items-center justify-center mb-5">
+                <div className="w-12 h-12 bg-green-50 border-2 border-[#1a7a45]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
                   {card.icon}
                 </div>
-                <h3 className="text-lg font-black text-gray-900 mb-2">{card.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{card.desc}</p>
+                <h3 className="text-xl font-black text-gray-900 mb-3">{card.title}</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">{card.desc}</p>
               </div>
             ))}
           </div>
@@ -262,7 +354,15 @@ const Landing = () => {
       </section>
 
       {/* ── How It Works ─────────────────────────────────────────────── */}
-      <section className="bg-white py-28 lg:py-36 border-t border-gray-100">
+      <section className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{ 
+            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundSize: "32px 32px"
+          }}
+        />
         <div
           ref={stepsRef.ref as React.RefObject<HTMLDivElement>}
           className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
@@ -274,7 +374,7 @@ const Landing = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { n: "01", title: "Submit",  desc: "Fill out the secure complaint form. Choose to stay anonymous or identify yourself." },
               { n: "02", title: "Track",   desc: "Get real-time status updates and notifications at each stage of your case." },
@@ -282,16 +382,17 @@ const Landing = () => {
             ].map((s, i) => (
               <div
                 key={i}
-                className={`relative bg-gray-50 border border-gray-200 rounded-3xl px-8 py-10 overflow-hidden transition-all duration-700 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                className={`group relative bg-gradient-to-br from-white via-green-50/30 to-white border-2 border-[#1a7a45]/20 hover:border-[#1a7a45]/50 rounded-3xl px-8 py-10 overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#1a7a45]/10 hover:-translate-y-2 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                {/* Decorative number backdrop (higher contrast) */}
-                <div className="absolute -top-6 -left-6 w-36 h-36 rounded-[2.25rem] bg-gradient-to-br from-[#1a7a45]/12 to-transparent" />
-                <p className="relative text-7xl font-black text-[#1a7a45] mb-6 leading-none select-none">
+                <p className="relative text-7xl font-black text-[#1a7a45] mb-6 leading-none select-none group-hover:scale-110 transition-transform duration-500">
                   {s.n}
                 </p>
-                <h3 className="relative text-xl font-black text-gray-900 mb-3">{s.title}</h3>
+                <h3 className="relative text-xl font-black text-gray-900 mb-3 group-hover:text-[#1a7a45] transition-colors duration-300">{s.title}</h3>
                 <p className="relative text-sm text-gray-500 leading-relaxed">{s.desc}</p>
+                
+                {/* Bottom accent line */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#1a7a45]/30 to-transparent group-hover:via-[#1a7a45]/60 transition-all duration-500" />
               </div>
             ))}
           </div>
@@ -299,7 +400,15 @@ const Landing = () => {
       </section>
 
       {/* ── About & Mission ──────────────────────────────────────────── */}
-      <section id="about" className="bg-white py-28 lg:py-36 border-t border-gray-100">
+      <section id="about" className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{ 
+            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundSize: "32px 32px"
+          }}
+        />
         <div
           ref={missionRef.ref as React.RefObject<HTMLDivElement>}
           className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
@@ -338,32 +447,50 @@ const Landing = () => {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────────────── */}
-      <section id="mission" className="bg-white py-28 lg:py-36 border-t border-gray-100">
+      <section id="mission" className="relative bg-gradient-to-br from-gray-50 to-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
+        {/* Dot grid background */}
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{ 
+            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundSize: "32px 32px"
+          }}
+        />
         <div
           ref={ctaRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
+          className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
         >
-          <div className={`bg-[#1a7a45] rounded-3xl px-10 py-20 sm:px-20 sm:py-24 text-center transition-all duration-700 ${ctaRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <p className="text-xs font-bold text-white/60 uppercase tracking-widest mb-5">Ready?</p>
-            <h2 className="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight mb-6">
-              Make your voice<br />heard today.
+          <div className={`max-w-4xl mx-auto text-center transition-all duration-700 ${ctaRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-6">
+              Your privacy is our priority.
             </h2>
-            <p className="text-white/70 text-base sm:text-lg max-w-md mx-auto leading-relaxed mb-10">
-              Join Gordon College students building a safer, more accountable community through transparent action — guided by the Safe Spaces Act (RA 11313) and Anti-Sexual Harassment Act (RA 7877).
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed mb-12 max-w-3xl mx-auto">
+              All complaints and communications are handled with strict confidentiality by the DEIU office. Your identity is never disclosed to respondents without your explicit consent.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            
+            {/* Privacy features grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12">
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">Identity Protected</h3>
+                <p className="text-sm text-gray-600">Anonymous filing available</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">Admin-Only Access</h3>
+                <p className="text-sm text-gray-600">Only DEIU staff can view reports</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">No Public Disclosure</h3>
+                <p className="text-sm text-gray-600">Your name stays confidential</p>
+              </div>
+            </div>
+
+            <div className="flex justify-center">
               <button
                 onClick={() => setShowWalkthrough(true)}
-                className="group inline-flex items-center justify-center gap-2.5 bg-white text-[#1a7a45] hover:bg-gray-50 font-bold text-base px-8 py-4 rounded-2xl transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#1a7a45] to-emerald-600 hover:from-[#155f36] hover:to-emerald-700 text-white font-bold text-lg px-10 py-5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-[#1a7a45]/30 hover:scale-105 active:scale-95"
               >
-                Get Started — It's Free
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </button>
-              <button
-                onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
-                className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-white/10 border border-white/30 text-white font-medium text-base px-8 py-4 rounded-2xl transition-all duration-200"
-              >
-                Log In
+                Get Started
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
             </div>
           </div>
@@ -371,19 +498,19 @@ const Landing = () => {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className="bg-white border-t border-gray-100">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex items-center gap-3">
-            <img src="/LOGO.png" alt="GC Logo" className="w-8 h-8 object-contain opacity-70" />
-            <span className="font-bold text-gray-400 text-base">SpeakUp GC</span>
+      <footer className="bg-gray-50 border-t border-gray-200">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex items-center gap-3 mb-6">
+            <img src="/LOGO.png" alt="GC Logo" className="w-10 h-10 object-contain" />
+            <span className="font-bold text-gray-700 text-lg">SpeakUp GC</span>
           </div>
-          <div className="mt-4 border-t border-gray-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-6 text-sm text-gray-400">
-              <Link to="/privacy" className="hover:text-gray-700 transition-colors">Privacy Policy</Link>
-              <Link to="/terms"   className="hover:text-gray-700 transition-colors">Terms</Link>
-              <Link to="/mission" className="hover:text-gray-700 transition-colors">Mission</Link>
+          <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex flex-wrap items-center gap-6">
+              <Link to="/privacy" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Terms & Conditions</Link>
+              <Link to="/mission" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Mission</Link>
             </div>
-            <p className="text-xs text-gray-300">© {new Date().getFullYear()} SpeakUp GC · Complaints handled under RA 11313 (Safe Spaces Act) &amp; RA 7877 (Anti-Sexual Harassment Act)</p>
+            <p className="text-xs text-gray-500">© {new Date().getFullYear()} SpeakUp GC · Complaints handled under RA 11313 (Safe Spaces Act) &amp; RA 7877 (Anti-Sexual Harassment Act)</p>
           </div>
         </div>
       </footer>

@@ -15,6 +15,7 @@ import {
 import { getAnalytics } from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -44,6 +45,7 @@ setPersistence(auth, browserSessionPersistence)
 const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 const db = getFirestore(app);
 const storage = getStorage(app);
+const functions = getFunctions(app);
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -56,6 +58,7 @@ export {
   db,
   storage,
   analytics,
+  functions,
   googleProvider,
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,

@@ -23,7 +23,6 @@ export async function submitComplaint(data: Omit<Complaint, 'id' | 'createdAt' |
     description: data.description,
     reportedUserId: data.reportedUserId || null,
     location: data.location || null,
-    severity: data.severity || 'low',
     status: 'open',
     assignedTo: data.assignedTo || null,
     attachments: attachmentUrls,
