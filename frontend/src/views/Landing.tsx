@@ -210,7 +210,7 @@ const Landing = () => {
                       <div>
                         <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-wide">Active Case</p>
                         <p className="text-2xl font-black text-gray-900 mt-1">CASE-002</p>
-                        <p className="text-xs text-gray-500 mt-1">Verbal harassment in classroom</p>
+                        <p className="text-xs text-gray-500 mt-1">Sexual harassment in classroom</p>
                       </div>
                       <div className="bg-[#1a7a45] rounded-xl px-4 py-2">
                         <p className="text-xs text-white font-bold">Anonymous Mode</p>
