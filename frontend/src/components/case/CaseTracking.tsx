@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Clock, 
   AlertTriangle, 
@@ -32,6 +32,8 @@ import {
 import { collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
+import { CaseActivityService } from '../../services/caseActivityService';
+import { CaseActivity, ActivityType } from '../../types/caseActivity';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -68,6 +70,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const [timelineEvents, setTimelineEvents] = useState<CaseTimelineEvent[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [activities, setActivities] = useState<InvestigationActivity[]>([]);
+  const [realActivities, setRealActivities] = useState<CaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch real data from Firebase
@@ -129,8 +132,10 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 reportSubmissionDeadline: data.reportSubmissionDeadline ? safeToDate(data.reportSubmissionDeadline) : undefined,
                 confidentialityLevel: data.confidentialityLevel || 'public',
                 createdAt: safeToDate(data.createdAt || data.reportedAt),
-                updatedAt: safeToDate(data.updatedAt || data.lastUpdated || data.createdAt)
-              };
+                updatedAt: safeToDate(data.updatedAt || data.lastUpdated || data.createdAt),
+                adminNotes: data.adminNotes || '', // Add handler notes
+                statusHistory: Array.isArray(data.statusHistory) ? data.statusHistory : [],
+              } as any;
               break;
             }
           } catch (error) {
@@ -167,6 +172,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   historyEntry.status === 'dismissed' ? 'Dismissed' :
                                   historyEntry.status;
                 
+                const noteText =
+                  typeof historyEntry.notes === 'string' ? historyEntry.notes.trim() : '';
                 events.push({
                   id: `status_${index}`,
                   stage: ComplaintStage.ACTION_ON_COMPLAINT,
@@ -175,7 +182,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   actor: historyEntry.updatedByName || 'Case Handler',
                   timestamp: historyEntry.updatedAt?.toDate ? historyEntry.updatedAt.toDate() : new Date(historyEntry.updatedAt),
                   attachments: [],
-                  details: historyEntry.notes || `The case status has been changed to ${statusLabel}.`
+                  details:
+                    noteText ||
+                    `The case status has been changed to ${statusLabel}.`
                 });
               });
             }
@@ -289,9 +298,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 actor: decisionActor,
                 timestamp: decisionDate,
                 attachments: [],
-                details: complaint.status === ComplaintStatus.RESOLVED
-                  ? "A final decision has been made on this case. Appropriate disciplinary actions will be implemented."
-                  : "The case has been dismissed after thorough review. The complainant has been notified."
+                details: complaint.adminNotes || (complaint.status === ComplaintStatus.RESOLVED
+                  ? "Case reviewed. Findings sustained with appropriate disciplinary action determined"
+                  : "Case dismissed. Complaint dismissed based on investigation findings")
               });
             }
 
@@ -562,6 +571,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               // Use the actual update date when case was resolved
               const decisionDate = updatedDate > baseDate ? updatedDate : new Date(baseDate.getTime() + 50 * 24 * 60 * 60 * 1000);
               
+              // Get handler notes if available
+              const handlerNotes = (complaint as any).adminNotes;
+              
               activities.push({
                 id: "decision_making",
                 complaintId: complaint.id,
@@ -569,8 +581,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 activityType: "deliberation",
                 description: "Final decision rendered",
                 findings: complaint.status === ComplaintStatus.RESOLVED
-                  ? "Case reviewed. Findings sustained with appropriate disciplinary action determined"
-                  : "Case reviewed. Complaint dismissed based on investigation findings",
+                  ? (handlerNotes || "Case reviewed. Findings sustained with appropriate disciplinary action determined")
+                  : (handlerNotes || "Case dismissed. Complaint dismissed based on investigation findings"),
                 date: decisionDate,
                 attachments: complaint.status === ComplaintStatus.RESOLVED ? ["decision_document.pdf"] : []
               });
@@ -596,6 +608,84 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
     fetchCaseData();
   }, [complaintId]);
+
+  // Subscribe to real-time case activities
+  useEffect(() => {
+    if (!complaintId) return;
+
+    console.log('👂 Subscribing to real activities for complaint:', complaintId);
+    
+    const unsubscribe = CaseActivityService.subscribeToActivities(
+      complaintId,
+      (fetchedActivities) => {
+        console.log(`✅ Received ${fetchedActivities.length} real activities`);
+        setRealActivities(fetchedActivities);
+      }
+    );
+
+    return () => {
+      console.log('🧹 Unsubscribing from activities');
+      unsubscribe();
+    };
+  }, [complaintId]);
+
+  /** Handler investigation / resolution notes from status updates + logged case activities */
+  const displayActivities = useMemo(() => {
+    if (!complaint) return [];
+
+    const statusLabels: Record<string, string> = {
+      pending: 'Pending',
+      submitted: 'Submitted',
+      inProgress: 'In Progress',
+      resolved: 'Resolved',
+      dismissed: 'Dismissed',
+    };
+
+    const fromStatusHistory: InvestigationActivity[] = (
+      Array.isArray((complaint as any).statusHistory) ? (complaint as any).statusHistory : []
+    )
+      .filter((h: { notes?: unknown }) => typeof h.notes === 'string' && (h.notes as string).trim())
+      .map((h: any, i: number) => ({
+        id: `status_history_notes_${i}_${safeToDate(h.updatedAt).getTime()}`,
+        complaintId: complaint.id,
+        investigatorId: h.updatedByName || 'Case Handler',
+        activityType: 'document_review' as const,
+        description: `Status update (${statusLabels[h.previousStatus] || h.previousStatus} → ${statusLabels[h.status] || h.status})`,
+        findings: String(h.notes).trim(),
+        date: safeToDate(h.updatedAt),
+        attachments: [] as string[],
+      }));
+
+    const mapCaseActivityType = (t: ActivityType): InvestigationActivity['activityType'] => {
+      switch (t) {
+        case ActivityType.INTERVIEW:
+          return 'interview';
+        case ActivityType.EVIDENCE_COLLECTION:
+        case ActivityType.INVESTIGATION:
+          return 'evidence_collection';
+        case ActivityType.DELIBERATION:
+          return 'deliberation';
+        default:
+          return 'document_review';
+      }
+    };
+
+    const fromLogged: InvestigationActivity[] = realActivities.map((ra) => ({
+      id: `case_activity_${ra.id}`,
+      complaintId: ra.complaintId,
+      investigatorId: ra.performedByName,
+      activityType: mapCaseActivityType(ra.activityType),
+      description: ra.description,
+      findings: ra.findings,
+      date: ra.createdAt,
+      attachments: ra.attachments || [],
+    }));
+
+    const now = new Date();
+    return [...activities, ...fromStatusHistory, ...fromLogged]
+      .filter((a) => a.date <= now)
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [complaint, activities, realActivities]);
 
   const getStageProgress = () => {
     if (!complaint) return 0;
@@ -882,9 +972,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="text-base font-semibold text-gray-900 mb-1">Investigation Activities</h3>
             <p className="text-xs text-gray-500 mb-5">Detailed log of all activities conducted on your case.</p>
-            {activities.length > 0 ? (
+            {displayActivities.length > 0 ? (
               <div className="space-y-3">
-                {activities.map((activity) => {
+                {displayActivities.map((activity) => {
                   const typeColors: Record<string, string> = {
                     document_review: "bg-blue-50 border-blue-200 text-blue-700",
                     evidence_collection: "bg-amber-50 border-amber-200 text-amber-700",

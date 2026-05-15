@@ -198,9 +198,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="pl-64">
-            <main className="py-6 px-8">
+          {/* Main Content — min height so the panel fills the viewport behind short pages */}
+          <div className="min-h-screen pl-64">
+            <main className="min-h-screen bg-gradient-to-b from-gray-50/90 to-gray-100/80 px-5 py-6 sm:px-8 sm:py-8">
               {children}
             </main>
           </div>

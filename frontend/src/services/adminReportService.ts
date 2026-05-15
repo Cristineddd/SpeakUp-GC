@@ -43,6 +43,7 @@ export interface AdminReport {
   evidenceURLs?: string[];
   evidenceCount?: number;
   evidenceFileNames?: string[];
+  evidenceExternalLinks?: string[]; // External links provided by complainant
   _collectionSource?: string;
   
   // Case Handler Fields
@@ -316,6 +317,15 @@ export class AdminReportService {
       evidenceURLs: data.evidenceURLs || [],
       evidenceCount: data.evidenceCount || 0,
       evidenceFileNames: data.evidenceFileNames || [],
+      evidenceExternalLinks: (() => {
+        const raw = data.evidenceExternalLinks;
+        if (!raw) return [];
+        if (Array.isArray(raw)) {
+          return raw.filter((l: unknown): l is string => typeof l === 'string' && l.trim() !== '');
+        }
+        if (typeof raw === 'string' && raw.trim()) return [raw.trim()];
+        return [];
+      })(),
       
       _collectionSource: collectionName,
 
@@ -849,7 +859,7 @@ export class AdminReportService {
         'investigating': 'preliminary_investigation',
         'under_review': 'action_on_complaint',
         'resolved': 'final_decision',
-        'dismissed': 'closed',
+        'dismissed': 'final_decision', // Dismissed is also a final decision
         'closed': 'closed'
       };
       

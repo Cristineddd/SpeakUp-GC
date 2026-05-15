@@ -27,6 +27,7 @@ import { useToast } from "../../hooks/use-toast";
 import { useNavigate } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import { ComplaintFormData, ComplaintType } from "../../types/complaints";
+import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCategories";
 import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
@@ -502,15 +503,6 @@ const FormalComplaint = () => {
     'Researcher'
   ];
 
-  const complaintTypes = [
-    { value: "sexual_harassment", label: "Sexual Harassment" },
-    { value: "gender_based_harassment", label: "Gender-Based Harassment" },
-    { value: "discrimination", label: "Gender-Based Discrimination" },
-    { value: "bullying", label: "Bullying/Harassment" },
-    { value: "online_harassment", label: "Online Sexual Harassment" },
-    { value: "other", label: "Other" }
-  ];
-
   const handleInputChange = (field: string, value: any) => {
     // Handle date validation for incidentDate
     if (field === "incidentDate") {
@@ -636,7 +628,7 @@ const FormalComplaint = () => {
 
   // Generate title based on complaint type
   const generateTitle = () => {
-    const complaintTypeLabel = complaintTypes.find(t => t.value === formData.type)?.label || "Complaint";
+    const complaintTypeLabel = FORMAL_COMPLAINT_CATEGORIES.find(t => t.value === formData.type)?.label || "Complaint";
     const date = formData.incidentDate ? new Date(formData.incidentDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "";
     
     let generatedTitle = "";
@@ -1485,7 +1477,7 @@ const FormalComplaint = () => {
                 }}
                 className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
-                {complaintTypes.map(opt => (
+                {FORMAL_COMPLAINT_CATEGORIES.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
@@ -1850,7 +1842,7 @@ const FormalComplaint = () => {
               <div className="p-4 bg-white">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Incident</p>
                 <p className="text-sm font-medium text-gray-900">{formData.title}</p>
-                <p className="text-sm text-gray-500 mt-1">{complaintTypes.find(t => t.value === formData.type)?.label} · {formData.incidentDate}</p>
+                <p className="text-sm text-gray-500 mt-1">{FORMAL_COMPLAINT_CATEGORIES.find(t => t.value === formData.type)?.label} · {formData.incidentDate}</p>
                 <p className="text-sm text-gray-500">{formData.incidentLocation}</p>
                 <p className="text-sm text-gray-700 mt-2 leading-relaxed">{formData.description}</p>
               </div>

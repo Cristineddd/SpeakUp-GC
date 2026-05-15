@@ -10,7 +10,7 @@ import { HandlerChatInterface } from '../../components/chat/HandlerChatInterface
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
-import { ArrowLeft, Loader2, MessageCircle, User, Shield, FileText, MapPin, Calendar, Clock, Mail, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
@@ -225,55 +225,85 @@ export default function CaseChat() {
   }
 
   // Show chat interface for all users
+  // fixed inset-0: pins the shell to the layout viewport so header + bottom input stay stable across browser zoom (h-screen/100vh alone often drifts).
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Simple Back Button Only - No Redundant Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 shadow-lg flex-shrink-0">
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4">
-          <div className="flex items-start sm:items-center gap-2 sm:gap-3 w-full">
+    <div className="fixed inset-0 z-10 flex flex-col min-h-0 overflow-hidden bg-gradient-to-br from-green-50 via-white to-emerald-50">
+      {/* Animated dots pattern background */}
+      <div
+        className="absolute inset-0 opacity-30 animate-pulse pointer-events-none"
+        style={{ 
+          backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+          backgroundSize: "32px 32px",
+          animationDuration: "4s"
+        }}
+      />
+      {/* Green glow effects */}
+      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1a7a45]/8 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
+      <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/6 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
+      {/* Case chat header — top-aligned so icon/title/meta read as one block (avoids “floating” icon vs two lines) */}
+      <div className="relative z-50 flex-shrink-0 border-b border-gray-200/70 bg-white/95 backdrop-blur-md shadow-sm">
+        <div className="mx-auto max-w-6xl px-3 py-2 sm:px-4 sm:py-2.5">
+          <div className="flex items-start gap-2.5 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
-              className="rounded-full hover:bg-gray-100 transition-colors border border-gray-200 flex-shrink-0 h-10 w-10"
+              aria-label="Back"
+              className="mt-px h-9 w-9 shrink-0 rounded-full text-gray-700 hover:bg-gray-100"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base sm:text-2xl font-bold text-gray-900 truncate leading-tight">
-                  {complaintTitle || 'Case Chat'}
+            <div
+              className="mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1a7a45] to-emerald-600 shadow-sm ring-1 ring-black/5"
+              aria-hidden
+            >
+              <MessageCircle className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1 pt-px">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <h1 className="max-w-full text-[15px] font-semibold leading-snug tracking-tight text-gray-900 sm:text-base">
+                  <span className="line-clamp-2 sm:line-clamp-1 sm:truncate">
+                    {complaintTitle || 'Case Chat'}
+                  </span>
                 </h1>
-                <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
-                  {complaint && (
-                    <div className="flex gap-1 sm:gap-2 flex-wrap">
-                      <Badge className="bg-green-100 text-green-800 border-green-200 font-medium px-1.5 py-0.5 sm:px-3 sm:py-1 text-xs whitespace-nowrap">
-                        {complaint.category}
-                      </Badge>
-                      <Badge className={`font-medium px-1.5 py-0.5 sm:px-3 sm:py-1 text-xs whitespace-nowrap ${getStatusColor(complaint.status)}`}>
-                        {formatStatus(complaint.status)}
-                      </Badge>
-                      {isHandler && (
-                        <Badge className={`font-medium px-1.5 py-0.5 sm:px-3 sm:py-1 text-xs flex items-center gap-0.5 sm:gap-1 whitespace-nowrap ${getSeverityColor(complaint.severity)}`}>
-                          <Shield className="h-3 w-3" />
-                          <span className="hidden sm:inline">{complaint.severity}</span>
-                          <span className="sm:hidden">{complaint.severity.charAt(0).toUpperCase()}</span>
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
+                {complaint && (
+                  <Badge
+                    className={`shrink-0 text-[10px] font-semibold ${getStatusColor(complaint.status)}`}
+                  >
+                    {formatStatus(complaint.status)}
+                  </Badge>
+                )}
               </div>
+              {complaint && (
+                <p className="mt-0.5 text-[11px] leading-tight text-gray-500 sm:text-xs">
+                  <span className="break-words">{complaint.category}</span>
+                  {isHandler && complaint.severity && (
+                    <>
+                      <span className="mx-1.5 text-gray-300" aria-hidden>
+                        ·
+                      </span>
+                      <span
+                        className={
+                          complaint.severity === 'critical'
+                            ? 'font-medium text-red-600'
+                            : complaint.severity === 'high'
+                              ? 'font-medium text-orange-600'
+                              : 'font-medium text-gray-600'
+                        }
+                      >
+                        {complaint.severity}
+                      </span>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Chat Interface */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0">
         {isHandler ? (
           <HandlerChatInterface
             complaintId={complaintId}

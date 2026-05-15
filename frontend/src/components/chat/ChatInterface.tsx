@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from '../../compat/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { MessageService } from '../../services/messageService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
@@ -22,7 +21,6 @@ import {
   User,
   Shield,
   ChevronDown,
-  FileText,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { format, isSameDay } from 'date-fns';
@@ -40,7 +38,6 @@ export function ChatInterface({
   onClose,
   className = '',
 }: ChatInterfaceProps) {
-  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -99,8 +96,12 @@ export function ChatInterface({
               }
             });
             
-            // Scroll to bottom only if user is already at bottom (Messenger-like behavior)
-            setTimeout(() => scrollToBottom(), 100);
+            // Auto-scroll to bottom on new messages
+            requestAnimationFrame(() => {
+              if (messagesContainerRef.current) {
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+              }
+            });
           }
         );
 
@@ -145,12 +146,12 @@ export function ChatInterface({
     };
   }, [complaintId, currentUser, userRole]);
 
-  // Scroll to bottom (only if user is at bottom)
-  const scrollToBottom = () => {
-    if (!isUserScrolling && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  };
+  }, [messages]);
 
   // Check if user is at the bottom
   const handleScroll = () => {
@@ -194,6 +195,16 @@ export function ChatInterface({
         currentUser.displayName || currentUser.email || 'User',
         false
       );
+
+      // Scroll to bottom after sending
+      setIsUserScrolling(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+          }
+        });
+      });
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -300,68 +311,52 @@ export function ChatInterface({
   const messageGroups = groupMessagesByDate();
 
   return (
-    <Card className={`flex flex-col h-screen ${className}`}>
-      <CardHeader className="border-b p-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <MessageCircle className="h-4 w-4 text-blue-600" />
-            </div>
-            <div>
-              {/* SIMPLE STATUS INFO LANG - WALANG TITLE */}
-              <div className="flex items-center gap-2">
-                {/* Current user role */}
-                <Badge 
-                  variant="outline" 
-                  className={`text-xs ${
-                    isHandler 
-                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                      : 'bg-green-50 text-green-700 border-green-200'
-                  }`}
-                >
-                  {isHandler ? (
-                    <Shield className="h-3 w-3 mr-1" />
-                  ) : (
-                    <User className="h-3 w-3 mr-1" />
-                  )}
-                  {isHandler ? 'Case Handler' : 'Complainant'}
-                </Badge>
+    <Card className={`flex flex-col h-full bg-transparent overflow-hidden ${className}`}>
+      {/* Only show header when used as standalone (with onClose) */}
+      {onClose && (
+        <CardHeader className="border-b px-3 py-2.5 flex-shrink-0 bg-white/90 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#1a7a45] to-emerald-600 rounded-lg flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-[11px] px-2 py-0.5 ${
+                        isHandler 
+                          ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                          : 'bg-green-50 text-green-700 border-green-200'
+                      }`}
+                    >
+                      {isHandler ? (
+                        <Shield className="h-3 w-3 mr-0.5" />
+                      ) : (
+                        <User className="h-3 w-3 mr-0.5" />
+                      )}
+                      {isHandler ? 'Handler' : 'Complainant'}
+                    </Badge>
 
-                {/* Handler info for complainants only */}
-                {isComplainant && chatRoom.handlerId && chatRoom.handlerName && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>•</span>
-                    <span>Handler: {chatRoom.handlerName}</span>
+                    {/* Handler info for complainants only */}
+                    {isComplainant && chatRoom.handlerId && chatRoom.handlerName && (
+                      <span className="text-[11px] text-gray-600">{chatRoom.handlerName}</span>
+                    )}
+
+                    {/* Pending status for complainants */}
+                    {isComplainant && !chatRoom.handlerId && (
+                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 bg-yellow-50 text-yellow-700">
+                        <AlertCircle className="h-3 w-3 mr-0.5" />
+                        Waiting
+                      </Badge>
+                    )}
                   </div>
-                )}
-
-                {/* Pending status for complainants */}
-                {isComplainant && !chatRoom.handlerId && (
-                  <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Awaiting Handler
-                  </Badge>
-                )}
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* File Formal Complaint Button */}
-            {isComplainant && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-white text-xs px-2 whitespace-nowrap flex items-center gap-1 h-8"
-                onClick={() => navigate('/complaints/new')}
-                title="File a formal complaint"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">File Complaint</span>
-                <span className="sm:hidden">File</span>
-              </Button>
-            )}
             
-            {onClose && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -370,48 +365,79 @@ export function ChatInterface({
               >
                 <X className="h-5 w-5" />
               </Button>
-            )}
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      )}
 
       {/* Messages area */}
-      <div className="flex-1 relative">
+      <div className="flex-1 min-h-0 relative">
         <div 
           ref={messagesContainerRef}
           onScroll={handleScroll}
-          className="absolute inset-0 overflow-y-auto p-3 space-y-0.5 bg-gradient-to-b from-gray-50 to-white" 
+          className="absolute inset-0 overflow-y-auto px-3 py-3 space-y-1 bg-gradient-to-b from-green-50/30 to-white"
         >
         {messageGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-2 shadow-lg">
-              <MessageCircle className="h-8 w-8 text-blue-600" />
+          <div className="flex flex-col items-center justify-center h-full text-center py-6">
+            <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-emerald-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
+              <MessageCircle className="h-7 w-7 text-[#1a7a45]" />
             </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
               No Messages Yet
             </h3>
             <p className="text-sm text-gray-600 max-w-sm leading-relaxed">
               {isHandler 
                 ? 'Start the conversation by introducing yourself to the complainant.'
-                : 'Start a conversation by sending a message below.'}
+                : 'Welcome to the case chat. A handler will respond to you shortly.'}
             </p>
           </div>
         ) : (
           <>
-            {messageGroups.map((group, groupIndex) => (
-              <div key={groupIndex}>
-                <DateSeparator date={group.date} />
-                {group.messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    isOwn={message.senderId === currentUser?.uid}
-                    showSenderName={true}
-                    isGroupChat={chatRoom.participantIds.length > 2}
-                  />
-                ))}
-              </div>
-            ))}
+            {messageGroups.map((group, groupIndex) => {
+              const groupedMessages = group.messages;
+              
+              // Helper to convert timestamp to Date
+              const toDate = (timestamp: any): Date => {
+                if (!timestamp) return new Date();
+                if (timestamp.toDate) return timestamp.toDate();
+                return new Date(timestamp);
+              };
+              
+              // Determine group position for each message
+              const getGroupPosition = (index: number): 'single' | 'first' | 'middle' | 'last' => {
+                const currentMsg = groupedMessages[index];
+                const prevMsg = index > 0 ? groupedMessages[index - 1] : null;
+                const nextMsg = index < groupedMessages.length - 1 ? groupedMessages[index + 1] : null;
+                
+                // Check if messages are from same sender and within 2 minutes
+                const isSameSenderAsPrev = prevMsg && prevMsg.senderId === currentMsg.senderId &&
+                  Math.abs(toDate(currentMsg.createdAt).getTime() - toDate(prevMsg.createdAt).getTime()) < 120000;
+                          
+                const isSameSenderAsNext = nextMsg && nextMsg.senderId === currentMsg.senderId &&
+                  Math.abs(toDate(nextMsg.createdAt).getTime() - toDate(currentMsg.createdAt).getTime()) < 120000;
+                
+                if (!isSameSenderAsPrev && !isSameSenderAsNext) return 'single';
+                if (isSameSenderAsPrev && isSameSenderAsNext) return 'middle';
+                if (!isSameSenderAsPrev && isSameSenderAsNext) return 'first';
+                return 'last';
+              };
+              
+              return (
+                <div key={groupIndex}>
+                  <DateSeparator date={group.date} />
+                  {groupedMessages.map((message, index) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isOwn={message.senderId === currentUser?.uid}
+                      showSenderName={true}
+                      isGroupChat={chatRoom.participantIds.length > 2}
+                      groupPosition={getGroupPosition(index)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
             
             {/* Typing indicator */}
             {typingUsers.length > 0 && (
@@ -428,12 +454,13 @@ export function ChatInterface({
         {isUserScrolling && (
           <Button
             onClick={() => {
-              if (messagesEndRef.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                setIsUserScrolling(false);
+              const el = messagesContainerRef.current;
+              if (el) {
+                el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
               }
+              setIsUserScrolling(false);
             }}
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-[#1a7a45] hover:bg-emerald-700 text-white"
             size="sm"
           >
             <ChevronDown className="h-4 w-4 mr-1" />
@@ -443,7 +470,7 @@ export function ChatInterface({
       </div>
 
       {/* Input area */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <ChatInput
           onSendMessage={handleSendMessage}
           onTyping={handleTyping}

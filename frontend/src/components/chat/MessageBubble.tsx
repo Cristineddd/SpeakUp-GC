@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showSenderName?: boolean;
   isGroupChat?: boolean;
+  groupPosition?: 'single' | 'first' | 'middle' | 'last';
 }
 
 export function MessageBubble({
@@ -24,6 +25,7 @@ export function MessageBubble({
   isOwn,
   showSenderName = true,
   isGroupChat = false,
+  groupPosition = 'single',
 }: MessageBubbleProps) {
   
   const formatTime = (timestamp: any): string => {
@@ -40,13 +42,13 @@ export function MessageBubble({
       return <AlertCircle className="h-3 w-3 text-red-500" />;
     }
     if (message.status === 'sending') {
-      return <Check className="h-3 w-3 text-gray-400 animate-pulse" />;
+      return <Check className="h-3 w-3 text-emerald-200 animate-pulse" />;
     }
     if (message.status === 'read') {
-      return <CheckCheck className="h-3 w-3 text-blue-500" />;
+      return <CheckCheck className="h-3 w-3 text-emerald-200" />;
     }
     if (message.status === 'delivered' || message.status === 'sent') {
-      return <CheckCheck className="h-3 w-3 text-gray-400" />;
+      return <CheckCheck className="h-3 w-3 text-emerald-200" />;
     }
     return null;
   };
@@ -61,17 +63,43 @@ export function MessageBubble({
   // System message (centered)
   if (message.type === 'system') {
     return (
-      <div className="flex justify-center my-4">
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 text-gray-700 text-xs font-medium px-5 py-2 rounded-full max-w-md text-center border border-blue-100 shadow-sm">
+      <div className="flex justify-center my-2">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 text-gray-700 text-[11px] font-medium px-4 py-1.5 rounded-full max-w-md text-center border border-green-100 shadow-sm">
           {message.content}
         </div>
       </div>
     );
   }
 
+  // Determine spacing based on group position
+  const getMarginBottom = () => {
+    if (groupPosition === 'last' || groupPosition === 'single') return 'mb-3';
+    return 'mb-[2px]'; // 2px gap within group for tighter feel
+  };
+
+  // Get border radius based on group position (for own messages on right)
+  const getBorderRadius = () => {
+    if (!isOwn) return 'rounded-[18px] rounded-bl-md'; // Received messages keep original style
+    
+    switch (groupPosition) {
+      case 'first':
+        return 'rounded-[18px] rounded-br-[4px]';
+      case 'middle':
+        return 'rounded-tl-[18px] rounded-bl-[4px] rounded-tr-[4px] rounded-br-[18px]';
+      case 'last':
+        return 'rounded-tl-[18px] rounded-bl-[4px] rounded-tr-[18px] rounded-br-[18px]';
+      case 'single':
+      default:
+        return 'rounded-[18px] rounded-br-[4px]';
+    }
+  };
+
+  // Only show timestamp on last or single message
+  const showTimestamp = groupPosition === 'last' || groupPosition === 'single';
+
   return (
-    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4 animate-fadeIn`}>
-      <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
+    <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${getMarginBottom()} animate-fadeIn`}>
+      <div className={`max-w-[88%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
         {/* Sender name only if needed */}
         {!isOwn && showSenderName && isGroupChat && (
           <div className="text-xs font-semibold mb-1 ml-3 text-gray-600 flex items-center gap-1">
@@ -83,17 +111,18 @@ export function MessageBubble({
         {/* Message bubble with modern design */}
         <div
           className={`
-            px-4 py-3 rounded-2xl shadow-md transition-all duration-300 hover:shadow-lg
+            px-[14px] py-[10px] shadow-md transition-all duration-200
+            ${getBorderRadius()}
             ${isOwn
-              ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-md'
-              : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
+              ? 'bg-[#1a8f57] text-white'
+              : 'bg-white text-gray-800 border border-gray-100'
             }
             ${message.status === 'failed' ? 'opacity-60 border-2 border-red-300' : ''}
           `}
         >
           {/* Text content */}
           {message.content && (
-            <p className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${isOwn ? 'text-white' : 'text-gray-800'}`}>
+            <p className={`whitespace-pre-wrap break-words text-[16px] leading-relaxed ${isOwn ? 'text-white' : 'text-gray-800'}`}>
               {message.content}
             </p>
           )}
@@ -121,13 +150,13 @@ export function MessageBubble({
                     key={attachment.id}
                     className={`
                       flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:scale-[1.02]
-                      ${isOwn ? 'bg-blue-600/40 backdrop-blur-sm' : 'bg-gray-50 border border-gray-200'}
+                      ${isOwn ? 'bg-emerald-700/40 backdrop-blur-sm' : 'bg-gray-50 border border-gray-200'}
                     `}
                   >
                     {/* File icon */}
                     <div className={`
                       w-12 h-12 flex items-center justify-center rounded-lg shadow-sm
-                      ${isOwn ? 'bg-blue-700/50' : 'bg-blue-50'}
+                      ${isOwn ? 'bg-emerald-800/50' : 'bg-blue-50'}
                     `}>
                       <span className="text-2xl">{getFileIcon(attachment.type)}</span>
                     </div>
@@ -142,7 +171,7 @@ export function MessageBubble({
                       </p>
                       <p className={`
                         text-xs mt-0.5
-                        ${isOwn ? 'text-blue-100' : 'text-gray-500'}
+                        ${isOwn ? 'text-emerald-100' : 'text-gray-500'}
                       `}>
                         {formatFileSize(attachment.size)}
                       </p>
@@ -156,7 +185,7 @@ export function MessageBubble({
                       rel="noopener noreferrer"
                       className={`
                         p-2 rounded-lg transition-colors
-                        ${isOwn ? 'hover:bg-blue-700/50' : 'hover:bg-gray-200'}
+                        ${isOwn ? 'hover:bg-emerald-800/50' : 'hover:bg-gray-200'}
                       `}
                     >
                       <Download className={`
@@ -170,20 +199,17 @@ export function MessageBubble({
             </div>
           )}
 
-          {/* Timestamp with status icon */}
-          <div className={`
-            flex items-center gap-1.5 mt-2
-            ${isOwn ? 'justify-end' : 'justify-start'}
-          `}>
-            <span className={`
-              text-xs font-medium
-              ${isOwn ? 'text-blue-100' : 'text-gray-500'}
-            `}>
+        </div>
+        
+        {/* Timestamp below bubble - only for last or single message */}
+        {showTimestamp && (
+          <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+            <span className="text-[10px] text-gray-500">
               {formatTime(message.createdAt)}
             </span>
             {isOwn && getStatusIcon()}
           </div>
-        </div>
+        )}
 
         {/* Failed message retry option */}
         {message.status === 'failed' && isOwn && (
@@ -214,16 +240,16 @@ export function TypingIndicator({ userNames }: TypingIndicatorProps) {
       : `${userNames[0]} and ${userNames.length - 1} others are typing`;
 
   return (
-    <div className="flex justify-start mb-4 animate-fadeIn">
-      <div className="max-w-[70%] items-start flex flex-col">
-        <div className="px-5 py-3 rounded-2xl rounded-bl-md bg-white border border-gray-100 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <span className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-2.5 h-2.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+    <div className="flex justify-start mb-3 animate-fadeIn">
+      <div className="max-w-[88%] items-start flex flex-col">
+        <div className="px-[14px] py-[10px] rounded-[18px] rounded-bl-md bg-white border border-gray-100 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
-            <span className="text-sm text-gray-600 font-medium">{displayText}</span>
+            <span className="text-[13px] text-gray-600 font-medium">{displayText}</span>
           </div>
         </div>
       </div>
@@ -254,13 +280,13 @@ export function DateSeparator({ date }: DateSeparatorProps) {
   };
 
   return (
-    <div className="flex items-center justify-center my-6">
+    <div className="flex items-center justify-center my-3">
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-200"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-500 rounded-full shadow-sm border border-gray-200">
+          <span className="bg-gray-50 px-3 py-1 text-[11px] font-semibold text-gray-500 rounded-full shadow-sm border border-gray-200">
             {formatDate(date)}
           </span>
         </div>

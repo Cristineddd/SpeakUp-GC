@@ -211,15 +211,15 @@ export function ChatInput({
   const canSend = (message.trim().length > 0 || attachments.length > 0) && !sending;
 
   return (
-    <div className="border-t bg-white">
+    <div className="border-t bg-white/95 backdrop-blur-sm">
       {/* Attachments preview */}
       {attachments.length > 0 && (
-        <div className="px-4 pt-3 pb-2 border-b bg-gray-50">
-          <div className="flex flex-wrap gap-2">
+        <div className="border-b bg-green-50/30 px-4 pt-3 pb-2">
+          <div className="max-w-6xl mx-auto flex flex-wrap gap-2">
             {attachments.map((attachment) => (
               <div
                 key={attachment.id}
-                className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 max-w-xs"
+                className="flex items-center gap-2 bg-white border-2 border-green-100 rounded-xl px-3 py-2 max-w-xs shadow-sm"
               >
                 {/* File icon or image preview */}
                 {attachment.type.startsWith('image/') ? (
@@ -259,7 +259,8 @@ export function ChatInput({
       )}
 
       {/* Input area */}
-      <div className="flex items-end gap-2 p-4">
+      <div className="px-4 py-3">
+        <div className="max-w-6xl mx-auto flex items-center gap-2">
         {/* File attachment button */}
         {allowAttachments && (
           <>
@@ -278,8 +279,9 @@ export function ChatInput({
               onClick={() => fileInputRef.current?.click()}
               disabled={disabled || attachments.length >= maxAttachments}
               title="Attach file"
+              className="h-10 w-10 hover:bg-green-50 transition-colors flex-shrink-0"
             >
-              <Paperclip className="h-5 w-5 text-gray-500" />
+              <Paperclip className="h-5 w-5 text-gray-500 hover:text-[#1a7a45]" />
             </Button>
           </>
         )}
@@ -294,15 +296,17 @@ export function ChatInput({
             placeholder={placeholder}
             disabled={disabled || sending}
             className="
-              w-full px-4 py-2 pr-12
-              border border-gray-300 rounded-lg
-              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+              w-full px-4 py-3 pr-12
+              border-2 border-gray-200 rounded-2xl
+              focus:outline-none focus:ring-2 focus:ring-[#1a7a45] focus:border-[#1a7a45]
               resize-none
-              max-h-32
+              max-h-28
               disabled:opacity-50 disabled:cursor-not-allowed
+              transition-all
+              bg-gray-50/50 hover:bg-white focus:bg-white
             "
             rows={1}
-            style={{ minHeight: '44px' }}
+            style={{ minHeight: '40px' }}
           />
           
           {/* Character count */}
@@ -322,7 +326,7 @@ export function ChatInput({
           onClick={handleSend}
           disabled={!canSend || disabled}
           size="icon"
-          className="flex-shrink-0 h-10 w-10"
+          className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-[#1a7a45] to-emerald-600 hover:from-emerald-700 hover:to-[#1a7a45] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none rounded-xl"
         >
           {sending ? (
             <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
@@ -330,11 +334,7 @@ export function ChatInput({
             <Send className="h-5 w-5" />
           )}
         </Button>
-      </div>
-
-      {/* Helper text */}
-      <div className="px-4 pb-2 text-xs text-gray-500">
-        Press Enter to send, Shift+Enter for new line
+        </div>
       </div>
     </div>
   );

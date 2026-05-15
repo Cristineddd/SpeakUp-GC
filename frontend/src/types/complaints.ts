@@ -75,6 +75,7 @@ export interface Complaint {
   confidentialityLevel: 'public' | 'restricted' | 'confidential';
   createdAt: Date;
   updatedAt: Date;
+  adminNotes?: string; // Handler notes when updating status
 }
 
 // Evidence and Documents

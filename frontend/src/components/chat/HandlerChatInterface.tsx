@@ -10,7 +10,6 @@ import { useToast } from '../../hooks/use-toast';
 import {
   MessageCircle,
   X,
-  CheckCircle,
   AlertCircle,
   Loader2,
   User,
@@ -19,14 +18,12 @@ import {
   Calendar,
   Clock,
   Flag,
-  Shield,
   Mail,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
-import type { AdminReport } from '../../services/adminReportService';
-import { format, isSameDay } from 'date-fns';
+import { isSameDay } from 'date-fns';
 
 // Extended interface to include all possible properties
 interface ExtendedAdminReport {
@@ -93,11 +90,12 @@ export function HandlerChatInterface({
   const incidentLocation = getSafeProperty(complaint, 'location', 'incidentLocation', 'Not specified');
   const createdAt = getSafeProperty(complaint, 'reportedAt', 'createdAt', '');
 
-  // Scroll to bottom function
+  // Scroll only the messages pane — scrollIntoView() on the anchor can scroll the
+  // window/document and leave a gap under h-screen layouts.
   const scrollToBottom = useCallback(() => {
-    if (!isUserScrolling && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    const el = messagesContainerRef.current;
+    if (!el || isUserScrolling) return;
+    el.scrollTop = el.scrollHeight;
   }, [isUserScrolling]);
 
   // Update ref whenever scrollToBottom changes
@@ -405,11 +403,13 @@ export function HandlerChatInterface({
   const messageGroups = groupMessagesByDate();
 
   return (
-    <div className={`flex flex-col lg:grid lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 h-full ${className}`}>
+    <div
+      className={`flex h-full min-h-0 min-w-0 w-full flex-col gap-2 overflow-hidden sm:gap-3 lg:grid lg:h-full lg:grid-cols-4 lg:items-stretch lg:gap-4 lg:overflow-hidden ${className}`}
+    >
       {/* Case Details Sidebar - Hidden on mobile, visible on lg */}
-      <div className="hidden lg:flex lg:col-span-1 flex-col space-y-3 overflow-y-auto">
+      <div className="hidden min-h-0 flex-col gap-3 overflow-y-auto overscroll-y-contain lg:col-span-1 lg:flex lg:h-full lg:max-h-full">
         {/* Case Info Card */}
-        <Card className="shadow-sm border flex-shrink-0">
+        <Card className="shadow-sm border shrink-0">
           <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
@@ -499,7 +499,7 @@ export function HandlerChatInterface({
         </Card>
 
         {/* Complainant Info Card */}
-        <Card className="shadow-sm border flex-shrink-0">
+        <Card className="shadow-sm border shrink-0">
           <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
             <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
               <User className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
@@ -527,36 +527,32 @@ export function HandlerChatInterface({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 lg:col-span-3 flex flex-col min-h-0">
-        <Card className="flex flex-col flex-1 shadow-sm border-0">
-          {/* Chat Header */}
-          <CardHeader className="border-b px-2 sm:px-4 py-2 sm:py-3 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-base sm:text-lg font-semibold truncate">
-                {complaint.title || 'Case Discussion'}
-              </CardTitle>
-              {onClose && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="h-7 w-7 p-0 flex-shrink-0"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:col-span-3">
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-0 shadow-sm">
+          {onClose && (
+            <div className="flex shrink-0 justify-end border-b bg-white/95 px-2 py-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-8 w-8 p-0"
+                aria-label="Close chat"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </CardHeader>
+          )}
 
           {/* Messages area */}
-          <div className="flex-1 relative min-h-0">
+          <div className="flex-1 relative min-h-0 min-w-0">
             <div 
               ref={messagesContainerRef}
               onScroll={handleScroll}
-              className="absolute inset-0 overflow-y-auto p-6 space-y-3 bg-gradient-to-b from-gray-50 to-white"
+              className="absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-gradient-to-b from-gray-50 to-white"
             >
+              <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-4 py-4 sm:px-5">
             {messageGroups.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                   <MessageCircle className="h-10 w-10 text-blue-600" />
                 </div>
@@ -566,7 +562,7 @@ export function HandlerChatInterface({
                 </p>
               </div>
             ) : (
-              <>
+              <div className="flex flex-1 flex-col space-y-3">
                 {messageGroups.map((group, groupIndex) => (
                   <div key={groupIndex}>
                     <DateSeparator date={group.date} />
@@ -588,20 +584,22 @@ export function HandlerChatInterface({
                 )}
                 
                 <div ref={messagesEndRef} />
-              </>
+              </div>
             )}
+              </div>
             </div>
 
             {/* Scroll to bottom button */}
             {isUserScrolling && (
               <Button
                 onClick={() => {
-                  if (messagesEndRef.current) {
-                    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-                    setIsUserScrolling(false);
+                  const el = messagesContainerRef.current;
+                  if (el) {
+                    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
                   }
+                  setIsUserScrolling(false);
                 }}
-                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+                className="absolute bottom-[5.75rem] left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#1a7a45] text-white shadow-lg hover:bg-emerald-700 sm:bottom-24"
                 size="sm"
               >
                 <ChevronDown className="h-4 w-4 mr-1" />
@@ -611,13 +609,15 @@ export function HandlerChatInterface({
           </div>
 
           {/* Input area */}
-          <div className="flex-shrink-0 border-t bg-white p-4">
+          <div className="shrink-0 border-t bg-white">
+            <div className="max-w-3xl mx-auto w-full px-4 sm:px-5 py-3">
             <ChatInput
               onSendMessage={handleSendMessage}
               onTyping={handleTyping}
               disabled={!chatRoom}
               placeholder="Type a message..."
             />
+            </div>
           </div>
         </Card>
       </div>

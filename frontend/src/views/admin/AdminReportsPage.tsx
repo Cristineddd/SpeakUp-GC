@@ -66,6 +66,7 @@ import { EscalationControls } from "../../components/admin/EscalationControls";
 import { ESCALATION_LABELS } from "../../types/escalation";
 import type { EscalationLevel } from "../../types/escalation";
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
+import { FORMAL_COMPLAINT_CATEGORIES, getFormalComplaintCategoryLabel } from "../../constants/formalComplaintCategories";
 
 // Safe data access helper
 const safeGet = (obj: any, path: string, fallback: any = 'N/A') => {
@@ -516,7 +517,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       const tableData = filteredReports.map(report => [
         safeGet(report, 'id', '').substring(0, 6) + '...',
         safeGet(report, 'title', 'No Title').substring(0, 30) + (safeGet(report, 'title', '').length > 30 ? '...' : ''),
-        safeGet(report, 'category', 'N/A'),
+        getFormalComplaintCategoryLabel(String(safeGet(report, 'category', ''))),
         safeGet(report, 'status', 'N/A').replace(/([A-Z])/g, ' $1').trim(),
         safeGet(report, 'userName', 'Unknown').substring(0, 15) + (safeGet(report, 'userName', '').length > 15 ? '...' : ''),
         safeGet(report, 'location', 'N/A').substring(0, 20) + (safeGet(report, 'location', '').length > 20 ? '...' : ''),
@@ -807,7 +808,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 </div>
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
                   <p className="text-sm text-gray-600 font-medium mb-2">Category</p>
-                  <p className="text-sm font-semibold">{safeGet(selectedReport, 'category', 'N/A')}</p>
+                  <p className="text-sm font-semibold">
+                    {getFormalComplaintCategoryLabel(String(safeGet(selectedReport, 'category', '')))}
+                  </p>
                 </div>
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
                   <p className="text-sm text-gray-600 font-medium mb-2">Handler</p>
@@ -1030,20 +1033,23 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 {(() => {
                   // Use cached version to avoid repetitive processing
                   const evidenceUrls = getCachedEvidenceUrls(selectedReport);
-                  const externalLinks = safeGet(selectedReport, 'evidenceExternalLinks', []);
+                  const externalLinks = safeGet(selectedReport, 'evidenceExternalLinks', []) || [];
                   const hasExternalLinks = Array.isArray(externalLinks) && externalLinks.length > 0;
                   
-                  // Debug logging
+                  // Enhanced debug logging
                   console.log('📎 Evidence Debug:', {
                     evidenceUrls: evidenceUrls.length,
                     externalLinks: externalLinks,
+                    externalLinksLength: externalLinks?.length || 0,
                     hasExternalLinks: hasExternalLinks,
-                    reportId: selectedReport?.id
+                    reportId: selectedReport?.id,
+                    rawEvidence: selectedReport.evidenceExternalLinks,
+                    fullReport: selectedReport
                   });
                   
                   if (evidenceUrls.length === 0 && !hasExternalLinks) {
                     return (
-                      <p className="text-sm text-gray-500 italic">No attachments found</p>
+                      <p className="text-sm text-gray-500 italic">No attachments or external links found</p>
                     );
                   }
                   
@@ -1139,32 +1145,16 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                                       View
                                     </Button>
                                   ) : (
-                                    // Other files: Link opens in new tab
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="flex-1 h-7 sm:h-8 text-xs"
-                                      asChild
+                                    // Other files: Direct download
+                                    <a
+                                      href={url}
+                                      download={fileName}
+                                      className="flex-1 h-7 sm:h-8 text-xs flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
                                     >
-                                      <a href={url} target="_blank" rel="noopener noreferrer">
-                                        <Eye className="h-3 w-3 mr-1" />
-                                        View
-                                      </a>
-                                    </Button>
+                                      <Download className="h-3 w-3 mr-1" />
+                                      Download
+                                    </a>
                                   )}
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 sm:h-8 px-1.5 sm:px-2"
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = url;
-                                      link.download = fileName;
-                                      link.click();
-                                    }}
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
                                 </div>
                               </div>
                             )}
@@ -1302,8 +1292,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
     };
   };
 
+  const reportCardClass =
+    'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-8 pb-10">
       {/* Fullscreen Image Viewer Modal */}
       {fullscreenImage && (
         <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex flex-col items-center justify-center" onClick={() => setFullscreenImage(null)}>
@@ -1349,67 +1342,67 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
       {/* Handler Dashboard Stats - ONLY for handlers, NOT for admins */}
       {!isAdmin && isHandler && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Cases</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+        <div className="mb-2 grid grid-cols-1 gap-4 md:grid-cols-5">
+          <Card className={reportCardClass}>
+            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-950/80">Total Cases</CardTitle>
+              <FileText className="h-4 w-4 text-[#1a7a45]" aria-hidden />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getHandlerStats()?.total || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.total || 0}</div>
+              <p className="mt-1 text-xs text-emerald-900/55">
                 Assigned to you
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-500" />
+          <Card className={reportCardClass}>
+            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-950/80">Pending Review</CardTitle>
+              <Clock className="h-4 w-4 text-[#1a7a45]/75" aria-hidden />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getHandlerStats()?.pending || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.pending || 0}</div>
+              <p className="mt-1 text-xs text-emerald-900/55">
                 Awaiting your review
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
+          <Card className={reportCardClass}>
+            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-950/80">In Progress</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-[#1a7a45]/70" aria-hidden />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getHandlerStats()?.inProgress || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.inProgress || 0}</div>
+              <p className="mt-1 text-xs text-emerald-900/55">
                 Currently handling
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Resolved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+          <Card className={reportCardClass}>
+            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-950/80">Resolved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-[#1a7a45]" aria-hidden />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getHandlerStats()?.resolved || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.resolved || 0}</div>
+              <p className="mt-1 text-xs text-emerald-900/55">
                 Completed cases
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Escalated</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+          <Card className={reportCardClass}>
+            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+              <CardTitle className="text-sm font-medium text-emerald-950/80">Escalated</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-emerald-900/65" aria-hidden />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{getHandlerStats()?.escalated || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.escalated || 0}</div>
+              <p className="mt-1 text-xs text-emerald-900/55">
                 Elevated priority
               </p>
             </CardContent>
@@ -1418,69 +1411,76 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       )}
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
+      <div className="rounded-xl border border-emerald-100/90 bg-gradient-to-br from-emerald-50/50 via-white to-white px-5 py-5 shadow-sm ring-1 ring-emerald-950/[0.03] sm:px-6">
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-[#1a7a45]">Case intake</p>
+          <h1 className="text-xl font-bold tracking-tight text-emerald-950 sm:text-2xl md:text-3xl">
             {isHandler ? 'My Assigned Cases' : 'Reports Management'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="max-w-2xl text-sm leading-relaxed text-emerald-900/60">
             {isHandler 
               ? 'View and manage cases assigned to you'
               : 'View and manage all incident reports submitted by users'
             }
           </p>
         </div>
-        <div className="flex gap-2">
-        </div>
       </div>
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className={reportCardClass}>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalReports}</p>
-                  <p className="text-sm text-gray-600">Total Reports</p>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.totalReports}</p>
+                  <p className="text-sm text-emerald-900/55">Total Reports</p>
                 </div>
-                <FileText className="h-8 w-8 text-blue-500" />
+                <div className="rounded-xl bg-emerald-100/60 p-2.5 ring-1 ring-emerald-200/50">
+                  <FileText className="h-7 w-7 text-[#1a7a45]" aria-hidden />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={reportCardClass}>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pendingReports}</p>
-                  <p className="text-sm text-gray-600">Pending</p>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.pendingReports}</p>
+                  <p className="text-sm text-emerald-900/55">Pending</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-500" />
+                <div className="rounded-xl bg-emerald-100/50 p-2.5 ring-1 ring-emerald-200/40">
+                  <Clock className="h-7 w-7 text-emerald-800/80" aria-hidden />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={reportCardClass}>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.inProgressReports}</p>
-                  <p className="text-sm text-gray-600">In Progress</p>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.inProgressReports}</p>
+                  <p className="text-sm text-emerald-900/55">In Progress</p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-orange-500" />
+                <div className="rounded-xl bg-emerald-100/50 p-2.5 ring-1 ring-emerald-200/40">
+                  <AlertTriangle className="h-7 w-7 text-emerald-900/70" aria-hidden />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={reportCardClass}>
             <CardContent className="p-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{stats.resolvedReports}</p>
-                  <p className="text-sm text-gray-600">Resolved</p>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.resolvedReports}</p>
+                  <p className="text-sm text-emerald-900/55">Resolved</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div className="rounded-xl bg-emerald-100/60 p-2.5 ring-1 ring-emerald-200/50">
+                  <CheckCircle className="h-7 w-7 text-[#1a7a45]" aria-hidden />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1488,26 +1488,28 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       )}
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+      <Card className={reportCardClass}>
+        <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
+              <Filter className="h-4 w-4" aria-hidden />
+            </span>
             Filters
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
             <div>
               <Input
                 placeholder="Search reports..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
+                className="w-full border-emerald-100/90 bg-white focus-visible:border-[#1a7a45]/40 focus-visible:ring-[#1a7a45]/20"
               />
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -1521,47 +1523,47 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="bullying">Bullying</SelectItem>
-                <SelectItem value="harassment">Harassment</SelectItem>
-                <SelectItem value="discrimination">Discrimination</SelectItem>
-                <SelectItem value="violence">Violence</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {FORMAL_COMPLAINT_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             {/* Escalation Filter */}
             <Select value={escalationFilter} onValueChange={setEscalationFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
                 <SelectValue placeholder="All Escalations" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Escalations</SelectItem>
                 <SelectItem value="0">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-gray-400" />
+                    <div className="h-2 w-2 rounded-full bg-emerald-200" />
                     Normal
                   </div>
                 </SelectItem>
                 <SelectItem value="1">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-400" />
+                    <div className="h-2 w-2 rounded-full bg-emerald-400" />
                     Priority
                   </div>
                 </SelectItem>
                 <SelectItem value="2">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-orange-400" />
+                    <div className="h-2 w-2 rounded-full bg-emerald-600" />
                     Urgent
                   </div>
                 </SelectItem>
                 <SelectItem value="3">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-400" />
+                    <div className="h-2 w-2 rounded-full bg-emerald-900" />
                     Critical
                   </div>
                 </SelectItem>
@@ -1576,6 +1578,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 setCategoryFilter('all');
                 setEscalationFilter('all');
               }}
+              className="border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
             >
               Clear Filters
             </Button>
@@ -1584,16 +1587,20 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       </Card>
 
       {/* Reports Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Reports ({filteredReports.length})</CardTitle>
+      <Card className={reportCardClass}>
+        <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/40 to-transparent pb-4 pt-5">
+          <CardTitle className="text-base font-semibold text-emerald-950">
+            Reports <span className="font-normal text-emerald-800/60">({filteredReports.length})</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredReports.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No reports found</h3>
-              <p className="text-gray-600">
+            <div className="px-6 py-12 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100/70 ring-1 ring-emerald-200/50">
+                <FileText className="h-7 w-7 text-[#1a7a45]/70" aria-hidden />
+              </div>
+              <h3 className="mb-2 text-lg font-semibold text-emerald-950">No reports found</h3>
+              <p className="text-sm text-emerald-900/55">
                 {reports.length === 0 
                   ? "No reports have been submitted yet." 
                   : "No reports match your current filters."
@@ -1601,18 +1608,18 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-b-xl">
               <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Report</TableHead>
-                  <TableHead>Reporter</TableHead>
+              <TableHeader className="bg-emerald-50/55 [&_tr]:border-emerald-100/80">
+                <TableRow className="border-emerald-100/80 hover:bg-transparent">
+                  <TableHead className="text-emerald-950/75">Report</TableHead>
+                  <TableHead className="text-emerald-950/75">Reporter</TableHead>
                   {/* Only show Handler column for admins, not for handlers */}
-                  {!isHandler && <TableHead>Handler</TableHead>}
-                  <TableHead>Escalation</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Actions</TableHead>
+                  {!isHandler && <TableHead className="text-emerald-950/75">Handler</TableHead>}
+                  <TableHead className="text-emerald-950/75">Escalation</TableHead>
+                  <TableHead className="text-emerald-950/75">Status</TableHead>
+                  <TableHead className="text-emerald-950/75">Date</TableHead>
+                  <TableHead className="text-emerald-950/75">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1620,7 +1627,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   const reportEvidence = processEvidence(safeGet(report, 'evidence'));
                   
                   return (
-                    <TableRow key={report.id}>
+                    <TableRow
+                      key={report.id}
+                      className="border-b border-emerald-100/50 transition-colors hover:bg-emerald-50/35"
+                    >
                       <TableCell>
                         <div className="space-y-1">
                           <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
@@ -1642,7 +1652,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           {report.assignedToName ? (
                             <div className="space-y-1">
                               <div className="font-medium text-sm flex items-center gap-2">
-                                <User className="h-4 w-4 text-green-500" />
+                                <User className="h-4 w-4 text-[#1a7a45]" />
                                 {report.assignedToName}
                               </div>
                               {report.assignedToRole && (

@@ -13,14 +13,12 @@ import {
   UserPlus,
   BarChart3,
   Settings,
-  Clock,
-  Eye
 } from 'lucide-react';
-import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from '../../compat/router';
-import { AdminReportService, AdminReport, ReportStats } from '../../services/adminReportService';
-import { format, subDays, startOfDay, endOfDay, isToday } from 'date-fns';
+import { AdminReportService, AdminReport } from '../../services/adminReportService';
+import { subDays, startOfDay, endOfDay } from 'date-fns';
 
 // Helper function to safely convert various date formats
 const safeToDate = (dateValue: any): Date => {
@@ -78,19 +76,32 @@ interface StatCardProps {
   trend?: TrendData;
 }
 
+const dashCardClass =
+  'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
+
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-gray-500" />
+  <Card className={dashCardClass}>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-emerald-100/60 bg-emerald-50/35 pb-3 pt-5">
+      <CardTitle className="text-sm font-medium text-emerald-950/75">{title}</CardTitle>
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
+        <Icon className="h-4 w-4" aria-hidden />
+      </span>
     </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">{description}</p>
+    <CardContent className="pt-4">
+      <div className="text-2xl font-bold tabular-nums tracking-tight text-emerald-950">{value}</div>
+      <div className="mt-2 flex items-start justify-between gap-2">
+        <p className="text-xs leading-snug text-emerald-900/50">{description}</p>
         {trend && (
-          <div className={`flex items-center text-xs ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {trend.isPositive ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+          <div
+            className={`flex shrink-0 items-center gap-0.5 text-xs font-medium tabular-nums ${
+              trend.isPositive ? 'text-[#1a7a45]' : 'text-emerald-950/45'
+            }`}
+          >
+            {trend.isPositive ? (
+              <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+            )}
             {trend.label}
           </div>
         )}
@@ -297,7 +308,7 @@ const AdminDashboard = () => {
       return;
     }
 
-    console.log('� Recalculating stats with:', allUsers.length, 'users and', allReports.length, 'reports');
+    console.log('Recalculating stats with:', allUsers.length, 'users and', allReports.length, 'reports');
 
     try {
       // Calculate stats based on current data
@@ -334,22 +345,43 @@ const AdminDashboard = () => {
   // Calculate real trends
   const trends = calculateTrends(stats);
 
+  const statusBadgeClass = (status: string) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'resolved') {
+      return 'border border-emerald-200/90 bg-emerald-100/90 text-emerald-950';
+    }
+    if (s === 'dismissed') {
+      return 'border border-stone-200/90 bg-stone-100/90 text-stone-800';
+    }
+    if (s === 'inprogress' || s === 'in_progress' || s === 'in progress') {
+      return 'border border-emerald-200/70 bg-emerald-50/90 text-emerald-900';
+    }
+    return 'border border-emerald-100/90 bg-white text-emerald-900/85';
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 py-24">
+        <div
+          className="h-12 w-12 animate-spin rounded-full border-[3px] border-[#1a7a45]/20 border-t-[#1a7a45]"
+          aria-hidden
+        />
+        <p className="text-sm font-medium text-emerald-900/60">Loading dashboard…</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Welcome to the SpeakUp GC admin dashboard.</p>
+    <div className="mx-auto w-full max-w-7xl space-y-8 pb-10">
+      <div className="rounded-xl border border-emerald-100/90 bg-gradient-to-br from-emerald-50/50 via-white to-white px-5 py-5 shadow-sm ring-1 ring-emerald-950/[0.03] sm:px-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#1a7a45]">Overview</p>
+        <h1 className="mt-1 text-xl font-bold tracking-tight text-emerald-950 sm:text-2xl md:text-3xl">Dashboard</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-emerald-900/60">
+          Welcome to the SpeakUp GC admin dashboard — live counts from your users and reports.
+        </p>
       </div>
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"
           value={stats.totalUsers}
@@ -381,7 +413,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Additional Stats Row */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <StatCard
           title="Daily Active Users"
           value={stats.dailyActiveUsers}
@@ -397,81 +429,96 @@ const AdminDashboard = () => {
       </div>
 
       {/* Recent Complaints & System Alerts */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Recent Complaints
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card className={dashCardClass}>
+          <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
+                <FileText className="h-4 w-4" aria-hidden />
+              </span>
+              Recent complaints
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
             {recentComplaints.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentComplaints.map((complaint) => (
-                  <div key={complaint.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{complaint.title}</h4>
-                        <p className="text-sm text-gray-500">ID: {complaint.id}</p>
-                        <p className="text-sm text-gray-500">
-                          Filed by: {complaint.complainant} • {complaint.filedDate.toLocaleDateString()}
+                  <div
+                    key={complaint.id}
+                    className="rounded-xl border border-emerald-100/80 bg-emerald-50/20 p-4 transition-colors hover:bg-emerald-50/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-emerald-950">{complaint.title}</h4>
+                        <p className="mt-0.5 truncate font-mono text-[11px] text-emerald-800/45">
+                          {complaint.id}
+                        </p>
+                        <p className="mt-1 text-xs text-emerald-900/55">
+                          Filed by {complaint.complainant} · {complaint.filedDate.toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge className={`ml-2 ${
-                        complaint.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        complaint.status === 'inProgress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {complaint.status}
+                      <Badge className={`shrink-0 text-xs font-medium capitalize ${statusBadgeClass(complaint.status)}`}>
+                        {complaint.status.replace(/([A-Z])/g, ' $1').trim()}
                       </Badge>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-4">No complaints filed yet</p>
+              <div className="rounded-xl border border-dashed border-emerald-200/70 bg-emerald-50/25 py-10 text-center">
+                <p className="text-sm text-emerald-900/55">No complaints filed yet</p>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              System Alerts
+        <Card className={dashCardClass}>
+          <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
+                <AlertCircle className="h-4 w-4" aria-hidden />
+              </span>
+              System alerts
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="flex min-h-[280px] flex-col pt-5">
+            <div className="flex flex-1 flex-col space-y-3">
               {systemAlerts.map((alert) => (
-                <div key={alert.id} className={`border rounded-lg p-4 ${
-                  alert.type === 'warning' ? 'border-yellow-200 bg-yellow-50' :
-                  alert.type === 'error' ? 'border-red-200 bg-red-50' :
-                  'border-blue-200 bg-blue-50'
-                }`}>
-                  <p className="text-sm">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {alert.timestamp.toLocaleString()}
-                  </p>
+                <div
+                  key={alert.id}
+                  className={`rounded-xl border p-4 ${
+                    alert.type === 'warning'
+                      ? 'border-emerald-300/60 bg-emerald-50/70'
+                      : alert.type === 'error'
+                        ? 'border-emerald-900/25 bg-emerald-950/[0.06]'
+                        : 'border-emerald-100/90 bg-emerald-50/35'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed text-emerald-950">{alert.message}</p>
+                  <p className="mt-2 text-xs text-emerald-800/45">{alert.timestamp.toLocaleString()}</p>
                 </div>
               ))}
+            </div>
+            <div className="mt-auto rounded-xl border border-dashed border-emerald-200/60 bg-emerald-50/20 px-4 py-3 text-center">
+              <p className="text-xs text-emerald-800/50">
+                Alerts refresh automatically as reports change.
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+      <Card className={dashCardClass}>
+        <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/40 to-transparent pb-4 pt-5">
+          <CardTitle className="text-base font-semibold text-emerald-950">Quick actions</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="pt-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <Button 
               onClick={() => navigate('/admin/users')}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
             >
               <UserPlus className="h-4 w-4" />
               Manage Users
@@ -479,7 +526,7 @@ const AdminDashboard = () => {
             <Button 
               onClick={() => navigate('/admin/reports')}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
             >
               <BarChart3 className="h-4 w-4" />
               View Reports
@@ -487,7 +534,7 @@ const AdminDashboard = () => {
             <Button 
               onClick={() => navigate('/admin/settings')}
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
             >
               <Settings className="h-4 w-4" />
               System Settings
