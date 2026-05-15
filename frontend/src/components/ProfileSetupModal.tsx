@@ -135,15 +135,15 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#16A34A] to-[#15803D] px-6 pt-6 pb-8">
+        <div className="shrink-0 bg-gradient-to-r from-[#16A34A] to-[#15803D] px-6 pt-6 pb-8">
           <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-1">SpeakUp GC</p>
           <h2 className="text-white text-xl font-bold">Profile Setup</h2>
           <p className="text-white/70 text-xs mt-0.5">Quick one-time setup to protect your identity</p>
@@ -174,15 +174,17 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           </div>
         </div>
 
-        {/* AI Bubble */}
-        <div className="px-6 -mt-4">
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex gap-3">
+        {/* Scrollable body */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          {/* AI Bubble */}
+          <div className="px-6 -mt-4 pt-1 pb-2">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex gap-3">
             <div className="shrink-0 w-8 h-8 rounded-xl bg-[#E8F5EE] border border-[#16A34A]/20 flex items-center justify-center">
               <Bot className="h-4 w-4 text-[#16A34A]" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-[#16A34A] mb-1">Laya · SpeakUp GC Guide</p>
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-[min(28vh,180px)] overflow-y-auto pr-1">
                 {displayedText}
                 {typing && <span className="inline-block w-1 h-3.5 bg-[#16A34A] ml-0.5 animate-pulse rounded-sm" />}
               </p>
@@ -190,8 +192,8 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           </div>
         </div>
 
-        {/* Step Content */}
-        <div className="px-6 pb-6 pt-4 space-y-4">
+          {/* Step Content */}
+          <div className="px-6 pt-2 pb-4 space-y-4">
 
           {/* ── ALIAS ── */}
           {step === "alias" && (
@@ -216,19 +218,13 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
               <p className="text-xs text-gray-400">
                 This alias protects your identity in cases. You can change it anytime from My Profile.
               </p>
-              <Button
-                onClick={handleAliasNext}
-                className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
-              >
-                Continue <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
             </div>
           )}
 
           {/* ── PRIVACY NOTICE ── */}
           {step === "privacy" && (
             <div className="space-y-3">
-              <div className="bg-[#F0FDF4] border border-[#16A34A]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2">
+              <div className="bg-[#F0FDF4] border border-[#16A34A]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
                 <p className="font-semibold text-[#15803D] text-sm">Privacy Notice — SpeakUp GC</p>
                 <p>
                   All complaints submitted through SpeakUp GC are handled with <strong>strict confidentiality</strong> by the Diversity, Equity, and Inclusion Unit (DEIU) of Gordon College.
@@ -255,18 +251,6 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                   I have read and understood the privacy notice. I consent to my information being stored and processed by the DEIU in accordance with the above.
                 </span>
               </label>
-
-              <Button
-                onClick={handlePrivacyNext}
-                disabled={!privacyAccepted || saving}
-                className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl disabled:opacity-50"
-              >
-                {saving ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>
-                ) : (
-                  <>Complete Setup <CheckCircle2 className="h-4 w-4 ml-1" /></>
-                )}
-              </Button>
             </div>
           )}
 
@@ -287,15 +271,43 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                 <span className="bg-gray-100 rounded-full px-3 py-1">Notifications: <strong className="text-gray-700 capitalize">{notifPref}</strong></span>
                 <span className="bg-green-50 text-green-700 rounded-full px-3 py-1">✓ Privacy accepted</span>
               </div>
-              <Button
-                onClick={() => onComplete(alias.trim())}
-                className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl mt-2"
-              >
-                Go to My Dashboard <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
             </div>
           )}
 
+          </div>
+        </div>
+
+        {/* Sticky footer — buttons always visible */}
+        <div className="shrink-0 px-6 pb-6 pt-3 border-t border-gray-100 bg-white">
+          {step === "alias" && (
+            <Button
+              onClick={handleAliasNext}
+              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
+            >
+              Continue <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+          {step === "privacy" && (
+            <Button
+              onClick={handlePrivacyNext}
+              disabled={!privacyAccepted || saving}
+              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl disabled:opacity-50"
+            >
+              {saving ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>
+              ) : (
+                <>Complete Setup <CheckCircle2 className="h-4 w-4 ml-1" /></>
+              )}
+            </Button>
+          )}
+          {step === "done" && (
+            <Button
+              onClick={() => onComplete(alias.trim())}
+              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
+            >
+              Go to My Dashboard <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
