@@ -30,6 +30,12 @@ import { DEFAULT_NOTIFICATION_PREFERENCES } from '../types/notification';
 export class NotificationService {
   private static readonly notificationsCollection = 'notifications';
   private static readonly preferencesCollection = 'notificationPreferences';
+
+  /** In-app only — chat / read receipts should not spam EmailJS (assignment & status still email). */
+  private static readonly emailSuppressedTypes: ReadonlySet<NotificationType> = new Set([
+    'new_message',
+    'message_read',
+  ]);
   private static readonly errorHandler = (error: any, context: string) => {
     console.error(`[NotificationService] ${context}:`, error);
     throw error;
@@ -747,7 +753,7 @@ export class NotificationService {
             } catch { return false; }
           })();
 
-      if (emailEnabled) {
+      if (emailEnabled && !this.emailSuppressedTypes.has(type)) {
         await this.sendEmailNotification(userId, {
           userId,
           type,
@@ -1104,6 +1110,8 @@ export class NotificationService {
    * Template routing:
    *  - complaint_created  → TEMPLATE_SUBMITTED  (case_id, category, date, to_name)
    *  - everything else    → TEMPLATE_UPDATE      (case_id, status, date, message, to_name)
+   *
+   * Chat (`new_message`) and read receipts are not emailed — see `emailSuppressedTypes` in createNotification.
    */
   private static async sendEmailNotification(
     userId: string,
