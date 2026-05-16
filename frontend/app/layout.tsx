@@ -5,6 +5,28 @@ import Providers from './providers';
 export const metadata: Metadata = {
   title: 'SpeakUp GC',
   description: 'A safe, confidential platform for Gordon College students to file complaints, track case status, and communicate directly with the DEIU.',
+  manifest: '/manifest.json',
+  themeColor: '#1e40af',
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SpeakUp GC',
+  },
+  icons: {
+    icon: [
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+  },
 };
 
 export default function RootLayout({
