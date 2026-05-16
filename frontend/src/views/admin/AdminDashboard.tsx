@@ -13,6 +13,9 @@ import {
   UserPlus,
   BarChart3,
   Settings,
+  Clock,
+  Calendar,
+  User,
 } from 'lucide-react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -79,36 +82,49 @@ interface StatCardProps {
 const dashCardClass =
   'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend }) => (
-  <Card className={dashCardClass}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-emerald-100/60 bg-emerald-50/35 pb-3 pt-5">
-      <CardTitle className="text-sm font-medium text-emerald-950/75">{title}</CardTitle>
-      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
-        <Icon className="h-4 w-4" aria-hidden />
-      </span>
-    </CardHeader>
-    <CardContent className="pt-4">
-      <div className="text-2xl font-bold tabular-nums tracking-tight text-emerald-950">{value}</div>
-      <div className="mt-2 flex items-start justify-between gap-2">
-        <p className="text-xs leading-snug text-emerald-900/50">{description}</p>
-        {trend && (
-          <div
-            className={`flex shrink-0 items-center gap-0.5 text-xs font-medium tabular-nums ${
-              trend.isPositive ? 'text-[#1a7a45]' : 'text-emerald-950/45'
-            }`}
-          >
-            {trend.isPositive ? (
-              <TrendingUp className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <TrendingDown className="h-3.5 w-3.5" aria-hidden />
-            )}
-            {trend.label}
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend }) => {
+  const getCardGradient = (title: string) => {
+    if (title.includes('Users')) return 'from-emerald-500 to-teal-500';
+    if (title.includes('Reports') || title.includes('Total Reports')) return 'from-green-500 to-emerald-600';
+    if (title.includes('Active')) return 'from-lime-500 to-green-500';
+    if (title.includes('Resolved')) return 'from-green-600 to-emerald-700';
+    if (title.includes('Resolution')) return 'from-teal-500 to-emerald-600';
+    return 'from-green-500 to-green-600';
+  };
+
+  return (
+    <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className={`p-4 rounded-2xl bg-gradient-to-br ${getCardGradient(title)} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className="h-8 w-8 text-white" aria-hidden />
           </div>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
+          {trend && (
+            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold ${
+              trend.isPositive 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-emerald-100 text-emerald-700'
+            }`}>
+              {trend.isPositive ? (
+                <TrendingUp className="h-4 w-4" aria-hidden />
+              ) : (
+                <TrendingDown className="h-4 w-4" aria-hidden />
+              )}
+              {trend.label}
+            </div>
+          )}
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">{title}</p>
+          <p className="text-5xl font-black text-gray-900">
+            {value}
+          </p>
+          <p className="text-sm text-gray-500 font-medium">{description}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -373,12 +389,18 @@ const AdminDashboard = () => {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 pb-10">
-      <div className="rounded-xl border border-emerald-100/90 bg-gradient-to-br from-emerald-50/50 via-white to-white px-5 py-5 shadow-sm ring-1 ring-emerald-950/[0.03] sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#1a7a45]">Overview</p>
-        <h1 className="mt-1 text-xl font-bold tracking-tight text-emerald-950 sm:text-2xl md:text-3xl">Dashboard</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-emerald-900/60">
-          Welcome to the SpeakUp GC admin dashboard — live counts from your users and reports.
-        </p>
+      <div className="relative rounded-2xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-8 py-10 shadow-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+            <BarChart3 className="h-5 w-5 text-white" />
+            <p className="text-sm font-bold uppercase tracking-wider text-white">Admin Overview</p>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white drop-shadow-lg">Dashboard</h1>
+          <p className="mt-3 max-w-2xl text-lg leading-relaxed text-white/90 font-medium">
+            📊 Real-time metrics and system analytics at a glance
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -420,44 +442,82 @@ const AdminDashboard = () => {
           icon={Users}
           description="Users who submitted reports today"
         />
-        <StatCard
-          title="Resolution Rate"
-          value={stats.totalReports > 0 ? `${Math.round((stats.resolvedCases / stats.totalReports) * 100)}%` : '0%'}
-          icon={CheckCircle}
-          description="Of all reports"
-        />
+        <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
+                <CheckCircle className="h-8 w-8 text-white" />
+              </div>
+            </div>
+            <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">Resolution Rate</p>
+            <div className="relative">
+              <svg className="w-full h-32" viewBox="0 0 100 50">
+                <path
+                  d="M 10,45 A 40,40 0 0,1 90,45"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 10,45 A 40,40 0 0,1 90,45"
+                  fill="none"
+                  stroke="url(#gradient)"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(stats.totalReports > 0 ? (stats.resolvedCases / stats.totalReports) * 100 : 0) * 2.51} 251`}
+                />
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                </defs>
+                <text x="50" y="35" textAnchor="middle" className="text-4xl font-black fill-gray-900">
+                  {stats.totalReports > 0 ? Math.round((stats.resolvedCases / stats.totalReports) * 100) : 0}%
+                </text>
+              </svg>
+            </div>
+            <p className="text-sm text-gray-500 font-medium text-center mt-2">Of all reports resolved</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent Complaints & System Alerts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className={dashCardClass}>
-          <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
-                <FileText className="h-4 w-4" aria-hidden />
-              </span>
-              Recent complaints
+        <Card className="border-0 bg-white shadow-lg">
+          <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50 pb-6 pt-6">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg">
+                <FileText className="h-6 w-6 text-white" aria-hidden />
+              </div>
+              📋 Recent Complaints
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-5">
+          <CardContent className="pt-6">
             {recentComplaints.length > 0 ? (
-              <div className="space-y-3">
-                {recentComplaints.map((complaint) => (
+              <div className="space-y-4">
+                {recentComplaints.map((complaint, index) => (
                   <div
                     key={complaint.id}
-                    className="rounded-xl border border-emerald-100/80 bg-emerald-50/20 p-4 transition-colors hover:bg-emerald-50/40"
+                    className="group relative rounded-2xl border-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 p-5 transition-all hover:border-green-200 hover:shadow-lg"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-emerald-950">{complaint.title}</h4>
-                        <p className="mt-0.5 truncate font-mono text-[11px] text-emerald-800/45">
-                          {complaint.id}
-                        </p>
-                        <p className="mt-1 text-xs text-emerald-900/55">
-                          Filed by {complaint.complainant} · {complaint.filedDate.toLocaleDateString()}
-                        </p>
+                    <div className="absolute -left-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-green-600 to-emerald-600 text-sm font-bold text-white shadow-lg">
+                      {index + 1}
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <h4 className="text-lg font-bold text-gray-900 line-clamp-1">{complaint.title}</h4>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">{complaint.complainant}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="h-4 w-4" />
+                          <span>{complaint.filedDate.toLocaleDateString()}</span>
+                        </div>
                       </div>
-                      <Badge className={`shrink-0 text-xs font-medium capitalize ${statusBadgeClass(complaint.status)}`}>
+                      <Badge className={`shrink-0 px-4 py-2 text-sm font-bold capitalize shadow-sm ${statusBadgeClass(complaint.status)}`}>
                         {complaint.status.replace(/([A-Z])/g, ' $1').trim()}
                       </Badge>
                     </div>
@@ -465,43 +525,56 @@ const AdminDashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-emerald-200/70 bg-emerald-50/25 py-10 text-center">
-                <p className="text-sm text-emerald-900/55">No complaints filed yet</p>
+              <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-16">
+                <FileText className="h-16 w-16 text-gray-300 mb-4" />
+                <p className="text-lg font-semibold text-gray-400">No complaints filed yet</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card className={dashCardClass}>
-          <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
-                <AlertCircle className="h-4 w-4" aria-hidden />
-              </span>
-              System alerts
+        <Card className="border-0 bg-white shadow-lg">
+          <CardHeader className="border-b bg-gradient-to-r from-lime-50 to-green-50 pb-6 pt-6">
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-lime-600 to-green-600 shadow-lg">
+                <AlertCircle className="h-6 w-6 text-white" aria-hidden />
+              </div>
+              🔔 System Alerts
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-[280px] flex-col pt-5">
-            <div className="flex flex-1 flex-col space-y-3">
-              {systemAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`rounded-xl border p-4 ${
-                    alert.type === 'warning'
-                      ? 'border-emerald-300/60 bg-emerald-50/70'
-                      : alert.type === 'error'
-                        ? 'border-emerald-900/25 bg-emerald-950/[0.06]'
-                        : 'border-emerald-100/90 bg-emerald-50/35'
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed text-emerald-950">{alert.message}</p>
-                  <p className="mt-2 text-xs text-emerald-800/45">{alert.timestamp.toLocaleString()}</p>
-                </div>
-              ))}
+          <CardContent className="flex min-h-[280px] flex-col pt-6">
+            <div className="flex flex-1 flex-col space-y-4">
+              {systemAlerts.map((alert) => {
+                const alertConfig = alert.type === 'warning'
+                  ? { bg: 'from-yellow-50 to-lime-50', border: 'border-lime-200', icon: '⚠️', iconBg: 'from-yellow-500 to-lime-500' }
+                  : alert.type === 'error'
+                    ? { bg: 'from-red-50 to-orange-50', border: 'border-orange-200', icon: '❌', iconBg: 'from-red-500 to-orange-500' }
+                    : { bg: 'from-teal-50 to-emerald-50', border: 'border-teal-200', icon: 'ℹ️', iconBg: 'from-teal-500 to-emerald-500' };
+                
+                return (
+                  <div
+                    key={alert.id}
+                    className={`relative rounded-2xl border-2 bg-gradient-to-r p-5 transition-all hover:shadow-lg ${alertConfig.border} ${alertConfig.bg}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-2xl shadow-lg ${alertConfig.iconBg}`}>
+                        <span className="text-white">{alertConfig.icon}</span>
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <p className="text-base font-semibold leading-relaxed text-gray-900">{alert.message}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Clock className="h-4 w-4" />
+                          <span>{alert.timestamp.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="mt-auto rounded-xl border border-dashed border-emerald-200/60 bg-emerald-50/20 px-4 py-3 text-center">
-              <p className="text-xs text-emerald-800/50">
-                Alerts refresh automatically as reports change.
+            <div className="mt-6 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 px-5 py-4 text-center">
+              <p className="text-sm font-medium text-gray-500">
+                ✨ Alerts refresh automatically as reports change
               </p>
             </div>
           </CardContent>
@@ -509,36 +582,44 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card className={dashCardClass}>
-        <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/40 to-transparent pb-4 pt-5">
-          <CardTitle className="text-base font-semibold text-emerald-950">Quick actions</CardTitle>
+      <Card className="border-0 bg-white shadow-lg">
+        <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50 pb-6 pt-6">
+          <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
+            <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 shadow-lg">
+              <Settings className="h-6 w-6 text-white" />
+            </div>
+            ⚡ Quick Actions
+          </CardTitle>
         </CardHeader>
-        <CardContent className="pt-5">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Button 
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <button 
               onClick={() => navigate('/admin/users')}
-              variant="outline"
-              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
+              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 transition-all hover:border-emerald-300 hover:shadow-xl hover:scale-105"
             >
-              <UserPlus className="h-4 w-4" />
-              Manage Users
-            </Button>
-            <Button 
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-110 transition-transform">
+                <UserPlus className="h-8 w-8 text-white" />
+              </div>
+              <span className="text-lg font-bold text-gray-900">Manage Users</span>
+            </button>
+            <button 
               onClick={() => navigate('/admin/reports')}
-              variant="outline"
-              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
+              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-lime-50 p-6 transition-all hover:border-green-300 hover:shadow-xl hover:scale-105"
             >
-              <BarChart3 className="h-4 w-4" />
-              View Reports
-            </Button>
-            <Button 
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-lime-500 shadow-lg group-hover:scale-110 transition-transform">
+                <BarChart3 className="h-8 w-8 text-white" />
+              </div>
+              <span className="text-lg font-bold text-gray-900">View Reports</span>
+            </button>
+            <button 
               onClick={() => navigate('/admin/settings')}
-              variant="outline"
-              className="flex items-center justify-center gap-2 border-emerald-200/90 text-emerald-900 hover:bg-emerald-50/90"
+              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-6 transition-all hover:border-teal-300 hover:shadow-xl hover:scale-105"
             >
-              <Settings className="h-4 w-4" />
-              System Settings
-            </Button>
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 shadow-lg group-hover:scale-110 transition-transform">
+                <Settings className="h-8 w-8 text-white" />
+              </div>
+              <span className="text-lg font-bold text-gray-900">System Settings</span>
+            </button>
           </div>
         </CardContent>
       </Card>

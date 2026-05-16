@@ -45,6 +45,9 @@ import {
   DateRangePreset,
   ComplianceSummaryReport,
   REPORT_TYPE_LABELS,
+  REPORT_TYPE_DESCRIPTIONS,
+  REPORT_CATEGORIES,
+  getReportCategory,
   DATE_RANGE_LABELS,
   getDateRangeFromPreset,
 } from '../../types/complianceReport';
@@ -226,18 +229,25 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         doc.text('Category Breakdown', 15, yPos);
         yPos += 6;
         
-        const categoryData = Object.entries(generatedReport.frequencyAnalysis.byCategory).map(
-          ([category, data]) => [
-            category.replace(/_/g, ' ').toUpperCase(),
-            data.count.toString(),
-            `${data.percentage.toFixed(1)}%`,
-          ]
-        );
+        // Handle both array and object formats for byCategory
+        const categoryArray = Array.isArray(generatedReport.frequencyAnalysis.byCategory)
+          ? generatedReport.frequencyAnalysis.byCategory
+          : Object.entries(generatedReport.frequencyAnalysis.byCategory).map(([category, data]: [string, any]) => ({
+              category,
+              count: data.count,
+              percentage: data.percentage,
+            }));
+        
+        const categoryData = categoryArray.map(item => [
+          (item.category || 'Unknown').replace(/_/g, ' ').toUpperCase(),
+          item.count?.toString() || '0',
+          `${(item.percentage || 0).toFixed(1)}%`,
+        ]);
         
         autoTable(doc, {
           startY: yPos,
           head: [['Category', 'Count', 'Percentage']],
-          body: categoryData,
+          body: categoryData.length > 0 ? categoryData : [['No data', '0', '0%']],
           theme: 'plain',
           styles: {
             fontSize: 9,
@@ -260,7 +270,12 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       }
       
       // Resolution time analysis if available
-      if (generatedReport.resolutionTimeAnalysis && yPos < 250) {
+      if (generatedReport.resolutionTimeAnalysis) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
@@ -270,7 +285,9 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         const resolutionData = [
           ['Average Resolution Time', `${generatedReport.resolutionTimeAnalysis.averageResolutionTime.toFixed(1)} hours`],
           ['Median Resolution Time', `${generatedReport.resolutionTimeAnalysis.medianResolutionTime.toFixed(1)} hours`],
-          ['SLA Compliance', `${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA} / ${generatedReport.resolutionTimeAnalysis.slaCompliance.total}`],
+          ['SLA Compliance Rate', `${generatedReport.resolutionTimeAnalysis.slaCompliance.complianceRate.toFixed(1)}%`],
+          ['Within SLA', `${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA} cases`],
+          ['Breached SLA', `${generatedReport.resolutionTimeAnalysis.slaCompliance.breachedSLA} cases`],
         ];
         
         autoTable(doc, {
@@ -287,6 +304,92 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           },
           margin: { left: 15, right: 15 },
         });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+      
+      // Trend analysis if available
+      if (generatedReport.trendAnalysis) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Trend Analysis', 15, yPos);
+        yPos += 6;
+        
+        const trendData = [
+          ['Current Period', `${generatedReport.trendAnalysis.overallTrend.currentPeriodCount} incidents`],
+          ['Previous Period', `${generatedReport.trendAnalysis.overallTrend.previousPeriodCount} incidents`],
+          ['Trend Direction', generatedReport.trendAnalysis.overallTrend.direction.toUpperCase()],
+          ['Change', `${generatedReport.trendAnalysis.overallTrend.percentageChange > 0 ? '+' : ''}${generatedReport.trendAnalysis.overallTrend.percentageChange.toFixed(1)}%`],
+        ];
+        
+        autoTable(doc, {
+          startY: yPos,
+          body: trendData,
+          theme: 'plain',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: [0, 0, 0],
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250],
+          },
+          margin: { left: 15, right: 15 },
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+      }
+      
+      // Handler performance if available
+      if (generatedReport.handlerPerformanceAnalysis) {
+        if (yPos > 240) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Staff Performance Summary', 15, yPos);
+        yPos += 6;
+        
+        const handlerData = generatedReport.handlerPerformanceAnalysis.handlers.slice(0, 10).map(handler => [
+          handler.handlerName,
+          handler.casesAssigned.toString(),
+          handler.casesResolved.toString(),
+          `${handler.resolutionRate.toFixed(1)}%`,
+          `${handler.averageResolutionTime.toFixed(1)}h`,
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Staff Member', 'Assigned', 'Resolved', 'Success Rate', 'Avg Time']],
+          body: handlerData,
+          theme: 'plain',
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            textColor: [0, 0, 0],
+          },
+          headStyles: {
+            fillColor: [245, 245, 245],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'left',
+          },
+          alternateRowStyles: {
+            fillColor: [250, 250, 250],
+          },
+          margin: { left: 15, right: 15 },
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
       }
       
       // Footer - Minimalist
@@ -410,6 +513,32 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
     }
   };
 
+  // Export All Formats
+  const handleExportAll = async () => {
+    if (!generatedReport) return;
+
+    try {
+      // Small delay between downloads to prevent browser blocking
+      handleExportPDF();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      handleExportCSV();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      handleExportJSON();
+      
+      toast({
+        title: 'Export Complete',
+        description: 'All formats downloaded successfully (PDF, CSV, JSON)',
+      });
+    } catch (error) {
+      console.error('Error exporting all formats:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Some formats may not have downloaded. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getReportIcon = (type: ComplianceReportType) => {
     switch (type) {
       case 'frequency_analysis':
@@ -433,17 +562,17 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center shadow-sm">
+                <FileText className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <CardTitle>Generate Compliance Report</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl">Generate Compliance Report</CardTitle>
+                <CardDescription className="text-sm">
                   Create privacy-compliant analytics and reports
                 </CardDescription>
               </div>
             </div>
-            <Badge variant="outline" className="bg-green-50 text-green-700">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               <Shield className="h-3 w-3 mr-1" />
               GDPR Compliant
             </Badge>
@@ -451,64 +580,122 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Report Type Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="report-type">Report Type</Label>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="report-type" className="text-base font-semibold">Report Type</Label>
+              <p className="text-sm text-gray-500 mt-1">
+                {REPORT_TYPE_DESCRIPTIONS[reportType]}
+              </p>
+            </div>
             <Select value={reportType} onValueChange={(value) => setReportType(value as ComplianceReportType)}>
-              <SelectTrigger id="report-type">
+              <SelectTrigger id="report-type" className="h-auto py-3">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="frequency_analysis">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    Frequency Analysis
-                  </div>
-                </SelectItem>
-                <SelectItem value="trend_analysis">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Trend Analysis
-                  </div>
-                </SelectItem>
-                <SelectItem value="category_breakdown">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    Category Breakdown
-                  </div>
-                </SelectItem>
-                <SelectItem value="resolution_time">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Resolution Time Analysis
-                  </div>
-                </SelectItem>
-                <SelectItem value="handler_performance">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Handler Performance
-                  </div>
-                </SelectItem>
+              <SelectContent className="max-h-96">
+                {/* Compliance & Performance Overview */}
+                <div className="px-2 py-2 text-xs font-semibold text-gray-500 border-b">
+                  {REPORT_CATEGORIES.OVERVIEW}
+                </div>
                 <SelectItem value="monthly_summary">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Monthly Summary (Complete)
+                  <div className="flex items-start gap-3 py-1">
+                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.monthly_summary}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Comprehensive monthly overview</div>
+                    </div>
                   </div>
                 </SelectItem>
                 <SelectItem value="quarterly_summary">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Quarterly Summary (Complete)
+                  <div className="flex items-start gap-3 py-1">
+                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.quarterly_summary}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">90-day performance trends</div>
+                    </div>
                   </div>
                 </SelectItem>
                 <SelectItem value="annual_summary">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Annual Summary (Complete)
+                  <div className="flex items-start gap-3 py-1">
+                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.annual_summary}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Year-over-year comparisons</div>
+                    </div>
+                  </div>
+                </SelectItem>
+
+                {/* Analytical & Statistical Reports */}
+                <div className="px-2 py-2 text-xs font-semibold text-gray-500 border-b border-t mt-2">
+                  {REPORT_CATEGORIES.ANALYTICAL}
+                </div>
+                <SelectItem value="frequency_analysis">
+                  <div className="flex items-start gap-3 py-1">
+                    <BarChart3 className="h-4 w-4 mt-0.5 text-blue-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.frequency_analysis}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Volume patterns & trends</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="trend_analysis">
+                  <div className="flex items-start gap-3 py-1">
+                    <TrendingUp className="h-4 w-4 mt-0.5 text-purple-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.trend_analysis}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Historical analysis & predictions</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="category_breakdown">
+                  <div className="flex items-start gap-3 py-1">
+                    <BarChart3 className="h-4 w-4 mt-0.5 text-indigo-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.category_breakdown}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Classification statistics</div>
+                    </div>
+                  </div>
+                </SelectItem>
+
+                {/* Performance & Metrics Reports */}
+                <div className="px-2 py-2 text-xs font-semibold text-gray-500 border-b border-t mt-2">
+                  {REPORT_CATEGORIES.PERFORMANCE}
+                </div>
+                <SelectItem value="resolution_time">
+                  <div className="flex items-start gap-3 py-1">
+                    <Clock className="h-4 w-4 mt-0.5 text-amber-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.resolution_time}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">SLA compliance & timings</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="handler_performance">
+                  <div className="flex items-start gap-3 py-1">
+                    <Users className="h-4 w-4 mt-0.5 text-teal-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.handler_performance}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Staff efficiency & workload</div>
+                    </div>
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Report Type Info */}
+          {['monthly_summary', 'quarterly_summary', 'annual_summary'].includes(reportType) ? (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="text-sm text-green-800">
+                <strong>ℹ️ Complete Report:</strong> This report includes all available analyses (Frequency, Trends, Resolution Metrics, and Staff Performance).
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="text-sm text-blue-800">
+                <strong>ℹ️ Focused Report:</strong> This report contains detailed in-depth analysis of one specific area.
+              </div>
+            </div>
+          )}
 
           {/* Date Range Selection */}
           <div className="space-y-2">
@@ -557,9 +744,9 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           )}
 
           {/* Privacy Settings */}
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Shield className="h-4 w-4 text-blue-600" />
+          <div className="space-y-4 p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+            <div className="flex items-center gap-2 text-sm font-semibold text-green-900">
+              <Shield className="h-4 w-4 text-green-600" />
               Privacy & Compliance Settings
             </div>
 
@@ -607,7 +794,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           <Button
             onClick={handleGenerateReport}
             disabled={generating}
-            className="w-full"
+            className="w-full bg-green-600 hover:bg-green-700"
             size="lg"
           >
             {generating ? (
@@ -631,7 +818,12 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Report Generated Successfully</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Report Generated Successfully
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    {REPORT_TYPE_LABELS[generatedReport.reportType]}
+                  </Badge>
+                </CardTitle>
                 <CardDescription>
                   {format(generatedReport.period.start, 'MMM dd, yyyy')} -{' '}
                   {format(generatedReport.period.end, 'MMM dd, yyyy')}
@@ -644,49 +836,71 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                     Export
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-md">
                   <DialogHeader>
                     <DialogTitle>Export Report</DialogTitle>
                     <DialogDescription>
-                      Choose a format to download the report
+                      Download in single or multiple formats
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="space-y-4 mt-4">
+                    {/* Export All - Primary Option */}
                     <Button 
-                      variant="outline" 
-                      className="justify-start"
-                      onClick={() => handleExportPDF()}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleExportAll()}
                       disabled={!generatedReport}
                     >
-                      <FileText className="h-4 w-4 mr-2" />
-                      PDF Report
+                      <Download className="h-4 w-4 mr-2" />
+                      Download All Formats (PDF + CSV + JSON)
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="justify-start"
-                      onClick={() => handleExportCSV()}
-                      disabled={!generatedReport}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      CSV Data
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="justify-start"
-                      onClick={() => handleExportJSON()}
-                      disabled={!generatedReport}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      JSON Data
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="justify-start opacity-50 cursor-not-allowed"
-                      disabled
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Excel (Coming Soon)
-                    </Button>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-gray-500">Or choose individual format</span>
+                      </div>
+                    </div>
+
+                    {/* Individual Export Options */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        variant="outline" 
+                        className="justify-start"
+                        onClick={() => handleExportPDF()}
+                        disabled={!generatedReport}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        PDF Only
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="justify-start"
+                        onClick={() => handleExportCSV()}
+                        disabled={!generatedReport}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        CSV Only
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="justify-start"
+                        onClick={() => handleExportJSON()}
+                        disabled={!generatedReport}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        JSON Only
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="justify-start opacity-50 cursor-not-allowed"
+                        disabled
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Excel (Soon)
+                      </Button>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -695,47 +909,47 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           <CardContent>
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-900">
+              <div className="p-5 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl">
+                <div className="text-3xl font-bold text-green-900">
                   {generatedReport.summary.totalIncidents}
                 </div>
-                <div className="text-sm text-blue-600">Total Incidents</div>
+                <div className="text-sm text-green-600 font-medium mt-1">Total Incidents</div>
               </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-900">
+              <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl">
+                <div className="text-3xl font-bold text-emerald-900">
                   {generatedReport.summary.resolvedIncidents}
                 </div>
-                <div className="text-sm text-green-600">Resolved</div>
+                <div className="text-sm text-emerald-600 font-medium mt-1">Resolved</div>
               </div>
-              <div className="p-4 bg-yellow-50 rounded-lg">
-                <div className="text-2xl font-bold text-yellow-900">
+              <div className="p-5 bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
+                <div className="text-3xl font-bold text-amber-900">
                   {generatedReport.summary.inProgressIncidents}
                 </div>
-                <div className="text-sm text-yellow-600">In Progress</div>
+                <div className="text-sm text-amber-600 font-medium mt-1">In Progress</div>
               </div>
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-900">
+              <div className="p-5 bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 rounded-xl">
+                <div className="text-3xl font-bold text-teal-900">
                   {generatedReport.summary.resolutionRate.toFixed(1)}%
                 </div>
-                <div className="text-sm text-purple-600">Resolution Rate</div>
+                <div className="text-sm text-teal-600 font-medium mt-1">Resolution Rate</div>
               </div>
             </div>
 
             {/* Compliance Badges */}
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               {generatedReport.dataPrivacyCompliant && (
-                <Badge variant="outline" className="bg-green-50 text-green-700">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   <Shield className="h-3 w-3 mr-1" />
                   Privacy Compliant
                 </Badge>
               )}
               {generatedReport.anonymized && (
-                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                   Data Anonymized
                 </Badge>
               )}
               {!generatedReport.personalDataIncluded && (
-                <Badge variant="outline" className="bg-gray-50 text-gray-700">
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                   No Personal Data
                 </Badge>
               )}

@@ -412,6 +412,7 @@ const FormalComplaint = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const evidenceRef = useRef<HTMLInputElement>(null);
+  const lastValidationLog = useRef<{[key: number]: boolean}>({});
 
   // Helper function to generate formatted case ID from Firestore hash
   const formatCaseId = (firestoreId: string): string => {
@@ -486,6 +487,7 @@ const FormalComplaint = () => {
   const [validationAttempted, setValidationAttempted] = useState(false);
 
   const departments = [
+    'Administration',
     'CCS - College of Computer Studies',
     'CHTM - College of Hospitality and Tourism Management', 
     'CEAS - College of Education and Arts Sciences',
@@ -706,44 +708,59 @@ const FormalComplaint = () => {
         // If anonymous, the fields will be auto-filled with "Anonymous" and "Not Disclosed"
         // So we can consider it valid. Otherwise, require actual user input
         if (isAnonymous) {
-          console.log('✓ Step 1 validation: PASS (Anonymous mode)');
+          if (lastValidationLog.current[1] !== true) {
+            console.log('✓ Step 1 validation: PASS (Anonymous mode)');
+            lastValidationLog.current[1] = true;
+          }
           return true;
         }
         const step1Valid = !!(formData.complainantName && formData.complainantAddress && formData.complainantContact);
-        console.log('🔍 Step 1 validation:', {
-          step1Valid,
-          complainantName: formData.complainantName,
-          complainantAddress: formData.complainantAddress,
-          complainantContact: formData.complainantContact
-        });
+        if (lastValidationLog.current[1] !== step1Valid) {
+          console.log('🔍 Step 1 validation:', {
+            step1Valid,
+            complainantName: formData.complainantName,
+            complainantAddress: formData.complainantAddress,
+            complainantContact: formData.complainantContact
+          });
+          lastValidationLog.current[1] = step1Valid;
+        }
         return step1Valid;
       case 2:
         const step2Valid = unknownRespondent 
           ? !!(formData.respondentName && formData.respondentAddress && formData.respondentAddress.trim().length >= 20)
           : !!formData.respondentName;
-        console.log('🔍 Step 2 validation:', {
-          step2Valid,
-          respondentName: formData.respondentName,
-          unknownRespondent,
-          respondentDescriptionLength: formData.respondentAddress?.trim().length || 0
-        });
+        if (lastValidationLog.current[2] !== step2Valid) {
+          console.log('🔍 Step 2 validation:', {
+            step2Valid,
+            respondentName: formData.respondentName,
+            unknownRespondent,
+            respondentDescriptionLength: formData.respondentAddress?.trim().length || 0
+          });
+          lastValidationLog.current[2] = step2Valid;
+        }
         return step2Valid;
       case 3:
         const step3Valid = !!(formData.title && formData.description && formData.description.trim().length >= 20 && formData.incidentDate && formData.incidentLocation && (formData.type !== "other" || otherTypeDetail.trim().length > 0));
-        console.log('🔍 Step 3 validation:', {
-          step3Valid,
-          title: formData.title,
-          description: formData.description,
-          incidentDate: formData.incidentDate,
-          incidentLocation: formData.incidentLocation
-        });
+        if (lastValidationLog.current[3] !== step3Valid) {
+          console.log('🔍 Step 3 validation:', {
+            step3Valid,
+            title: formData.title,
+            description: formData.description,
+            incidentDate: formData.incidentDate,
+            incidentLocation: formData.incidentLocation
+          });
+          lastValidationLog.current[3] = step3Valid;
+        }
         return step3Valid;
       case 4:
         const step4Valid = formData.evidence.length > 0;
-        console.log('🔍 Step 4 validation:', {
-          step4Valid,
-          evidenceCount: formData.evidence.length
-        });
+        if (lastValidationLog.current[4] !== step4Valid) {
+          console.log('🔍 Step 4 validation:', {
+            step4Valid,
+            evidenceCount: formData.evidence.length
+          });
+          lastValidationLog.current[4] = step4Valid;
+        }
         return step4Valid;
       default:
         return true;
@@ -1637,7 +1654,7 @@ const FormalComplaint = () => {
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Pin exact location</span>
+                  <span className="text-sm font-medium text-gray-700">Pin exact location on campus</span>
                   <span className="text-xs text-gray-400">(optional)</span>
                 </div>
                 <LocationMapPicker

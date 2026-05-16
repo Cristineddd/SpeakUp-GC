@@ -121,16 +121,16 @@ export default function LeafletMap({
       <div ref={containerRef} style={{ height: readOnly ? '100%' : 'calc(100% - 36px)', width: '100%' }}>
         <MapContainer
           center={mapCenter}
-          zoom={17}
+          zoom={16}
           scrollWheelZoom={!readOnly}
           doubleClickZoom={!readOnly}
           touchZoom={!readOnly}
           dragging={!readOnly}
           zoomControl={!readOnly}
           style={{ height: '100%', width: '100%' }}
-          maxBounds={[[14.8260, 120.2790], [14.8310, 120.2840]]}
+          maxBounds={[[14.8220, 120.2750], [14.8350, 120.2880]]}
           maxBoundsViscosity={1.0}
-          minZoom={16}
+          minZoom={15}
           maxZoom={19}
           zoomSnap={0.5}
           zoomDelta={0.5}

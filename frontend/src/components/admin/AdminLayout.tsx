@@ -11,7 +11,7 @@ import {
   UserPlus,
   FileCheck
 } from 'lucide-react';
-const gcLogo = '/gclogo.png';
+const gcLogo = '/LOGO.png';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { cn } from '../../lib/utils';

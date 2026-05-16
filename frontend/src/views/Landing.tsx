@@ -286,7 +286,7 @@ const Landing = () => {
           <div className={`mb-16 transition-all duration-700 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
             <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-widest mb-3">Features</p>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight max-w-lg">
-              Built for students.<br />Backed by law &amp; trust.
+              Built for the community.<br />Backed by law &amp; trust.
             </h2>
           </div>
 

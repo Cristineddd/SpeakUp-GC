@@ -74,7 +74,7 @@ const RepresentativesManagement = () => {
   const handleSubmit = async () => {
     try {
       // Basic validation
-      if (!formData.email || !formData.displayName || !formData.department || !formData.position) {
+      if (!formData.email || !formData.displayName) {
         toast({
           title: 'Validation Error',
           description: 'Please fill in all required fields',
@@ -94,8 +94,8 @@ const RepresentativesManagement = () => {
         await RepresentativeService.update(editingRep.id, {
           displayName: formData.displayName,
           role: formData.role,
-          department: formData.department,
-          position: formData.position,
+          department: '',
+          position: '',
           phone: formData.phone
         });
         toast({
@@ -133,8 +133,8 @@ const RepresentativesManagement = () => {
       email: rep.email,
       displayName: rep.displayName,
       role: rep.role,
-      department: rep.department,
-      position: rep.position,
+      department: '',
+      position: '',
       phone: rep.phone
     });
     setDialogOpen(true);
@@ -206,29 +206,22 @@ const RepresentativesManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold">Staff Management</h1>
-          <p className="text-gray-600 mt-1">
-            Manage system access for Administrators and Case Handlers
-          </p>
-          <div className="mt-2 text-sm text-gray-500">
-            <p>• <strong>Admin:</strong> Full system access including case assignment</p>
-            <p>• <strong>Handler:</strong> Can be assigned to process complaints</p>
-          </div>
+      <div>
+        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold">Staff Management</h1>
+        <p className="text-gray-600 mt-1">
+          Manage system access for Administrators and Case Handlers
+        </p>
+        <div className="mt-2 text-sm text-gray-500">
+          <p>• <strong>Admin:</strong> Full system access including case assignment</p>
+          <p>• <strong>Handler:</strong> Can be assigned to process complaints</p>
         </div>
+      </div>
 
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add Staff Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>{editingRep ? 'Edit Staff Member' : 'Add New Staff Member'}</DialogTitle>
               <DialogDescription>
@@ -253,7 +246,7 @@ const RepresentativesManagement = () => {
             </Alert>
 
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="userId">User ID (Firebase UID)</Label>
                   <Input
@@ -308,26 +301,6 @@ const RepresentativesManagement = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="department">Department *</Label>
-                  <Input
-                    id="department"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="Student Affairs"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="position">Position *</Label>
-                  <Input
-                    id="position"
-                    value={formData.position}
-                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                    placeholder="Case Handler"
-                  />
-                </div>
-
-                <div>
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
@@ -348,7 +321,6 @@ const RepresentativesManagement = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -405,11 +377,7 @@ const RepresentativesManagement = () => {
             <div className="text-center py-8">
               <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Representatives</h3>
-              <p className="text-gray-600 mb-4">Add representatives to start assigning cases</p>
-              <Button onClick={() => setDialogOpen(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add First Representative
-              </Button>
+              <p className="text-gray-600">Representatives are managed through the Users page. Assign users as representatives to have them appear here.</p>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -442,10 +410,6 @@ const RepresentativesManagement = () => {
                             {rep.phone}
                           </div>
                         )}
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4" />
-                          {rep.position}, {rep.department}
-                        </div>
                         {/* Show case stats only for handlers, not admins */}
                         {rep.role === 'handler' && (
                           <div>

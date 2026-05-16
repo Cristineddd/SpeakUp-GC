@@ -332,25 +332,64 @@ export const calculateResolutionTime = (
   return (resolved.getTime() - reported.getTime()) / (1000 * 60 * 60); // Convert to hours
 };
 
-// Constants
+// Report category groupings for organized display
+export const REPORT_CATEGORIES = {
+  OVERVIEW: 'Compliance & Performance Overview',
+  ANALYTICAL: 'Analytical & Statistical Reports',
+  PERFORMANCE: 'Performance & Metrics Reports',
+} as const;
+
+// Professional report labels organized by category
 export const REPORT_TYPE_LABELS: Record<ComplianceReportType, string> = {
-  frequency_analysis: 'Frequency Analysis',
-  trend_analysis: 'Trend Analysis',
-  category_breakdown: 'Category Breakdown',
-  location_analysis: 'Location Analysis',
-  severity_analysis: 'Severity Analysis',
-  resolution_time: 'Resolution Time Analysis',
-  handler_performance: 'Handler Performance',
-  monthly_summary: 'Monthly Summary',
-  quarterly_summary: 'Quarterly Summary',
-  annual_summary: 'Annual Summary',
+  // Compliance & Performance Overview
+  monthly_summary: 'Monthly Performance Summary',
+  quarterly_summary: 'Quarterly Performance Summary',
+  annual_summary: 'Annual Performance Summary',
+  
+  // Analytical & Statistical Reports
+  frequency_analysis: 'Case Volume & Frequency Analysis',
+  trend_analysis: 'Trend & Pattern Analysis',
+  category_breakdown: 'Case Classification Report',
+  location_analysis: 'Geographic Distribution Report',
+  severity_analysis: 'Severity Level Distribution',
+  
+  // Performance & Metrics Reports
+  resolution_time: 'Resolution Performance Metrics',
+  handler_performance: 'Staff Performance Analysis',
+};
+
+// Report descriptions for better context
+export const REPORT_TYPE_DESCRIPTIONS: Record<ComplianceReportType, string> = {
+  monthly_summary: 'Comprehensive monthly overview of case management performance and key metrics',
+  quarterly_summary: 'Quarterly compliance report with performance trends and analytics',
+  annual_summary: 'Annual compliance summary with year-over-year comparisons',
+  
+  frequency_analysis: 'Detailed analysis of case volumes, patterns, and frequency trends',
+  trend_analysis: 'Historical trend analysis with predictive insights and pattern recognition',
+  category_breakdown: 'Statistical breakdown of cases by category and classification',
+  location_analysis: 'Geographic analysis of case distribution across locations',
+  severity_analysis: 'Analysis of incident severity levels and priority distribution',
+  
+  resolution_time: 'Performance metrics for case resolution times and SLA compliance',
+  handler_performance: 'Detailed analysis of staff performance, workload, and efficiency metrics',
 };
 
 export const DATE_RANGE_LABELS: Record<DateRangePreset, string> = {
   last_7_days: 'Last 7 Days',
-  last_30_days: 'Last 30 Days',
-  last_90_days: 'Last 90 Days',
+  last_30_days: 'Last 30 Days (Monthly)',
+  last_90_days: 'Last 90 Days (Quarterly)',
   last_6_months: 'Last 6 Months',
-  last_year: 'Last Year',
-  custom: 'Custom Range',
+  last_year: 'Last 12 Months (Annual)',
+  custom: 'Custom Date Range',
+};
+
+// Helper: Get report category
+export const getReportCategory = (type: ComplianceReportType): string => {
+  if (['monthly_summary', 'quarterly_summary', 'annual_summary'].includes(type)) {
+    return REPORT_CATEGORIES.OVERVIEW;
+  }
+  if (['frequency_analysis', 'trend_analysis', 'category_breakdown', 'location_analysis', 'severity_analysis'].includes(type)) {
+    return REPORT_CATEGORIES.ANALYTICAL;
+  }
+  return REPORT_CATEGORIES.PERFORMANCE;
 };

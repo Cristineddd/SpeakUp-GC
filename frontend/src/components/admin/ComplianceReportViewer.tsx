@@ -20,14 +20,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import {
-  ComplianceSummaryReport,
-  FrequencyAnalysis,
-  TrendAnalysis,
-  ResolutionTimeAnalysis,
-  HandlerPerformanceAnalysis,
-} from '../../types/complianceReport';
+import { CategoryBarChart } from '../charts/CategoryBarChart';
+import { TrendLineChart } from '../charts/TrendLineChart';
+import { ResolutionBarChart } from '../charts/ResolutionBarChart';
+import { HandlerPerformanceChart } from '../charts/HandlerPerformanceChart';
 import { format } from 'date-fns';
+import { ComplianceSummaryReport, FrequencyAnalysis, TrendAnalysis, ResolutionTimeAnalysis, HandlerPerformanceAnalysis } from '../../types/complianceReport';
 
 interface ComplianceReportViewerProps {
   report: ComplianceSummaryReport;
@@ -86,35 +84,35 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-3xl font-bold text-blue-900">
-                {report.summary.totalIncidents}
-              </div>
-              <div className="text-sm text-blue-600 mt-1">Total Incidents</div>
-            </div>
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
               <div className="text-3xl font-bold text-green-900">
-                {report.summary.resolvedIncidents}
+                {report.summary.totalIncidents || 0}
               </div>
-              <div className="text-sm text-green-600 mt-1">Resolved</div>
+              <div className="text-sm text-green-600 font-medium mt-1">Total Incidents</div>
             </div>
-            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="text-3xl font-bold text-yellow-900">
-                {report.summary.inProgressIncidents}
+            <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
+              <div className="text-3xl font-bold text-emerald-900">
+                {report.summary.resolvedIncidents || 0}
               </div>
-              <div className="text-sm text-yellow-600 mt-1">In Progress</div>
+              <div className="text-sm text-emerald-600 font-medium mt-1">Resolved</div>
             </div>
-            <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="p-5 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border border-amber-200">
+              <div className="text-3xl font-bold text-amber-900">
+                {report.summary.inProgressIncidents || 0}
+              </div>
+              <div className="text-sm text-amber-600 font-medium mt-1">In Progress</div>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
               <div className="text-3xl font-bold text-orange-900">
-                {report.summary.pendingIncidents}
+                {report.summary.pendingIncidents || 0}
               </div>
-              <div className="text-sm text-orange-600 mt-1">Pending</div>
+              <div className="text-sm text-orange-600 font-medium mt-1">Pending</div>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <div className="text-3xl font-bold text-purple-900">
-                {report.summary.resolutionRate.toFixed(1)}%
+            <div className="p-5 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl border border-teal-200">
+              <div className="text-3xl font-bold text-teal-900">
+                {report.summary.resolutionRate?.toFixed(1) || 0}%
               </div>
-              <div className="text-sm text-purple-600 mt-1">Resolution Rate</div>
+              <div className="text-sm text-teal-600 font-medium mt-1">Resolution Rate</div>
             </div>
           </div>
         </CardContent>
@@ -127,42 +125,40 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
         </CardHeader>
         <CardContent className="space-y-4">
           {/* KPI Metrics Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Average Resolution Time */}
-            {report.summary.averageResolutionTime && (
-              <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                <div className="text-sm text-indigo-600 font-medium">Avg Resolution Time</div>
-                <div className="text-2xl font-bold text-indigo-900 mt-1">
-                  {Math.round(report.summary.averageResolutionTime)} hrs
-                </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Average Resolution Time - Always show */}
+            <div className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200">
+              <div className="text-sm text-indigo-600 font-medium">Avg Resolution Time</div>
+              <div className="text-2xl font-bold text-indigo-900 mt-1">
+                {report.summary.averageResolutionTime ? Math.round(report.summary.averageResolutionTime) : 0} hrs
               </div>
-            )}
+            </div>
             
             {/* Cases per Day */}
-            <div className="p-3 bg-cyan-50 rounded-lg border border-cyan-200">
+            <div className="p-4 bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl border border-cyan-200">
               <div className="text-sm text-cyan-600 font-medium">Cases/Day Avg</div>
               <div className="text-2xl font-bold text-cyan-900 mt-1">
-                {(report.summary.totalIncidents / Math.max(1, Math.ceil((new Date(report.period.end).getTime() - new Date(report.period.start).getTime()) / (1000 * 60 * 60 * 24)))).toFixed(1)}
+                {((report.summary.totalIncidents || 0) / Math.max(1, Math.ceil((new Date(report.period.end).getTime() - new Date(report.period.start).getTime()) / (1000 * 60 * 60 * 24)))).toFixed(1)}
               </div>
             </div>
 
             {/* Dismissed Rate */}
-            <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
+            <div className="p-4 bg-gradient-to-br from-rose-50 to-rose-100 rounded-xl border border-rose-200">
               <div className="text-sm text-rose-600 font-medium">Dismissed Rate</div>
               <div className="text-2xl font-bold text-rose-900 mt-1">
-                {report.summary.totalIncidents > 0 ? ((report.summary.dismissedIncidents / report.summary.totalIncidents) * 100).toFixed(1) : 0}%
+                {(report.summary.totalIncidents > 0 && report.summary.dismissedIncidents) ? ((report.summary.dismissedIncidents / report.summary.totalIncidents) * 100).toFixed(1) : '0.0'}%
               </div>
             </div>
           </div>
 
           {/* Key Insights */}
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
-            <div className="font-semibold text-blue-900 mb-2">📈 Key Insights:</div>
-            <ul className="space-y-1 text-sm text-blue-800">
-              <li>✓ {report.summary.resolvedIncidents} incidents resolved ({report.summary.resolutionRate.toFixed(1)}% success rate)</li>
-              <li>✓ {report.summary.inProgressIncidents} cases currently under investigation</li>
-              <li>✓ {report.summary.pendingIncidents} cases awaiting review or assignment</li>
-              {report.handlerPerformanceAnalysis && report.handlerPerformanceAnalysis.handlers.length > 0 && (
+          <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 space-y-2">
+            <div className="font-semibold text-green-900 mb-2">📈 Key Insights:</div>
+            <ul className="space-y-1 text-sm text-green-800">
+              <li>✓ {report.summary.resolvedIncidents || 0} incidents resolved ({report.summary.resolutionRate?.toFixed(1) || 0}% success rate)</li>
+              <li>✓ {report.summary.inProgressIncidents || 0} cases currently under investigation</li>
+              <li>✓ {report.summary.pendingIncidents || 0} cases awaiting review or assignment</li>
+              {report.handlerPerformanceAnalysis && report.handlerPerformanceAnalysis.handlers && report.handlerPerformanceAnalysis.handlers.length > 0 && (
                 <li>✓ {report.handlerPerformanceAnalysis.handlers.length} active case handlers assigned to incidents</li>
               )}
             </ul>
@@ -177,12 +173,56 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
           </div>
         </CardContent>
       </Card>
-      <Tabs defaultValue="frequency" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          {report.frequencyAnalysis && <TabsTrigger value="frequency">Frequency</TabsTrigger>}
-          {report.trendAnalysis && <TabsTrigger value="trends">Trends</TabsTrigger>}
-          {report.resolutionTimeAnalysis && <TabsTrigger value="resolution">Resolution Time</TabsTrigger>}
-          {report.handlerPerformanceAnalysis && <TabsTrigger value="handlers">Handlers</TabsTrigger>}
+      {/* Analysis Included Badge */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold text-gray-700">Analyses Included:</span>
+            {report.frequencyAnalysis && (
+              <Badge className="bg-blue-600">
+                <BarChart3 className="h-3 w-3 mr-1" />
+                Frequency Analysis
+              </Badge>
+            )}
+            {report.trendAnalysis && (
+              <Badge className="bg-purple-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Trend Analysis
+              </Badge>
+            )}
+            {report.resolutionTimeAnalysis && (
+              <Badge className="bg-amber-600">
+                <Clock className="h-3 w-3 mr-1" />
+                Resolution Metrics
+              </Badge>
+            )}
+            {report.handlerPerformanceAnalysis && (
+              <Badge className="bg-teal-600">
+                <Users className="h-3 w-3 mr-1" />
+                Staff Performance
+              </Badge>
+            )}
+            {!report.frequencyAnalysis && !report.trendAnalysis && !report.resolutionTimeAnalysis && !report.handlerPerformanceAnalysis && (
+              <span className="text-sm text-gray-500">Summary data only</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue={report.frequencyAnalysis ? "frequency" : report.trendAnalysis ? "trends" : report.resolutionTimeAnalysis ? "resolution" : "handlers"} className="w-full">
+        <TabsList className={`grid w-full ${
+          [report.frequencyAnalysis, report.trendAnalysis, report.resolutionTimeAnalysis, report.handlerPerformanceAnalysis].filter(Boolean).length === 1 
+            ? 'grid-cols-1' 
+            : [report.frequencyAnalysis, report.trendAnalysis, report.resolutionTimeAnalysis, report.handlerPerformanceAnalysis].filter(Boolean).length === 2
+            ? 'grid-cols-2'
+            : [report.frequencyAnalysis, report.trendAnalysis, report.resolutionTimeAnalysis, report.handlerPerformanceAnalysis].filter(Boolean).length === 3
+            ? 'grid-cols-3'
+            : 'grid-cols-4'
+        }`}>
+          {report.frequencyAnalysis && <TabsTrigger value="frequency">📊 Frequency Analysis</TabsTrigger>}
+          {report.trendAnalysis && <TabsTrigger value="trends">📈 Trend Analysis</TabsTrigger>}
+          {report.resolutionTimeAnalysis && <TabsTrigger value="resolution">⏱️ Resolution Metrics</TabsTrigger>}
+          {report.handlerPerformanceAnalysis && <TabsTrigger value="handlers">👥 Staff Performance</TabsTrigger>}
         </TabsList>
 
         {/* Frequency Analysis Tab */}
@@ -217,21 +257,36 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
   );
 };
 
-// Frequency Analysis View
 const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ analysis }) => {
   const getTrendIcon = (trend: 'increasing' | 'decreasing' | 'stable') => {
     switch (trend) {
       case 'increasing':
-        return <TrendingUp className="h-3 w-3 text-red-500" />;
+        return <TrendingUp className="h-4 w-4 text-red-500" />;
       case 'decreasing':
-        return <TrendingDown className="h-3 w-3 text-green-500" />;
+        return <TrendingDown className="h-4 w-4 text-green-500" />;
       case 'stable':
-        return <Minus className="h-3 w-3 text-gray-500" />;
+        return <Minus className="h-4 w-4 text-gray-500" />;
     }
   };
 
   return (
     <>
+      {/* Visual Charts */}
+      {analysis.byCategory && Array.isArray(analysis.byCategory) && analysis.byCategory.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              Cases by Category
+            </CardTitle>
+            <CardDescription>Visual breakdown of incident categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CategoryBarChart data={analysis.byCategory} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* By Category */}
       <Card>
         <CardHeader>
@@ -241,49 +296,39 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {analysis.byCategory.map((item) => (
-            <div key={item.category}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium capitalize">{item.category}</span>
-                  {getTrendIcon(item.trend)}
+          {analysis.byCategory && (Array.isArray(analysis.byCategory) 
+            ? analysis.byCategory.map((item) => (
+                <div key={item.category}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium capitalize">{item.category}</span>
+                      {item.trend && getTrendIcon(item.trend)}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold">{item.count || 0}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({(item.percentage || 0).toFixed(1)}%)
+                      </span>
+                    </div>
+                  </div>
+                  <Progress value={item.percentage || 0} className="h-2" />
                 </div>
-                <div className="text-right">
-                  <span className="font-bold">{item.count}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({item.percentage.toFixed(1)}%)
-                  </span>
+              ))
+            : Object.entries(analysis.byCategory).map(([category, data]: [string, any]) => (
+                <div key={category}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium capitalize">{category.replace(/_/g, ' ')}</span>
+                    <div className="text-right">
+                      <span className="font-bold">{data.count || 0}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({(data.percentage || 0).toFixed(1)}%)
+                      </span>
+                    </div>
+                  </div>
+                  <Progress value={data.percentage || 0} className="h-2" />
                 </div>
-              </div>
-              <Progress value={item.percentage} className="h-2" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* By Severity */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            Incidents by Severity
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {analysis.bySeverity.map((item) => (
-            <div key={item.severity}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium capitalize">{item.severity}</span>
-                <div className="text-right">
-                  <span className="font-bold">{item.count}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({item.percentage.toFixed(1)}%)
-                  </span>
-                </div>
-              </div>
-              <Progress value={item.percentage} className="h-2" />
-            </div>
-          ))}
+              ))
+          )}
         </CardContent>
       </Card>
 
@@ -296,20 +341,23 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {analysis.byLocation.slice(0, 5).map((item) => (
-            <div key={item.location}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">{item.location}</span>
-                <div className="text-right">
-                  <span className="font-bold">{item.count}</span>
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({item.percentage.toFixed(1)}%)
-                  </span>
+          {analysis.byLocation && Array.isArray(analysis.byLocation) && analysis.byLocation.length > 0
+            ? analysis.byLocation.slice(0, 5).map((item) => (
+                <div key={item.location}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium">{item.location || 'Unknown'}</span>
+                    <div className="text-right">
+                      <span className="font-bold">{item.count || 0}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({(item.percentage || 0).toFixed(1)}%)
+                      </span>
+                    </div>
+                  </div>
+                  <Progress value={item.percentage || 0} className="h-2" />
                 </div>
-              </div>
-              <Progress value={item.percentage} className="h-2" />
-            </div>
-          ))}
+              ))
+            : <div className="text-sm text-gray-500">No location data available</div>
+          }
         </CardContent>
       </Card>
 
@@ -324,8 +372,10 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {['Morning', 'Afternoon', 'Evening', 'Night'].map((period) => {
-              const periodData = analysis.byTimeOfDay.filter((t) => t.period === period);
-              const count = periodData.reduce((sum, t) => sum + t.count, 0);
+              const periodData = analysis.byTimeOfDay && Array.isArray(analysis.byTimeOfDay)
+                ? analysis.byTimeOfDay.filter((t) => t.period === period)
+                : [];
+              const count = periodData.reduce((sum, t) => sum + (t.count || 0), 0);
               return (
                 <div key={period} className="text-center p-4 bg-gray-50 rounded-lg">
                   <div className="text-2xl font-bold">{count}</div>
@@ -379,21 +429,40 @@ const TrendAnalysisView: React.FC<{
         </CardContent>
       </Card>
 
+      {/* Trend Line Chart */}
+      {analysis.categoryTrends && Array.isArray(analysis.categoryTrends) && analysis.categoryTrends.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-purple-600" />
+              Category Trends Over Time
+            </CardTitle>
+            <CardDescription>Historical trend comparison across incident categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TrendLineChart trends={analysis.categoryTrends} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Category Trends */}
       <Card>
         <CardHeader>
           <CardTitle>Category Trends</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {analysis.categoryTrends.map((trend) => (
-            <div key={trend.category} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-              <span className="font-medium capitalize">{trend.category}</span>
-              <Badge variant="outline" className={getTrendColor(trend.trend)}>
-                {getTrendIcon(trend.trend)}
-                <span className="ml-1">{Math.abs(trend.percentageChange).toFixed(1)}%</span>
-              </Badge>
-            </div>
-          ))}
+          {analysis.categoryTrends && Array.isArray(analysis.categoryTrends) && analysis.categoryTrends.length > 0
+            ? analysis.categoryTrends.map((trend) => (
+                <div key={trend.category} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                  <span className="font-medium capitalize">{trend.category}</span>
+                  <Badge variant="outline" className={getTrendColor(trend.trend)}>
+                    {getTrendIcon(trend.trend)}
+                    <span className="ml-1">{Math.abs(trend.percentageChange || 0).toFixed(1)}%</span>
+                  </Badge>
+                </div>
+              ))
+            : <div className="text-sm text-gray-500 p-3">No trend data available</div>
+          }
         </CardContent>
       </Card>
     </>
@@ -460,6 +529,22 @@ const ResolutionTimeView: React.FC<{ analysis: ResolutionTimeAnalysis }> = ({ an
           </div>
         </CardContent>
       </Card>
+
+      {/* Resolution Time by Category Chart */}
+      {analysis.byCategory && Array.isArray(analysis.byCategory) && analysis.byCategory.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-600" />
+              Average Resolution Time by Category
+            </CardTitle>
+            <CardDescription>Compare resolution performance across different incident types</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResolutionBarChart data={analysis.byCategory} />
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 };
@@ -484,28 +569,47 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
         </CardContent>
       </Card>
 
+      {/* Handler Performance Chart */}
+      {analysis.handlers && Array.isArray(analysis.handlers) && analysis.handlers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-teal-600" />
+              Staff Workload Distribution
+            </CardTitle>
+            <CardDescription>Visual comparison of case resolution status by staff member</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <HandlerPerformanceChart data={analysis.handlers} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top Performers */}
       <Card>
         <CardHeader>
           <CardTitle>Top Performers</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {analysis.topPerformers.map((performer, idx) => (
-            <div key={`${performer.handlerId}-${idx}`} className="flex items-center justify-between p-3 bg-green-50 rounded">
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className="bg-white">#{idx + 1}</Badge>
-                <div>
-                  <div className="font-medium">{performer.handlerName}</div>
-                  <div className="text-sm text-gray-600">{performer.metric}</div>
+          {analysis.topPerformers && Array.isArray(analysis.topPerformers) && analysis.topPerformers.length > 0
+            ? analysis.topPerformers.map((performer, idx) => (
+                <div key={`${performer.handlerId}-${idx}`} className="flex items-center justify-between p-3 bg-green-50 rounded">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="bg-white">#{idx + 1}</Badge>
+                    <div>
+                      <div className="font-medium">{performer.handlerName || 'Unknown'}</div>
+                      <div className="text-sm text-gray-600">{performer.metric || 'N/A'}</div>
+                    </div>
+                  </div>
+                  <div className="font-bold text-green-600">
+                    {performer.metric && (performer.metric.includes('Rate') || performer.metric.includes('Compliance'))
+                      ? `${(performer.value || 0).toFixed(1)}%`
+                      : `${(performer.value || 0).toFixed(1)}h`}
+                  </div>
                 </div>
-              </div>
-              <div className="font-bold text-green-600">
-                {performer.metric.includes('Rate') || performer.metric.includes('Compliance')
-                  ? `${performer.value.toFixed(1)}%`
-                  : `${performer.value.toFixed(1)}h`}
-              </div>
-            </div>
-          ))}
+              ))
+            : <div className="text-sm text-gray-500 p-3">No top performers data available</div>
+          }
         </CardContent>
       </Card>
 
@@ -515,37 +619,40 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
           <CardTitle>Handler Performance Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {analysis.handlers.map((handler) => (
-            <div key={handler.handlerId} className="p-4 border rounded-lg space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{handler.handlerName}</div>
-                  <div className="text-sm text-gray-600">{handler.handlerRole}</div>
+          {analysis.handlers && Array.isArray(analysis.handlers) && analysis.handlers.length > 0
+            ? analysis.handlers.map((handler) => (
+                <div key={handler.handlerId} className="p-4 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{handler.handlerName || 'Unknown'}</div>
+                      <div className="text-sm text-gray-600">{handler.handlerRole || 'N/A'}</div>
+                    </div>
+                    <Badge variant="outline">
+                      {(handler.resolutionRate || 0).toFixed(1)}% Resolution
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 text-center text-sm">
+                    <div>
+                      <div className="font-bold">{handler.casesAssigned || 0}</div>
+                      <div className="text-gray-600">Assigned</div>
+                    </div>
+                    <div>
+                      <div className="font-bold text-green-600">{handler.casesResolved || 0}</div>
+                      <div className="text-gray-600">Resolved</div>
+                    </div>
+                    <div>
+                      <div className="font-bold text-blue-600">{handler.casesInProgress || 0}</div>
+                      <div className="text-gray-600">In Progress</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{(handler.averageResolutionTime || 0).toFixed(1)}h</div>
+                      <div className="text-gray-600">Avg Time</div>
+                    </div>
+                  </div>
                 </div>
-                <Badge variant="outline">
-                  {handler.resolutionRate.toFixed(1)}% Resolution
-                </Badge>
-              </div>
-              <div className="grid grid-cols-4 gap-3 text-center text-sm">
-                <div>
-                  <div className="font-bold">{handler.casesAssigned}</div>
-                  <div className="text-gray-600">Assigned</div>
-                </div>
-                <div>
-                  <div className="font-bold text-green-600">{handler.casesResolved}</div>
-                  <div className="text-gray-600">Resolved</div>
-                </div>
-                <div>
-                  <div className="font-bold text-blue-600">{handler.casesInProgress}</div>
-                  <div className="text-gray-600">In Progress</div>
-                </div>
-                <div>
-                  <div className="font-bold">{handler.averageResolutionTime.toFixed(1)}h</div>
-                  <div className="text-gray-600">Avg Time</div>
-                </div>
-              </div>
-            </div>
-          ))}
+              ))
+            : <div className="text-sm text-gray-500 p-3">No handler data available</div>
+          }
         </CardContent>
       </Card>
     </>

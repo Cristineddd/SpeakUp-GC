@@ -44,9 +44,8 @@ import {
 } from "../../components/ui/select";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { MoreHorizontal, Shield, UserX, UserCheck, UserCog, Briefcase } from 'lucide-react';
+import { MoreHorizontal, UserX, UserCog, Search, Users2, RefreshCw } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { RepresentativeService } from '../../services/representativeService';
 import type { RepresentativeRole } from '../../types/representative';
@@ -56,6 +55,7 @@ interface User {
   uid: string;
   email: string;
   displayName: string;
+  alias?: string;
   isAdmin: boolean;
   createdAt: string;
   emailVerified: boolean;
@@ -66,6 +66,7 @@ interface User {
 
 const UsersManagement = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [assignRoleDialogOpen, setAssignRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -73,6 +74,7 @@ const UsersManagement = () => {
     role: '' as RepresentativeRole | '',
     position: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -86,20 +88,23 @@ const UsersManagement = () => {
         representatives.map(rep => [rep.userId, rep])
       );
       
-      const usersData = snapshot.docs.map(doc => {
-        const userData = doc.data();
-        const rep = representativeMap.get(doc.id);
-        
-        return {
-          uid: doc.id,
-          ...userData,
-          representativeRole: rep?.role || null,
-          department: rep?.department || userData.department,
-          position: rep?.position || userData.position
-        };
-      }) as User[];
+      const usersData = snapshot.docs
+        .map(doc => {
+          const userData = doc.data();
+          const rep = representativeMap.get(doc.id);
+          
+          return {
+            uid: doc.id,
+            ...userData,
+            representativeRole: rep?.role || null,
+            department: rep?.department || userData.department,
+            position: rep?.position || userData.position
+          };
+        })
+        .filter(user => !user.representativeRole) as User[]; // Exclude representatives
       
       setUsers(usersData);
+      setFilteredUsers(usersData);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -116,32 +121,29 @@ const UsersManagement = () => {
     fetchUsers();
   }, []);
 
-  const toggleAdminStatus = async (uid: string, currentStatus: boolean) => {
-    try {
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
-        isAdmin: !currentStatus
-      });
-      
-      setUsers(users.map(user => 
-        user.uid === uid 
-          ? { ...user, isAdmin: !currentStatus }
-          : user
-      ));
+  // Filter and search effect
+  useEffect(() => {
+    let result = [...users];
 
-      toast({
-        title: "Success",
-        description: `User admin status ${!currentStatus ? 'granted' : 'revoked'}`,
-      });
-    } catch (error) {
-      console.error('Error updating admin status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update admin status",
-        variant: "destructive",
-      });
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(user => 
+        user.alias?.toLowerCase().includes(term) ||
+        user.displayName?.toLowerCase().includes(term) ||
+        user.email.toLowerCase().includes(term) ||
+        user.position?.toLowerCase().includes(term)
+      );
     }
+
+    setFilteredUsers(result);
+  }, [users, searchTerm]);
+
+  // Calculate stats (only regular users, no representatives)
+  const stats = {
+    total: users.length,
   };
+
 
   const deleteUser = async (uid: string) => {
     if (!window.confirm('Are you sure you want to delete this user? This will also delete all their reports and complaints.')) {
@@ -284,69 +286,125 @@ const UsersManagement = () => {
     }
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Invalid Date';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+      <div className="space-y-6">
+        <div>
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div className="h-4 w-96 bg-gray-100 rounded animate-pulse"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse"></div>
+          ))}
+        </div>
+        <div className="h-96 bg-gray-50 rounded-lg animate-pulse"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">Users Management</h1>
-        <p className="text-gray-500">Manage user accounts and permissions.</p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">Users Management</h1>
+          <p className="text-gray-500 text-sm">Manage user accounts and permissions.</p>
+        </div>
+        <Button 
+          onClick={() => fetchUsers()} 
+          variant="outline" 
+          size="sm"
+          className="w-fit"
+        >
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      <div className="rounded-md border">
+      {/* Stats Cards */}
+      <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6 max-w-xs">
+        <div className="flex items-center justify-between mb-2">
+          <div className="bg-green-500 rounded-lg p-2">
+            <Users2 className="h-5 w-5 text-white" />
+          </div>
+        </div>
+        <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+        <p className="text-sm text-gray-600">Total Users</p>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search by name, email, or position..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Results Count */}
+      <div className="text-sm text-gray-500">
+        Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span> of <span className="font-semibold text-gray-900">{users.length}</span> users
+      </div>
+
+      {/* Table */}
+      <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead>Alias</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Admin</TableHead>
-              <TableHead>Representative Role</TableHead>
-              <TableHead>Verified</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-64 text-center">
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <Users2 className="h-12 w-12 mb-3 opacity-40" />
+                    <p className="text-lg font-medium">No users found</p>
+                    <p className="text-sm">Try adjusting your search or filters</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredUsers.map((user) => (
               <TableRow key={user.uid}>
-                <TableCell className="font-medium">{user.displayName || 'N/A'}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  {user.isAdmin && (
-                    <Badge variant="default" className="bg-purple-600">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Admin
-                    </Badge>
-                  )}
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {(user.alias || user.displayName || user.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{user.alias || user.displayName || 'N/A'}</div>
+                      {user.position && (
+                        <div className="text-xs text-gray-500">{user.position}</div>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
-                <TableCell>
-                  {user.representativeRole ? (
-                    <Badge 
-                      variant="outline" 
-                      className={`border-${ROLE_COLORS[user.representativeRole]} text-${ROLE_COLORS[user.representativeRole]}`}
-                    >
-                      <Briefcase className="h-3 w-3 mr-1" />
-                      {ROLE_LABELS[user.representativeRole]}
-                    </Badge>
-                  ) : (
-                    <span className="text-gray-400 text-sm">No role</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {user.emailVerified ? (
-                    <UserCheck className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <UserX className="h-4 w-4 text-red-500" />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {new Date(user.createdAt).toLocaleDateString()}
+                <TableCell className="text-sm text-gray-600">{user.email}</TableCell>
+                <TableCell className="text-sm text-gray-600">
+                  {formatDate(user.createdAt)}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -362,23 +420,9 @@ const UsersManagement = () => {
                         onClick={() => openAssignRoleDialog(user)}
                       >
                         <UserCog className="mr-2 h-4 w-4" />
-                        {user.representativeRole ? 'Change Role' : 'Assign Role'}
+                        Assign as Representative
                       </DropdownMenuItem>
-                      {user.representativeRole && (
-                        <DropdownMenuItem
-                          onClick={() => removeRepresentativeRole(user)}
-                        >
-                          <UserX className="mr-2 h-4 w-4" />
-                          Remove Role
-                        </DropdownMenuItem>
-                      )}
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => toggleAdminStatus(user.uid, user.isAdmin)}
-                      >
-                        <Shield className="mr-2 h-4 w-4" />
-                        {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600"
                         onClick={() => deleteUser(user.uid)}
@@ -390,7 +434,8 @@ const UsersManagement = () => {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
@@ -401,7 +446,7 @@ const UsersManagement = () => {
           <DialogHeader>
             <DialogTitle>Assign Representative Role</DialogTitle>
             <DialogDescription>
-              Assign a role to {selectedUser?.displayName} ({selectedUser?.email})
+              Assign a role to {selectedUser?.alias || selectedUser?.displayName} ({selectedUser?.email}). This user will be moved to the Representatives page.
             </DialogDescription>
           </DialogHeader>
 
