@@ -18,7 +18,8 @@ import {
   Trash2,
   UserPlus,
   MessageCircle,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -56,7 +57,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useRepresentativeRole } from "../../hooks/useRepresentativeRole";
 import { AdminReportService, AdminReport, ReportStats } from "../../services/adminReportService";
 import { format } from "date-fns";
-import { useNavigate } from "../../compat/router";
+import { useNavigate, useLocation } from "../../compat/router";
 import { AssignHandlerDialog } from "../../components/admin/AssignHandlerDialog";
 import { HandlerTimeline } from "../../components/admin/HandlerTimeline";
 import { ReportStatusManager } from "../../components/case/ReportStatusManager";
@@ -189,6 +190,8 @@ const AdminReportsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [escalationFilter, setEscalationFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const location = useLocation();
   const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
   const [newNote, setNewNote] = useState('');
   const [newStatus, setNewStatus] = useState<string>('');
@@ -203,6 +206,7 @@ const AdminReportsPage = () => {
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [videoViewerOpen, setVideoViewerOpen] = useState(false);
+  const [highlightNoteId, setHighlightNoteId] = useState<string | null>(null);
   
   // FIXED: Evidence caching to prevent repetitive processing
   const [evidenceCache] = useState(new Map<string, string[]>());
@@ -211,6 +215,15 @@ const AdminReportsPage = () => {
 
   // Check if user is a handler (not admin)
   const isHandler = role === 'handler' && !isAdmin;
+
+  // Read URL query params on mount to pre-select tab
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const statusParam = params.get('status');
+    if (statusParam && ['all', 'active', 'investigating', 'resolved'].includes(statusParam)) {
+      setActiveTab(statusParam);
+    }
+  }, [location.search]);
 
   // Get representative ID for handlers (use representativeData from hook)
   useEffect(() => {
@@ -296,7 +309,33 @@ const AdminReportsPage = () => {
   // Apply filters when reports or filter values change
   useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter]);
+  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter, activeTab]);
+
+  // Auto-open report from URL query parameter (e.g., from notification)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const reportId = params.get('reportId');
+    const noteId = params.get('noteId');
+    
+    if (reportId && reports.length > 0) {
+      const report = reports.find(r => r.id === reportId);
+      if (report) {
+        console.log('📬 Opening report from notification:', reportId, noteId ? `with note: ${noteId}` : '');
+        setSelectedReport(report);
+        
+        // Set highlight note ID if present
+        if (noteId) {
+          setHighlightNoteId(noteId);
+        }
+        
+        // Clean up URL after opening (delayed to allow scroll to complete)
+        setTimeout(() => {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }, 2000);
+      }
+    }
+  }, [location.search, reports]);
 
   // DEBUG: Monitor reports changes
   useEffect(() => {
@@ -354,6 +393,19 @@ const AdminReportsPage = () => {
   const applyFilters = () => {
     let filtered = reports;
 
+    // Tab-based status filter (takes priority over dropdown filter)
+    if (activeTab === 'active') {
+      filtered = filtered.filter(report => {
+        const status = safeGet(report, 'status');
+        return status === 'pending' || status === 'submitted';
+      });
+    } else if (activeTab === 'investigating') {
+      filtered = filtered.filter(report => safeGet(report, 'status') === 'inProgress');
+    } else if (activeTab === 'resolved') {
+      filtered = filtered.filter(report => safeGet(report, 'status') === 'resolved');
+    }
+    // If activeTab is 'all', no tab-based filtering
+
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(report => 
@@ -364,8 +416,8 @@ const AdminReportsPage = () => {
       );
     }
 
-    // Status filter
-    if (statusFilter !== 'all') {
+    // Additional status filter from dropdown (only if tab is 'all')
+    if (activeTab === 'all' && statusFilter !== 'all') {
       filtered = filtered.filter(report => safeGet(report, 'status') === statusFilter);
     }
 
@@ -432,6 +484,7 @@ const AdminReportsPage = () => {
     fetchReports();
     fetchStats();
     setSelectedReport(null);
+    setHighlightNoteId(null);
     setNewNote('');
     setNewStatus('');
   } catch (error) {
@@ -781,9 +834,12 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             onClick={() => {
               setSelectedReport(report);
             }}
-            title="View Details"
+            className="relative group"
           >
             <Eye className="h-4 w-4" />
+            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+              View Details
+            </span>
           </Button>
         </DialogTrigger>
         <DialogContent className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
@@ -907,7 +963,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   const vicinity = safeGet(selectedReport, 'locationVicinity');
                   
                   return (
-                    <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
+                    <div className="bg-blue-50 p-4 rounded-lg border">
                       <h4 className="font-bold text-base mb-3 flex items-center gap-2 text-blue-700">
                         <MapPin className="h-5 w-5" />
                         Where It Happened
@@ -1243,6 +1299,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   caseTitle={selectedReport.title || 'Case'}
                   assignedToId={selectedReport.assignedTo}
                   assignedToRole={selectedReport.assignedToRole as 'admin' | 'handler'}
+                  highlightNoteId={highlightNoteId || undefined}
                 />
               </div>
             </div>
@@ -1259,10 +1316,12 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           variant="outline" 
           size="sm"
           onClick={() => navigate(`/case-chat/${report.id}`)}
-          title="Open Chat with Complainant"
-          className="text-blue-600 hover:text-blue-700"
+          className="text-blue-600 hover:text-blue-700 relative group"
         >
           <MessageCircle className="h-4 w-4" />
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+            Open Chat
+          </span>
         </Button>
       );
     }
@@ -1295,8 +1354,24 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
   const reportCardClass =
     'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
 
+  // Calculate tab counts
+  const tabCounts = {
+    all: reports.length,
+    active: reports.filter(r => r.status === 'pending' || (r.status as string) === 'submitted').length,
+    investigating: reports.filter(r => r.status === 'inProgress').length,
+    resolved: reports.filter(r => r.status === 'resolved').length,
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Update URL
+    const newUrl = tab === 'all' ? '/admin/reports' : `/admin/reports?status=${tab}`;
+    window.history.pushState({}, '', newUrl);
+  };
+
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 pb-10">
+    <div className="w-full space-y-8 pb-10">
       {/* Fullscreen Image Viewer Modal */}
       {fullscreenImage && (
         <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex flex-col items-center justify-center" onClick={() => setFullscreenImage(null)}>
@@ -1342,10 +1417,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
       {/* Handler Dashboard Stats - ONLY for handlers, NOT for admins */}
       {!isAdmin && isHandler && (
-        <div className="mb-2 grid grid-cols-1 gap-4 md:grid-cols-5">
+        <div className={`mb-2 grid grid-cols-1 gap-4 ${(getHandlerStats()?.escalated || 0) > 0 ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950/80">Total Cases</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">Total Cases</CardTitle>
               <FileText className="h-4 w-4 text-[#1a7a45]" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1358,7 +1433,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950/80">Pending Review</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">Pending Review</CardTitle>
               <Clock className="h-4 w-4 text-[#1a7a45]/75" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1371,7 +1446,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950/80">In Progress</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">In Progress</CardTitle>
               <AlertTriangle className="h-4 w-4 text-[#1a7a45]/70" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1384,7 +1459,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950/80">Resolved</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">Resolved</CardTitle>
               <CheckCircle className="h-4 w-4 text-[#1a7a45]" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1395,34 +1470,52 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             </CardContent>
           </Card>
 
-          <Card className={reportCardClass}>
-            <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950/80">Escalated</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-emerald-900/65" aria-hidden />
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.escalated || 0}</div>
-              <p className="mt-1 text-xs text-emerald-900/55">
-                Elevated priority
-              </p>
-            </CardContent>
-          </Card>
+          {(getHandlerStats()?.escalated || 0) > 0 && (
+            <Card className={reportCardClass}>
+              <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
+                <CardTitle className="text-sm font-medium text-emerald-950">Escalated</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-emerald-900/65" aria-hidden />
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.escalated || 0}</div>
+                <p className="mt-1 text-xs text-emerald-900/55">
+                  Elevated priority
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
-      {/* Header */}
-      <div className="rounded-xl border border-emerald-100/90 bg-gradient-to-br from-emerald-50/50 via-white to-white px-5 py-5 shadow-sm ring-1 ring-emerald-950/[0.03] sm:px-6">
-        <div className="min-w-0 space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#1a7a45]">Case intake</p>
-          <h1 className="text-xl font-bold tracking-tight text-emerald-950 sm:text-2xl md:text-3xl">
-            {isHandler ? 'My Assigned Cases' : 'Reports Management'}
-          </h1>
-          <p className="max-w-2xl text-sm leading-relaxed text-emerald-900/60">
-            {isHandler 
-              ? 'View and manage cases assigned to you'
-              : 'View and manage all incident reports submitted by users'
-            }
-          </p>
+      {/* Header Banner */}
+      <div className="relative rounded-xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-6 py-6 shadow-lg overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-2">
+              <FileText className="h-4 w-4 text-white" />
+              <p className="text-xs font-bold uppercase tracking-wider text-white">Case Intake</p>
+            </div>
+            <h1 className="text-3xl font-bold text-white drop-shadow-lg">
+              {isHandler ? 'My Assigned Cases' : 'Reports Management'}
+            </h1>
+            <p className="text-sm text-white/90 font-medium mt-1">
+              {isHandler 
+                ? 'View and manage cases assigned to you'
+                : 'View and manage all incident reports submitted by users'
+              }
+            </p>
+          </div>
+          {!isHandler && (
+            <Button 
+              onClick={handleExportConfirmation}
+              className="bg-white text-green-600 hover:bg-white/90 font-bold shadow-lg"
+              size="lg"
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Export PDF
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1487,6 +1580,91 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         </div>
       )}
 
+      {/* Status Tabs */}
+      <div className="border-b border-gray-200 bg-white rounded-lg shadow-sm">
+        <nav className="flex space-x-8 px-6" aria-label="Status tabs">
+          <button
+            onClick={() => handleTabChange('all')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'all'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            All
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'all' 
+                ? 'bg-green-100 text-green-600' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.all}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('active')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'active'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            Active
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'active' 
+                ? 'bg-green-100 text-green-600' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.active}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('investigating')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'investigating'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            Under Investigation
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'investigating' 
+                ? 'bg-green-100 text-green-600' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.investigating}
+            </span>
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('resolved')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'resolved'
+                ? 'border-green-600 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            Resolved
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'resolved' 
+                ? 'bg-green-100 text-green-600' 
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.resolved}
+            </span>
+          </button>
+        </nav>
+      </div>
+
       {/* Filters */}
       <Card className={reportCardClass}>
         <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
@@ -1514,7 +1692,6 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="submitted">Submitted</SelectItem>
                 <SelectItem value="inProgress">In Progress</SelectItem>
                 <SelectItem value="resolved">Resolved</SelectItem>
@@ -1642,8 +1819,17 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-gray-400" />
-                          {safeGet(report, 'userName', 'Unknown')}
+                          {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
+                            <>
+                              <Lock className="h-4 w-4 text-amber-600" />
+                              <span className="text-amber-700 font-medium">Anonymous</span>
+                            </>
+                          ) : (
+                            <>
+                              <User className="h-4 w-4 text-gray-400" />
+                              {safeGet(report, 'userName', 'Unknown')}
+                            </>
+                          )}
                         </div>
                       </TableCell>
                       {/* Only show Handler column for admins */}
@@ -1676,11 +1862,17 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       )}
                       {/* Escalation Column */}
                       <TableCell>
-                        <CompactEscalationInfo
-                          level={(report.escalationLevel || 0) as EscalationLevel}
-                          hoursUnprocessed={report.hoursUnprocessed || 0}
-                          slaBreached={report.slaBreached || false}
-                        />
+                        {(report.escalationLevel || 0) > 0 ? (
+                          <CompactEscalationInfo
+                            level={(report.escalationLevel || 0) as EscalationLevel}
+                            hoursUnprocessed={report.hoursUnprocessed || 0}
+                            slaBreached={report.slaBreached || false}
+                          />
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-gray-500 border-gray-300">
+                            None
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(safeGet(report, 'status', 'pending'))}>
@@ -1745,6 +1937,55 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         />
       )}
 
+      {/* Export PDF Confirmation Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Reports to PDF</DialogTitle>
+            <DialogDescription>
+              Export {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} with the current filters applied.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-gray-600">
+              The PDF will include all visible reports in a compact, professional format with:
+            </p>
+            <ul className="mt-2 space-y-1 text-sm text-gray-600 list-disc list-inside">
+              <li>Report ID, Title, and Category</li>
+              <li>Status and Reporter information</li>
+              <li>Location and Incident dates</li>
+              <li>Escalation level (if any)</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExportDialogOpen(false)}
+              disabled={exporting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={exportReports}
+              disabled={exporting}
+              className="bg-[#16A34A] hover:bg-[#15803D]"
+            >
+              {exporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export PDF
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* PDF Viewer Modal */}
       {selectedPdfUrl && (
         <Dialog open={pdfViewerOpen} onOpenChange={setPdfViewerOpen}>
@@ -1763,13 +2004,14 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </div>
               <div className="flex-1 overflow-hidden bg-gray-200 relative">
                 <iframe
-                  src={selectedPdfUrl}
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdfUrl)}&embedded=true`}
                   style={{ 
                     width: '100%', 
                     height: '100%',
                     border: 'none'
                   }}
                   title="PDF Viewer"
+                  allow="autoplay"
                 />
               </div>
               <div className="flex gap-2 p-4 border-t bg-gray-50 justify-end">

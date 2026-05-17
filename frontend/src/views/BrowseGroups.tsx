@@ -158,7 +158,7 @@ const BrowseGroups: React.FC = () => {
                       size="sm"
                       variant="outline"
                       className="w-full"
-                      onClick={() => navigate('/group-chats')}
+                      onClick={() => navigate('/know-your-rights')}
                     >
                       <Check className="h-4 w-4 mr-1" /> Joined — Open Chat
                     </Button>

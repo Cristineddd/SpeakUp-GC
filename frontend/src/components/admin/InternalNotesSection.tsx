@@ -13,7 +13,6 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { CaseNoteService } from '../../services/caseNoteService';
-import RepresentativeService from '../../services/representativeService';
 import type { CaseNote } from '../../types/caseNote';
 import { Lock, Send, MessageSquare, User, UserPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,13 +22,15 @@ interface InternalNotesSectionProps {
   caseTitle: string;
   assignedToId?: string;
   assignedToRole?: 'admin' | 'handler';
+  highlightNoteId?: string;
 }
 
 export function InternalNotesSection({
   caseId,
   caseTitle,
   assignedToId,
-  assignedToRole
+  assignedToRole,
+  highlightNoteId
 }: InternalNotesSectionProps) {
   const [notes, setNotes] = useState<CaseNote[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -45,7 +46,11 @@ export function InternalNotesSection({
 
     try {
       setRegistering(true);
-      await RepresentativeService.autoRegisterAsAdmin(
+      
+      const RepServiceModule = await import('../../services/representativeService');
+      const RepService = RepServiceModule.default;
+      
+      await RepService.autoRegisterAsAdmin(
         currentUser.uid,
         currentUser.email || '',
         currentUser.displayName || undefined
@@ -84,6 +89,34 @@ export function InternalNotesSection({
 
     return () => unsubscribe();
   }, [caseId]);
+
+  // Auto-scroll to and highlight specific note from notification
+  useEffect(() => {
+    if (highlightNoteId && notes.length > 0) {
+      const noteElement = document.getElementById(`note-${highlightNoteId}`);
+      if (noteElement) {
+        console.log('📍 Scrolling to note:', highlightNoteId);
+        
+        // Wait for dialog to fully render
+        setTimeout(() => {
+          noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+          // Add highlight effect with inline styles
+          noteElement.style.transition = 'all 0.3s ease-in-out';
+          noteElement.style.backgroundColor = 'rgba(26, 122, 69, 0.15)';
+          noteElement.style.boxShadow = '0 0 20px 8px rgba(26, 122, 69, 0.3)';
+          noteElement.style.border = '2px solid #1a7a45';
+          
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            noteElement.style.backgroundColor = '';
+            noteElement.style.boxShadow = '';
+            noteElement.style.border = '';
+          }, 3000);
+        }, 500);
+      }
+    }
+  }, [highlightNoteId, notes]);
 
   const handleSubmitNote = async () => {
     if (!newNote.trim()) {
@@ -139,21 +172,88 @@ export function InternalNotesSection({
 
       if (role === 'admin' && assignedToId && assignedToRole) {
         // Admin posting -> notify handler
-        recipientId = assignedToId;
-        recipientRole = assignedToRole;
+        console.log('Admin posting note - notifying handler:', assignedToId);
+        
+        // Create the note and capture the ID
+        const noteId = await CaseNoteService.createNote(noteData);
+        
+        // Send notification to handler with noteId
+        try {
+          // Get handler's userId from representatives collection
+          const RepServiceModule = await import('../../services/representativeService');
+          const RepService = RepServiceModule.default;
+          const handler = await RepService.getById(assignedToId);
+          
+          if (!handler || !handler.userId) {
+            console.error('❌ Handler not found or missing userId:', assignedToId);
+            throw new Error('Handler userId not found');
+          }
+          
+          console.log('✅ Found handler userId:', handler.userId);
+          
+          const { NotificationService } = await import('../../services/notificationService');
+          
+          await NotificationService.createNotification(
+            handler.userId,
+            'comment_added',
+            'New Internal Note from Admin',
+            `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
+            {
+              priority: 'normal',
+              actionUrl: `/admin/reports?reportId=${caseId}&noteId=${noteId}`,
+              data: {
+                caseId,
+                caseTitle,
+                noteId,
+                noteAuthor: noteData.userName,
+                notePreview: newNote.trim().substring(0, 200)
+              }
+            }
+          );
+          
+          console.log('✅ Notification sent to handler:', handler.displayName);
+        } catch (notifError) {
+          console.error('❌ Failed to notify handler:', notifError);
+        }
       } else if (role === 'handler') {
-        // Handler posting -> notify admin (need to find admin who assigned the case)
-        // For now, we'll skip notification to admin or you can implement admin lookup
-        console.log('Handler posted note - admin notification not implemented yet');
-      }
-
-      if (recipientId && recipientRole) {
-        await CaseNoteService.createNoteWithNotification(
-          noteData,
-          caseTitle,
-          recipientId,
-          recipientRole
-        );
+        // Handler posting -> notify ALL admins
+        console.log('Handler posted note - notifying all admins');
+        
+        // First, create the note and capture the ID
+        const noteId = await CaseNoteService.createNote(noteData);
+        
+        // Then notify all admins
+        try {
+          // Dynamic import to ensure proper module loading
+          const RepServiceModule = await import('../../services/representativeService');
+          const RepService = RepServiceModule.default;
+          const admins = await RepService.getAllAdmins();
+          const { NotificationService } = await import('../../services/notificationService');
+          
+          for (const admin of admins) {
+            if (admin.userId) {
+              await NotificationService.createNotification(
+                admin.userId,
+                'comment_added',
+                'New Internal Note from Handler',
+                `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
+                {
+                  priority: 'normal',
+                  actionUrl: `/admin/reports?reportId=${caseId}&noteId=${noteId}`,
+                  data: {
+                    caseId,
+                    caseTitle,
+                    noteId,
+                    noteAuthor: noteData.userName,
+                    notePreview: newNote.trim().substring(0, 200)
+                  }
+                }
+              );
+            }
+          }
+        } catch (notifError) {
+          console.error('Failed to notify admins:', notifError);
+        }
       } else {
         await CaseNoteService.createNote(noteData);
       }
@@ -209,6 +309,7 @@ export function InternalNotesSection({
   }
 
   return (
+    <>
     <Card className="border-2 border-gray-200 shadow-sm">
       <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b-2 border-gray-200">
         <div className="flex items-center gap-3">
@@ -243,6 +344,7 @@ export function InternalNotesSection({
             {notes.map((note) => (
               <div
                 key={note.id}
+                id={`note-${note.id}`}
                 className={`p-4 rounded-lg border ${getNoteCardColor(note.userRole)} transition-all hover:shadow-md`}
               >
                 <div className="flex items-start gap-3">
@@ -357,5 +459,6 @@ export function InternalNotesSection({
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

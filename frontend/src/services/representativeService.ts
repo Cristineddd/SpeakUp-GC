@@ -186,6 +186,35 @@ export class RepresentativeService {
   }
 
   /**
+   * Get all admins for notifications
+   */
+  static async getAllAdmins(): Promise<Representative[]> {
+    try {
+      const q = query(
+        collection(db, this.COLLECTION),
+        where('role', '==', 'admin'),
+        where('isActive', '==', true)
+      );
+      const snapshot = await getDocs(q);
+
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+          updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+          lastActive: data.lastActive?.toDate?.() ? data.lastActive.toDate().toISOString() : data.lastActive,
+          lastLoginAt: data.lastLoginAt?.toDate?.() ? data.lastLoginAt.toDate().toISOString() : data.lastLoginAt
+        } as Representative;
+      });
+    } catch (error) {
+      console.error('❌ Error fetching all admins:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Create new representative
    */
   static async create(data: CreateRepresentativeData): Promise<string> {

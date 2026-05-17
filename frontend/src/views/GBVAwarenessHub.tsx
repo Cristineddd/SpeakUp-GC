@@ -1,7 +1,7 @@
 /**
  * GBVAwarenessHub — SpeakUp GC
  * Know Your Rights & GBV Awareness Hub
- * Route: /group-chats
+ * Route: /know-your-rights
  */
 
 import React, { useState, useEffect } from "react";
@@ -25,22 +25,22 @@ interface ReportingStep { step:number; title:string; description:string; tips:st
 
 const LEGAL_ACTS: LegalAct[] = [
   { acronym:"Safe Spaces Act", raNumber:"RA 11313", title:"Republic Act No. 11313", color:"green", icon:ShieldCheck,
-    summary:"Enacted in 2019, the Safe Spaces Act expands the definition of sexual harassment to cover gender-based sexual harassment committed in streets, public spaces, online, workplaces, and educational institutions. It expressly covers all genders including women, men, and LGBTQIA+ persons.",
+    summary:"Enacted in 2019, the Safe Spaces Act expands the definition of sexual harassment to cover gender-based harassment in streets, public spaces, online, workplaces, and educational institutions. It covers all genders including women, men, and LGBTQIA+ persons.",
     keyProvisions:["Prohibits gender-based sexual harassment in streets, public spaces, online, workplaces, and schools.","Covers catcalling, wolf-whistling, unwanted sexual remarks, unsolicited sexual invitations, misogynistic and homophobic slurs.","Schools must adopt a Code of Conduct and create mechanisms to receive, investigate, and act on complaints.","Mandates at least one (1) anti-sexual harassment focal person per institution.","Prohibits retaliation against complainants and witnesses.","Online sexual harassment includes offensive communications, uploading content without consent, and cyberstalking."],
     penalties:"1–6 months imprisonment and/or fines of ₱10,000–₱500,000 depending on the offense. Institutions face suspension or closure for non-compliance.",
     whoItProtects:"All persons regardless of sex, gender, or sexual orientation — including students, faculty, staff, and visitors in educational settings." },
   { acronym:"Anti-Sexual Harassment Act", raNumber:"RA 7877", title:"Republic Act No. 7877", color:"green", icon:Ban,
-    summary:"The Anti-Sexual Harassment Act of 1995 was the first Philippine law addressing sexual harassment in work and educational environments. It holds employers, educators, and trainers directly liable for failing to prevent or address sexual harassment.",
+    summary:"The Anti-Sexual Harassment Act of 1995 was the first Philippine law addressing sexual harassment in work and educational environments. It holds employers and educators directly liable for failing to prevent or address harassment.",
     keyProvisions:["Defines sexual harassment as an act committed by a person in a position of authority, influence, or moral ascendancy.","Covers workplaces, educational institutions, and training environments.","Requires all institutions to create a written anti-sexual harassment policy.","Mandates the creation of a Committee on Decorum and Investigation (CODI).","Expressly holds superior officers liable if they fail to act on known incidents.","Complainant may file both criminal and administrative cases simultaneously."],
     penalties:"Imprisonment of 1–6 months and/or fine of ₱10,000–₱20,000. Administrative sanctions include dismissal, suspension, or demotion.",
     whoItProtects:"Employees, students, and trainees subjected to sexual harassment by a person with authority, influence, or moral ascendancy over them." },
   { acronym:"VAWC Act", raNumber:"RA 9262", title:"Republic Act No. 9262", color:"green", icon:Heart,
-    summary:"RA 9262 defines and criminalizes violence against women and their children committed by intimate partners. It covers physical, sexual, psychological, and economic abuse.",
+    summary:"RA 9262 defines and criminalizes violence against women and their children by intimate partners. It covers physical, sexual, psychological, and economic abuse.",
     keyProvisions:["Covers physical violence (assault, battery), sexual violence, and psychological violence (emotional abuse, harassment).","Includes economic abuse such as controlling finances or depriving victims of resources.","Temporary and Permanent Protection Orders (TPO/PPO) can be issued within 24 hours.","Barangay Protection Orders (BPO) can be issued immediately by barangay officials.","Covers children who are victims or who witness the abuse.","DSWD, LGUs, and schools must provide assistance and referral to victims."],
     penalties:"Prision correccional to reclusion perpetua depending on the gravity of the offense. Mandatory psychological counseling for the offender.",
     whoItProtects:"Women and their children in intimate partner or family relationships." },
   { acronym:"Data Privacy Act", raNumber:"RA 10173", title:"Republic Act No. 10173", color:"green", icon:Lock,
-    summary:"The Data Privacy Act protects the privacy and security of personal information. In GBV complaints, it ensures that your identity and case details remain strictly confidential.",
+    summary:"The Data Privacy Act protects the privacy and security of personal information. In GBV complaints, it ensures your identity and case details remain strictly confidential.",
     keyProvisions:["Personal data must be processed lawfully and only for its stated purpose.","Data collected must be proportionate — only what is necessary for the complaint.","Complainants have the right to access, correct, and request erasure of their data.","Data must be protected from unauthorized access through adequate security measures.","Unauthorized disclosure of a complainant's identity is a criminal offense.","The National Privacy Commission (NPC) oversees compliance and receives complaints."],
     penalties:"Imprisonment of 1–6 years and fines of ₱500,000–₱4,000,000 for unauthorized processing, access, or disclosure of personal information.",
     whoItProtects:"All persons whose personal data is collected, including complainants, respondents, and witnesses in any complaint proceeding." },
@@ -187,7 +187,7 @@ function LegalActCard({ act, expanded, onToggle }: { act: LegalAct; expanded: bo
         </div>
         {/* Lighter description text */}
         <div className="flex-1">
-          <p className="text-sm text-gray-500 leading-relaxed mt-3">{act.summary}</p>
+          <p className="text-sm text-gray-600 leading-loose mt-3">{act.summary}</p>
         </div>
         {/* Friendlier CTA button */}
         <button
@@ -427,18 +427,18 @@ export default function GBVAwarenessHub() {
       </div>
 
       {/* Tab content */}
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
 
         {/* LEGAL RIGHTS */}
         {activeTab === "laws" && (
           <div className="space-y-6">
-            <div className="flex items-start gap-4 bg-blue-50 border-2 border-blue-200 rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Info className="h-5 w-5 text-blue-600" />
+            <div className="flex items-start gap-4 bg-green-50 border-2 border-green-200 rounded-2xl p-5">
+              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Info className="h-5 w-5 text-[#16A34A]" />
               </div>
               <div>
-                <p className="text-base font-bold text-blue-900 mb-1">Understanding Your Legal Protections</p>
-                <p className="text-sm text-blue-700 leading-relaxed">
+                <p className="text-base font-bold text-green-900 mb-1">Understanding Your Legal Protections</p>
+                <p className="text-sm text-green-700 leading-relaxed">
                   Philippine law provides multiple layers of protection for GBV and sexual harassment survivors.
                   These laws apply to all members of the Gordon College community.
                 </p>

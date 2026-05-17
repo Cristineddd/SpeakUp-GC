@@ -253,7 +253,7 @@ export default function MyComplaints() {
 
   return (
     <div className="min-h-full">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -270,24 +270,24 @@ export default function MyComplaints() {
           </Button>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats Row (Minimal Outline Style) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Total Filed", value: total, icon: FileText, iconColor: "text-gray-500", bg: "bg-gray-100" },
-            { label: "In Progress", value: inProgress, icon: Clock, iconColor: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Resolved", value: resolved, icon: CheckCircle, iconColor: "text-[#16A34A]", bg: "bg-green-50" },
-            { label: "Dismissed", value: dismissed, icon: AlertTriangle, iconColor: "text-red-500", bg: "bg-red-50" },
+            { label: "Total Filed", value: total, icon: FileText },
+            { label: "In Progress", value: inProgress, icon: Clock },
+            { label: "Resolved", value: resolved, icon: CheckCircle },
+            { label: "Dismissed", value: dismissed, icon: AlertTriangle },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center flex-shrink-0`}>
-                  <Icon className={`h-4 w-4 ${stat.iconColor}`} />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900 leading-none">{stat.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
-                </div>
+              <div
+                key={stat.label}
+                className="bg-white rounded-xl p-4 flex flex-col items-center text-center"
+                style={{ border: "0.5px solid #e5e7eb" }}
+              >
+                <Icon className="h-7 w-7 text-[#16a34a] mb-3" strokeWidth={1.5} />
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">{stat.label}</p>
               </div>
             );
           })}

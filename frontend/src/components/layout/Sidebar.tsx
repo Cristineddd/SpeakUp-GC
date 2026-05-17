@@ -48,7 +48,7 @@ export default function Sidebar() {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "File a Complaint", href: "/complaints/new", icon: FileText },
     { name: "My Cases", href: "/complaints", icon: Briefcase, badge: unreadCasesCount },
-    { name: "Know Your Rights", href: "/group-chats", icon: ShieldCheck },
+    { name: "Know Your Rights", href: "/know-your-rights", icon: ShieldCheck },
     { name: "My Profile", href: "/account", icon: UserCircle },
   ];
 
@@ -107,7 +107,7 @@ export default function Sidebar() {
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            const isKnowYourRights = item.href === "/group-chats";
+            const isKnowYourRights = item.href === "/know-your-rights";
 
             const subNav = [
               { label: "Legal Rights",  hash: "laws",      icon: Scale       },
@@ -144,7 +144,7 @@ export default function Sidebar() {
                       return (
                         <button
                           key={sub.hash}
-                          onClick={() => router.push(`/group-chats?tab=${sub.hash}`)}
+                          onClick={() => router.push(`/know-your-rights?tab=${sub.hash}`)}
                           className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-[#16A34A] hover:bg-green-50 rounded-md transition-colors group text-left"
                         >
                           <SubIcon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400 group-hover:text-[#16A34A]" />

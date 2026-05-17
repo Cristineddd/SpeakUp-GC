@@ -454,7 +454,7 @@ const FormalComplaint = () => {
     title: "",
     description: "",
     statementOfFacts: "",
-    type: ComplaintType.MISCONDUCT,
+    type: FORMAL_COMPLAINT_CATEGORIES[0].value as ComplaintType,
     incidentDate: "",
     incidentTime: "",
     incidentLocation: "",
@@ -485,6 +485,7 @@ const FormalComplaint = () => {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [titleGenerated, setTitleGenerated] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
 
   const departments = [
     'Administration',
@@ -1194,9 +1195,9 @@ const FormalComplaint = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 Full name *
-                {hasFieldError('complainantName') && <span className="text-red-500 ml-2 text-xs normal-case">(Required)</span>}
+                {hasFieldError('complainantName') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <Input
                 value={formData.complainantName}
@@ -1219,9 +1220,9 @@ const FormalComplaint = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 Complete address *
-                {hasFieldError('complainantAddress') && <span className="text-red-500 ml-2 text-xs normal-case">(Required)</span>}
+                {hasFieldError('complainantAddress') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <Textarea
                 value={formData.complainantAddress}
@@ -1237,9 +1238,9 @@ const FormalComplaint = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 Contact number *
-                {hasFieldError('complainantContact') && <span className="text-red-500 ml-2 text-xs normal-case">(Required)</span>}
+                {hasFieldError('complainantContact') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1322,7 +1323,7 @@ const FormalComplaint = () => {
             {!unknownRespondent && (
               <>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Full name of respondent *</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Full name of respondent *</label>
                   <Input
                     value={formData.respondentName}
                     onChange={(e) => handleInputChange("respondentName", e.target.value)}
@@ -1333,7 +1334,7 @@ const FormalComplaint = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Position <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Position <span className="font-normal text-gray-400">(optional)</span></label>
                     <Select
                       value={formData.respondentPosition}
                       onValueChange={(value) => handleInputChange("respondentPosition", value === "not-specified" ? "" : value)}
@@ -1350,7 +1351,7 @@ const FormalComplaint = () => {
                     </Select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Department <span className="normal-case font-normal text-gray-400">(optional)</span></label>
+                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Department <span className="font-normal text-gray-400">(optional)</span></label>
                     <Select
                       value={formData.respondentDepartment}
                       onValueChange={(value) => handleInputChange("respondentDepartment", value)}
@@ -1371,8 +1372,8 @@ const FormalComplaint = () => {
             )}
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">
                   Physical description or identifying details
                   {unknownRespondent && <span className="text-red-500 ml-1">*</span>}
                 </label>
@@ -1382,7 +1383,9 @@ const FormalComplaint = () => {
                     formData.respondentAddress.trim().length < 20 ? "text-red-500" :
                     "text-green-600"
                   }`}>
-                    {formData.respondentAddress.trim().length} / 20 min
+                    {formData.respondentAddress.trim().length >= 20 
+                      ? `${formData.respondentAddress.trim().length} chars ✓` 
+                      : `${formData.respondentAddress.trim().length} / 20 minimum`}
                   </span>
                 )}
               </div>
@@ -1421,14 +1424,16 @@ const FormalComplaint = () => {
           <div className="space-y-4">
             {/* Description — moved first so Generate button can activate */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Description *</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">Description *</label>
                 <span className={`text-xs font-medium ${
                   formData.description.trim().length === 0 ? "text-gray-400" :
                   formData.description.trim().length < 20 ? "text-red-500" :
                   "text-green-600"
                 }`}>
-                  {formData.description.trim().length} / 20 min
+                  {formData.description.trim().length >= 20 
+                    ? `${formData.description.trim().length} chars ✓` 
+                    : `${formData.description.trim().length} / 20 minimum`}
                 </span>
               </div>
               <Textarea
@@ -1457,9 +1462,9 @@ const FormalComplaint = () => {
 
             {/* Title with Generate button */}
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 Complaint title *
-                <span className="ml-2 normal-case font-normal text-gray-400">Auto-generated from description</span>
+                <span className="ml-2 font-normal text-gray-400">Auto-generated from description</span>
               </label>
               <div className="flex gap-2">
                 <Input
@@ -1485,7 +1490,7 @@ const FormalComplaint = () => {
 
             {/* Type */}
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Type of complaint *</label>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">Type of complaint *</label>
               <select
                 value={formData.type}
                 onChange={e => {
@@ -1515,9 +1520,9 @@ const FormalComplaint = () => {
             {/* Date + Time row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Date of incident *
-                  {hasFieldError('incidentDate') && <span className="text-red-500 ml-2 text-xs normal-case">(Required)</span>}
+                  {hasFieldError('incidentDate') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
                 </label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1560,8 +1565,8 @@ const FormalComplaint = () => {
                 )}
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
-                  Time of incident <span className="normal-case font-normal text-gray-400">(optional)</span>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                  Time of incident <span className="font-normal text-gray-400">(optional)</span>
                 </label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -1597,7 +1602,7 @@ const FormalComplaint = () => {
             {/* Location */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">Where it happened *</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">Where it happened *</label>
                 <Select value={locationVicinity} onValueChange={setLocationVicinity}>
                   <SelectTrigger className="w-full text-sm border-gray-300">
                     <SelectValue />
@@ -1610,7 +1615,7 @@ const FormalComplaint = () => {
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   {locationVicinity === "online" ? "Platform *" : "Location details"} {locationVicinity === "outside" && <span className="text-red-500">*</span>}
                 </label>
                 {locationVicinity === "online" ? (
@@ -1649,36 +1654,61 @@ const FormalComplaint = () => {
               </div>
             </div>
 
-            {/* Map - Only show when NOT online */}
+            {/* Map - Collapsed by default */}
             {locationVicinity !== "online" && (
               <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Pin exact location on campus</span>
-                  <span className="text-xs text-gray-400">(optional)</span>
-                </div>
-                <LocationMapPicker
-                  onLocationSelect={(lat, lng, address) => setMapCoordinates({ lat, lng, address })}
-                  initialLat={mapCoordinates?.lat}
-                  initialLng={mapCoordinates?.lng}
-                  centerLat={selectedCity ? CITY_COORDINATES[selectedCity]?.[0] : undefined}
-                  centerLng={selectedCity ? CITY_COORDINATES[selectedCity]?.[1] : undefined}
-                  selectedCity={selectedCity}
-                  selectedBarangay={selectedBarangay}
-                />
-                {mapCoordinates && (
-                  <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 text-green-600" />
-                    Pinned: {mapCoordinates.address}
-                  </p>
+                <button
+                  type="button"
+                  onClick={() => setIsMapExpanded(!isMapExpanded)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700">Pin exact location on map</span>
+                    <span className="text-xs text-gray-400">(optional)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {mapCoordinates && (
+                      <span className="text-xs text-green-600 font-medium">✓ Location pinned</span>
+                    )}
+                    <svg
+                      className={`h-5 w-5 text-gray-400 transition-transform ${
+                        isMapExpanded ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                {isMapExpanded && (
+                  <div className="mt-4">
+                    <LocationMapPicker
+                      onLocationSelect={(lat, lng, address) => setMapCoordinates({ lat, lng, address })}
+                      initialLat={mapCoordinates?.lat}
+                      initialLng={mapCoordinates?.lng}
+                      centerLat={selectedCity ? CITY_COORDINATES[selectedCity]?.[0] : undefined}
+                      centerLng={selectedCity ? CITY_COORDINATES[selectedCity]?.[1] : undefined}
+                      selectedCity={selectedCity}
+                      selectedBarangay={selectedBarangay}
+                    />
+                    {mapCoordinates && (
+                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3 text-green-600" />
+                        Pinned: {mapCoordinates.address}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
 
             {/* Witnesses + Additional info */}
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
-                Witnesses <span className="normal-case font-normal text-gray-400">(optional)</span>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Witnesses <span className="font-normal text-gray-400">(optional)</span>
               </label>
               <Textarea
                 value={formData.witnesses}
@@ -1690,8 +1720,8 @@ const FormalComplaint = () => {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
-                Additional information <span className="normal-case font-normal text-gray-400">(optional)</span>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Additional information <span className="font-normal text-gray-400">(optional)</span>
               </label>
               <Textarea
                 value={formData.additionalInfo}
@@ -1947,7 +1977,7 @@ const FormalComplaint = () => {
   const STEP_LABELS = ["Your information", "Respondent", "Incident details", "Supporting files", "Review"];
 
   return (
-    <div className="min-h-full">
+    <div className="min-h-full pt-6">
       {/* Page header - full width */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Formal complaint filing</h1>
@@ -2072,26 +2102,33 @@ const FormalComplaint = () => {
           </div>
           <div>
             {currentStep < 5 && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (validateStep(currentStep)) {
-                    setCurrentStep(prev => Math.min(prev + 1, 5));
-                  } else {
-                    toast({
-                      title: "Incomplete information",
-                      description: currentStep === 4
-                        ? "Please upload at least one file before proceeding."
-                        : "Please fill in all required fields before proceeding.",
-                      variant: "destructive"
-                    });
-                  }
-                }}
-                disabled={!validateStep(currentStep)}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
-              >
-                Continue
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validateStep(currentStep)) {
+                      setCurrentStep(prev => Math.min(prev + 1, 5));
+                    } else {
+                      toast({
+                        title: "Incomplete information",
+                        description: currentStep === 4
+                          ? "Please upload at least one file before proceeding."
+                          : "Please fill in all required fields before proceeding.",
+                        variant: "destructive"
+                      });
+                    }
+                  }}
+                  disabled={!validateStep(currentStep)}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
+                >
+                  Continue
+                </button>
+                {!validateStep(currentStep) && (
+                  <p className="text-xs text-gray-400 italic">
+                    Fill in required fields to continue
+                  </p>
+                )}
+              </div>
             )}
             {currentStep === 5 && (
               <button

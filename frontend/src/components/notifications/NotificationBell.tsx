@@ -13,7 +13,7 @@ import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { NotificationService } from '../../services/notificationService';
 import type { Notification } from '../../types/notification';
 import { getNotificationIcon, getNotificationColor } from '../../types/notification';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useNavigate, useLocation } from '../../compat/router';
 import { useToast } from '../../hooks/use-toast';
 
@@ -56,12 +56,6 @@ export const NotificationBell: React.FC = () => {
     
     setLoading(true);
 
-    // Create test notification (development only) - DISABLED
-    const createTestNotification = async () => {
-      // Test notifications disabled - only create real notifications
-      return;
-    };
-
     // Set up real-time listener
     const unsubscribe = NotificationService.subscribeToNotifications(
       currentUser.uid,
@@ -69,25 +63,31 @@ export const NotificationBell: React.FC = () => {
         console.log('🔔 [BELL] Received notifications from service:', newNotifications.length);
         console.log('🔔 [BELL] Notifications data:', newNotifications);
         
-        setNotifications(newNotifications);
-        const unread = newNotifications.filter((n) => n.status === 'unread').length;
+        // Deduplicate notifications based on title, message, and createdAt
+        const seen = new Map<string, Notification>();
+        newNotifications.forEach(notif => {
+          const key = `${notif.title}-${notif.message}-${new Date(notif.createdAt).getTime()}`;
+          if (!seen.has(key) || notif.status === 'unread') {
+            seen.set(key, notif);
+          }
+        });
+        const deduplicated = Array.from(seen.values());
+        
+        setNotifications(deduplicated);
+        const unread = deduplicated.filter((n) => n.status === 'unread').length;
         setUnreadCount(unread);
         setLoading(false);
         
         console.log('🔔 [BELL] Unread count:', unread);
-        
-        // Test notifications disabled - only show real notifications
       },
       { limit: 20 }
     );
-
-    // Test notifications disabled - only real notifications
 
     return () => {
       console.log('🔔 [BELL] Cleaning up notification listener');
       unsubscribe();
     };
-  }, [currentUser, testNotificationCreated]);
+  }, [currentUser]);
 
   const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -224,7 +224,7 @@ export const NotificationBell: React.FC = () => {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-96 p-0">
+      <DropdownMenuContent align="end" className="w-[420px] p-0 shadow-xl border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-lg">Notifications</h3>
@@ -290,11 +290,14 @@ export const NotificationBell: React.FC = () => {
                           >
                             {notification.title}
                           </p>
-                          <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                             {notification.message}
                           </p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-col gap-0.5 mt-2">
                             <span className="text-xs text-gray-500">
+                              {format(notification.createdAt, 'MMM dd, yyyy • h:mm a')}
+                            </span>
+                            <span className="text-xs text-gray-400">
                               {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
                             </span>
                             {notification.priority === 'high' && (
@@ -314,31 +317,37 @@ export const NotificationBell: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex flex-col gap-1">
-                      {notification.status === 'unread' && (
+                      <div className="relative group/actions">
+                        {notification.status === 'unread' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 relative"
+                            onClick={(e) => handleMarkAsRead(notification.id, e)}
+                            disabled={markingRead === notification.id}
+                          >
+                            {markingRead === notification.id ? (
+                              <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                            ) : (
+                              <Check className="h-3.5 w-3.5" />
+                            )}
+                            <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/actions:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                              Mark as read
+                            </span>
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
-                          onClick={(e) => handleMarkAsRead(notification.id, e)}
-                          title="Mark as read"
-                          disabled={markingRead === notification.id}
+                          className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50 relative"
+                          onClick={(e) => handleDeleteNotification(notification.id, e)}
                         >
-                          {markingRead === notification.id ? (
-                            <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
-                          ) : (
-                            <Check className="h-3 w-3" />
-                          )}
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span className="absolute -bottom-8 right-0 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/actions:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                            Delete
+                          </span>
                         </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={(e) => handleDeleteNotification(notification.id, e)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -347,29 +356,22 @@ export const NotificationBell: React.FC = () => {
           )}
         </ScrollArea>
 
-        {/* Footer */}
-        {notifications.length > 0 && (
-          <div className="p-3 border-t bg-gray-50">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => {
-                // Stay in admin interface if already there, otherwise go to user notifications
-                if (isInAdminInterface) {
-                  // For admin users, just close dropdown since there's no separate admin notifications page
-                  // All notifications are shown in the dropdown
-                  setOpen(false);
-                } else {
-                  navigate('/notifications');
-                  setOpen(false);
-                }
-              }}
-            >
-              {isInAdminInterface ? 'Close' : 'View all notifications'}
-            </Button>
-          </div>
-        )}
+        {/* Footer - Always visible */}
+        <div className="p-3 border-t bg-gray-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-sm font-medium text-green-700 hover:text-green-800 hover:bg-green-50"
+            onClick={() => {
+              if (!isInAdminInterface) {
+                navigate('/notifications');
+              }
+              setOpen(false);
+            }}
+          >
+            {notifications.length > 0 && !isInAdminInterface ? 'View all notifications' : 'Close'}
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

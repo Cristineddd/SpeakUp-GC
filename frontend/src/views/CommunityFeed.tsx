@@ -1,6 +1,6 @@
 /**
  * CommunityFeed — redesigned to match SpeakUp GC design system.
- * Route: /group-chats (or /community-feed)
+ * Route: /know-your-rights (or /community-feed)
  */
 
 import React, { useState } from "react";
@@ -440,8 +440,8 @@ export default function CommunityFeed() {
     setConcernType(null);
   };
 
-  // Only show Topbar if not on /group-chats
-  const showTopbar = !pathname.startsWith('/group-chats');
+  // Only show Topbar if not on /know-your-rights
+  const showTopbar = !pathname.startsWith('/know-your-rights');
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f7f7]">

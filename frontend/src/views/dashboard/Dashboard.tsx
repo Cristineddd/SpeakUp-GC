@@ -17,8 +17,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { useNavigate, Link } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import {
-  FileText, Clock, CheckCircle, AlertTriangle, Bell, Shield,
-  MessageSquare, Plus, ArrowRight, User, Lock,
+  FileText, Clock, CheckCircle, Loader, Bell, Shield,
+  MessageSquare, Plus, ArrowRight, User, Lock, X, Lightbulb, BookOpen,
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -93,6 +93,7 @@ export default function Dashboard() {
   // ── Profile setup modal ──────────────────────────────────────────────────
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [alias, setAlias] = useState<string | null>(null);
+  const [showPrivacyBanner, setShowPrivacyBanner] = useState(true);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -276,7 +277,7 @@ export default function Dashboard() {
         }}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-5">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-5">
 
         {/* ─── Welcome Header ─── */}
         <div>
@@ -286,46 +287,51 @@ export default function Dashboard() {
           <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
         </div>
 
-        {/* ─── Privacy Notice ─── */}
-        <div
-          className="flex items-start gap-3 p-4 rounded-2xl"
-          style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
-        >
-          <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-            <Lock className="h-4 w-4 text-[#16A34A]" />
+        {/* ─── Privacy Notice (Dismissible) ─── */}
+        {showPrivacyBanner && (
+          <div
+            className="flex items-start gap-3 p-4 rounded-2xl relative"
+            style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
+          >
+            <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
+              <Lock className="h-4 w-4 text-[#16A34A]" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-[#15803D]">Your privacy is protected</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
+                All complaints are handled with strict confidentiality by the DEIU office.
+                Your identity is <strong>never disclosed</strong> to respondents without your consent.
+                You may also file anonymously.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowPrivacyBanner(false)}
+              className="shrink-0 p-1 hover:bg-green-200/50 rounded-lg transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4 text-[#15803D]" />
+            </button>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-[#15803D]">Your privacy is protected</p>
-            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
-              All complaints are handled with strict confidentiality by the DEIU office.
-              Your identity is <strong>never disclosed</strong> to respondents without your consent.
-              You may also file anonymously.
-            </p>
-          </div>
-        </div>
+        )}
 
-        {/* ─── Stats Row ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* ─── Stats Row (Minimal Outline Style) ─── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total Filed",  value: total,      icon: FileText,      iconColor: "text-gray-500",   bg: "#F3F4F6" },
-            { label: "Pending",      value: pending,    icon: Clock,         iconColor: "text-yellow-600", bg: "#FEFCE8" },
-            { label: "In Progress",  value: inProgress, icon: AlertTriangle, iconColor: "text-blue-600",   bg: "#EFF6FF" },
-            { label: "Resolved",     value: resolved,   icon: CheckCircle,   iconColor: "text-[#16A34A]",  bg: "#DCFCE7" },
+            { label: "Total Filed",  value: total,      icon: FileText },
+            { label: "Pending",      value: pending,    icon: Clock },
+            { label: "In Progress",  value: inProgress, icon: Loader },
+            { label: "Resolved",     value: resolved,   icon: CheckCircle },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
-                className="flex items-center gap-3 p-4 rounded-2xl"
-                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+                className="bg-white rounded-xl p-4 flex flex-col items-center text-center"
+                style={{ border: "0.5px solid #e5e7eb" }}
               >
-                <div className="rounded-xl p-2.5 shrink-0" style={{ background: stat.bg }}>
-                  <Icon className={`h-5 w-5 ${stat.iconColor}`} />
-                </div>
-                <div>
-                  <p className="text-2xl font-semibold text-gray-900">{loading ? "–" : stat.value}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{stat.label}</p>
-                </div>
+                <Icon className="h-7 w-7 text-[#16a34a] mb-3" strokeWidth={1.5} />
+                <p className="text-3xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
+                <p className="text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
               </div>
             );
           })}
@@ -498,40 +504,42 @@ export default function Dashboard() {
                     See all
                   </button>
                 </div>
-                <div className="p-4 space-y-2">
+                <div className="p-4">
                   {topNotifications.length === 0 ? (
-                    <div className="py-6 text-center">
-                      <Bell className="h-7 w-7 text-gray-200 mx-auto mb-1" />
+                    <div className="py-3 text-center">
+                      <Bell className="h-6 w-6 text-gray-200 mx-auto mb-1" />
                       <p className="text-xs text-gray-400">You're all caught up.</p>
                     </div>
                   ) : (
-                    topNotifications.map((n) => {
-                      const isUnread = n.status === "unread";
-                      const time = n.createdAt ? formatDistanceToNow(new Date(n.createdAt), { addSuffix: true }) : "";
-                      return (
-                        <button
-                          key={n.id}
-                          type="button"
-                          className="w-full text-left p-3 rounded-xl transition-colors"
-                          style={{
-                            background: isUnread ? "#F0FDF4" : "#F9FAFB",
-                            border: `0.5px solid ${isUnread ? "#86EFAC" : "#e2f0e5"}`,
-                          }}
-                          onClick={() => onNotificationClick(n)}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div
-                              className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                              style={{ background: isUnread ? "#16A34A" : "#D1D5DB" }}
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs font-medium text-gray-800 leading-snug">{n.message || n.title}</p>
-                              {!!time && <p className="text-xs text-gray-400 mt-0.5">{time}</p>}
+                    <div className="space-y-3">
+                      {topNotifications.map((n) => {
+                        const isUnread = n.status === "unread";
+                        const time = n.createdAt ? formatDistanceToNow(new Date(n.createdAt), { addSuffix: true }) : "";
+                        return (
+                          <button
+                            key={n.id}
+                            type="button"
+                            className="w-full text-left p-3 rounded-xl transition-colors"
+                            style={{
+                              background: isUnread ? "#F0FDF4" : "#F9FAFB",
+                              border: `0.5px solid ${isUnread ? "#86EFAC" : "#e2f0e5"}`,
+                            }}
+                            onClick={() => onNotificationClick(n)}
+                          >
+                            <div className="flex items-start gap-2">
+                              <div
+                                className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                                style={{ background: isUnread ? "#16A34A" : "#D1D5DB" }}
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-800 leading-snug">{n.message || n.title}</p>
+                                {!!time && <p className="text-xs text-gray-400 mt-0.5">{time}</p>}
+                              </div>
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })
+                          </button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               </div>
@@ -594,46 +602,37 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* ── Quick Actions ── */}
+            {/* ── Know Your Rights (Tip of the Day) ── */}
             <div
               className="rounded-2xl overflow-hidden"
               style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
             >
               <div className="px-5 py-3.5" style={{ borderBottom: "0.5px solid #e8f4ea" }}>
-                <p className="text-sm font-semibold text-gray-800">Quick Actions</p>
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4 text-amber-500" />
+                  Know Your Rights
+                </p>
               </div>
-              <div className="p-4 space-y-2">
+              <div className="p-4">
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-lg p-2 bg-white shadow-sm shrink-0">
+                      <BookOpen className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900 mb-2">Tip of the Day</p>
+                      <p className="text-xs text-amber-800 leading-relaxed">
+                        You have the right to file anonymously. Your identity will be protected throughout the entire process, and you can choose whether or not to reveal yourself at any time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => navigate("/complaints/new")}
-                  className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white transition-colors"
+                  onClick={() => navigate("/know-your-rights")}
+                  className="w-full mt-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Plus className="h-4 w-4 shrink-0" />
-                  <span className="text-sm font-medium">File a Complaint</span>
+                  Learn More About Your Rights
                 </button>
-
-                {[
-                  { label: "My Cases",       icon: FileText,      path: "/complaints" },
-                  { label: "Notifications",  icon: Bell,          path: "/notifications", badge: unreadCount },
-                  { label: "Messages",       icon: MessageSquare, path: "/chat" },
-                  { label: "My Profile",     icon: User,          path: "/account" },
-                ].map(({ label, icon: Icon, path, badge }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => navigate(path)}
-                    className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
-                    style={{ background: "#F9FFF9", border: "0.5px solid #e2f0e5" }}
-                  >
-                    <Icon className="h-4 w-4 text-[#16A34A] shrink-0" />
-                    <span className="text-sm font-medium text-gray-700">{label}</span>
-                    {badge != null && badge > 0 && (
-                      <span className="ml-auto bg-[#16A34A] text-white text-xs rounded-full px-1.5 py-0.5 font-medium">
-                        {badge > 9 ? "9+" : badge}
-                      </span>
-                    )}
-                  </button>
-                ))}
               </div>
             </div>
 

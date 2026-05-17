@@ -130,10 +130,10 @@ export function useReportStatus(
         if (reportSnapshot.exists()) {
           const reportData = reportSnapshot.data();
           const complainantId = reportData.userId;
+          const { NotificationService } = await import('../services/notificationService');
           
+          // Send notification to complainant
           if (complainantId) {
-            const { NotificationService } = await import('../services/notificationService');
-            
             // Send different notifications based on status
             if (newStatus === 'inProgress') {
               await NotificationService.sendComplaintInProgressNotification(
@@ -157,6 +157,44 @@ export function useReportStatus(
                 'Your complaint has been reviewed and dismissed. Please check the details for more information.'
               );
             }
+          }
+          
+          // Send notification to ALL admins about status change by handler
+          try {
+            const RepresentativeServiceModule = await import('../services/representativeService');
+            const RepresentativeService = RepresentativeServiceModule.default;
+            const admins = await RepresentativeService.getAllAdmins();
+            
+            const statusLabels = {
+              'inProgress': 'In Progress',
+              'resolved': 'Resolved',
+              'dismissed': 'Dismissed'
+            };
+            
+            for (const admin of admins) {
+              if (admin.userId) {
+                await NotificationService.createNotification(
+                  admin.userId,
+                  'status_update',
+                  `Case Status Updated to ${statusLabels[newStatus as keyof typeof statusLabels] || newStatus}`,
+                  `${currentUser.displayName || currentUser.email} updated case "${reportData.title || 'Untitled'}" to ${statusLabels[newStatus as keyof typeof statusLabels] || newStatus}${notes ? ': ' + notes.substring(0, 100) : ''}`,
+                  {
+                    priority: newStatus === 'resolved' || newStatus === 'dismissed' ? 'high' : 'normal',
+                    actionUrl: `/admin/reports?reportId=${reportId}`,
+                    data: {
+                      reportId,
+                      reportTitle: reportData.title,
+                      previousStatus: currentStatus,
+                      newStatus,
+                      updatedBy: currentUser.displayName || currentUser.email,
+                      notes: notes || null
+                    }
+                  }
+                );
+              }
+            }
+          } catch (adminNotifError) {
+            console.error('Failed to notify admins about status change:', adminNotifError);
           }
         }
       } catch (notifError) {

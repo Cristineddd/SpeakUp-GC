@@ -77,12 +77,13 @@ interface StatCardProps {
   icon: React.ElementType;
   description: string;
   trend?: TrendData;
+  onClick?: () => void;
 }
 
 const dashCardClass =
   'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend, onClick }) => {
   const getCardGradient = (title: string) => {
     if (title.includes('Users')) return 'from-emerald-500 to-teal-500';
     if (title.includes('Reports') || title.includes('Total Reports')) return 'from-green-500 to-emerald-600';
@@ -92,14 +93,26 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, descripti
     return 'from-green-500 to-green-600';
   };
 
+  const isActiveCasesZero = title.includes('Active') && value === 0;
+
   return (
-    <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
+    <Card 
+      className={`border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group ${
+        onClick ? 'cursor-pointer' : ''
+      }`}
+      onClick={onClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className={`p-4 rounded-2xl bg-gradient-to-br ${getCardGradient(title)} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
             <Icon className="h-8 w-8 text-white" aria-hidden />
           </div>
-          {trend && (
+          {isActiveCasesZero ? (
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700">
+              <CheckCircle className="h-4 w-4" aria-hidden />
+              All clear
+            </div>
+          ) : trend && (
             <div className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold ${
               trend.isPositive 
                 ? 'bg-green-100 text-green-700' 
@@ -120,6 +133,9 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, descripti
             {value}
           </p>
           <p className="text-sm text-gray-500 font-medium">{description}</p>
+          {trend && !isActiveCasesZero && (
+            <p className="text-xs text-gray-400 font-medium">vs. last 30 days</p>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -375,9 +391,11 @@ const AdminDashboard = () => {
     return 'border border-emerald-100/90 bg-white text-emerald-900/85';
   };
 
+  const hasNoData = stats.totalReports === 0 && stats.activeIncidents === 0 && stats.dailyActiveUsers === 0;
+
   if (loading) {
     return (
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 py-24">
+      <div className="flex flex-col items-center justify-center gap-4 py-24">
         <div
           className="h-12 w-12 animate-spin rounded-full border-[3px] border-[#1a7a45]/20 border-t-[#1a7a45]"
           aria-hidden
@@ -388,20 +406,32 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 pb-10">
-      <div className="relative rounded-2xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-8 py-10 shadow-2xl overflow-hidden">
+    <div className="w-full space-y-8 pb-10">
+      <div className="relative rounded-xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-6 py-6 shadow-lg overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm mb-4">
-            <BarChart3 className="h-5 w-5 text-white" />
-            <p className="text-sm font-bold uppercase tracking-wider text-white">Admin Overview</p>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-2">
+              <BarChart3 className="h-4 w-4 text-white" />
+              <p className="text-xs font-bold uppercase tracking-wider text-white">Admin Overview</p>
+            </div>
+            <h1 className="text-3xl font-bold text-white drop-shadow-lg">Dashboard</h1>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-white drop-shadow-lg">Dashboard</h1>
-          <p className="mt-3 max-w-2xl text-lg leading-relaxed text-white/90 font-medium">
-            📊 Real-time metrics and system analytics at a glance
+          <p className="text-sm text-white/90 font-medium">
+            Last updated: {new Date().toLocaleTimeString()}
           </p>
         </div>
       </div>
+
+      {hasNoData && (
+        <div className="rounded-xl border-2 border-dashed border-green-200 bg-green-50/50 px-8 py-12 text-center">
+          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Active Investigations — System is Healthy</h3>
+          <p className="text-gray-600 max-w-md mx-auto">
+            Your system is running smoothly with no pending cases or active reports. New submissions will appear here automatically.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -410,6 +440,7 @@ const AdminDashboard = () => {
           icon={Users}
           description="Registered users"
           trend={trends.usersTrend}
+          onClick={() => navigate('/admin/users')}
         />
         <StatCard
           title="Total Reports"
@@ -417,6 +448,7 @@ const AdminDashboard = () => {
           icon={FileText}
           description="All-time complaints"
           trend={trends.reportsTrend}
+          onClick={() => navigate('/admin/reports')}
         />
         <StatCard
           title="Active Cases"
@@ -424,6 +456,7 @@ const AdminDashboard = () => {
           icon={ShieldAlert}
           description="Under investigation"
           trend={trends.activeTrend}
+          onClick={() => navigate('/admin/reports?status=active')}
         />
         <StatCard
           title="Resolved Cases"
@@ -431,6 +464,7 @@ const AdminDashboard = () => {
           icon={CheckCircle}
           description="Successfully resolved"
           trend={trends.resolvedTrend}
+          onClick={() => navigate('/admin/reports?status=resolved')}
         />
       </div>
 
@@ -442,45 +476,12 @@ const AdminDashboard = () => {
           icon={Users}
           description="Users who submitted reports today"
         />
-        <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg">
-                <CheckCircle className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">Resolution Rate</p>
-            <div className="relative">
-              <svg className="w-full h-32" viewBox="0 0 100 50">
-                <path
-                  d="M 10,45 A 40,40 0 0,1 90,45"
-                  fill="none"
-                  stroke="#e5e7eb"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M 10,45 A 40,40 0 0,1 90,45"
-                  fill="none"
-                  stroke="url(#gradient)"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${(stats.totalReports > 0 ? (stats.resolvedCases / stats.totalReports) * 100 : 0) * 2.51} 251`}
-                />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#059669" />
-                  </linearGradient>
-                </defs>
-                <text x="50" y="35" textAnchor="middle" className="text-4xl font-black fill-gray-900">
-                  {stats.totalReports > 0 ? Math.round((stats.resolvedCases / stats.totalReports) * 100) : 0}%
-                </text>
-              </svg>
-            </div>
-            <p className="text-sm text-gray-500 font-medium text-center mt-2">Of all reports resolved</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Resolution Rate"
+          value={`${stats.totalReports > 0 ? Math.round((stats.resolvedCases / stats.totalReports) * 100) : 0}%`}
+          icon={CheckCircle}
+          description="Of all reports successfully resolved"
+        />
       </div>
 
       {/* Recent Complaints & System Alerts */}

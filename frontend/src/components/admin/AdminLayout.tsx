@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from '../../compat/router';
 import { 
   Users, 
@@ -9,7 +9,10 @@ import {
   Shield,
   LogOut,
   UserPlus,
-  FileCheck
+  FileCheck,
+  ChevronLeft,
+  ChevronRight,
+  User
 } from 'lucide-react';
 const gcLogo = '/LOGO.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,6 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -37,6 +42,29 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, logout, isAdmin } = useAuth();
   const { role } = useRepresentativeRole();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pendingReportsCount, setPendingReportsCount] = useState(0);
+
+  // Real-time listener for pending reports count
+  useEffect(() => {
+    const reportsQuery = query(
+      collection(db, 'reports'),
+      where('status', 'in', ['pending', 'inProgress'])
+    );
+
+    const unsubscribe = onSnapshot(
+      reportsQuery,
+      (snapshot) => {
+        setPendingReportsCount(snapshot.size);
+      },
+      (error) => {
+        console.error('Error fetching pending reports count:', error);
+        setPendingReportsCount(0);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Navigation for Handlers (Case Management Only)
   const handlerNav = [
@@ -108,14 +136,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar Layout */}
       <>
           {/* Sidebar */}
-          <div className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
+          <div className={cn(
+            "fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300",
+            sidebarCollapsed ? "w-20" : "w-64"
+          )}>
             <div className="flex flex-col h-full">
               {/* Logo */}
-              <div className="flex flex-col gap-2 px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center gap-2">
                   <img
                     src={gcLogo}
@@ -128,79 +159,131 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                       target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
                     }}
                   />
-                  <span className="text-lg font-semibold">SpeakUp GC</span>
+                  {!sidebarCollapsed && <span className="text-lg font-semibold">SpeakUp GC</span>}
                 </div>
-                {role === 'handler' && !isAdmin && (
-                  <Badge variant="secondary" className="w-fit text-xs">
-                    <FileText className="h-3 w-3 mr-1" />
-                    Case Handler
-                  </Badge>
-                )}
-                {isAdmin && (
-                  <Badge variant="default" className="w-fit text-xs">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Administrator
-                  </Badge>
-                )}
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                  title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                  {sidebarCollapsed ? (
+                    <ChevronRight className="h-5 w-5 text-gray-600" />
+                  ) : (
+                    <ChevronLeft className="h-5 w-5 text-gray-600" />
+                  )}
+                </button>
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 px-4 py-6 space-y-1">
+              <nav className="flex-1 py-6 space-y-1">
                 {navigationItems.map((item) => (
                   <Link
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      "flex items-start gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                      "relative flex items-center gap-3 px-3 py-2 mx-3 rounded-lg text-sm font-medium transition-colors",
                       location.pathname === item.href
                         ? "bg-primary text-white"
                         : "text-gray-600 hover:bg-gray-100"
                     )}
+                    title={sidebarCollapsed ? item.label : item.description}
                   >
-                    <item.icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div>{item.label}</div>
-                      {item.description && (
-                        <div className={cn(
-                          "text-xs mt-0.5",
-                          location.pathname === item.href
-                            ? "text-white/80"
-                            : "text-gray-500"
-                        )}>
-                          {item.description}
+                    {location.pathname === item.href && (
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
+                    )}
+                    <div className="relative">
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      {item.label === 'Reports' && pendingReportsCount > 0 && (
+                        <div className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-white">{pendingReportsCount}</span>
                         </div>
                       )}
                     </div>
+                    {!sidebarCollapsed && (
+                      <div className="flex-1 min-w-0">
+                        <div>{item.label}</div>
+                      </div>
+                    )}
                   </Link>
                 ))}
               </nav>
 
               {/* User Section */}
               <div className="p-4 border-t border-gray-200">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.displayName}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {user?.email}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowLogoutDialog(true)}
-                    className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
-                    title="Logout"
-                  >
-                    <LogOut className="h-5 w-5" />
-                  </button>
+                <div className="flex items-center gap-2 py-2">
+                  {!sidebarCollapsed ? (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate mb-1.5">
+                          {user?.displayName}
+                        </p>
+                        <div>
+                          {role === 'handler' && !isAdmin && (
+                            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                              <FileText className="h-3 w-3 mr-1" />
+                              Handler
+                            </Badge>
+                          )}
+                          {isAdmin && (
+                            <Badge variant="default" className="text-[10px] px-2 py-0.5">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowLogoutDialog(true)}
+                        className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
+                        title="Logout"
+                      >
+                        <LogOut className="h-5 w-5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setShowLogoutDialog(true)}
+                      className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 mx-auto"
+                      title="Logout"
+                    >
+                      <LogOut className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Main Content — min height so the panel fills the viewport behind short pages */}
-          <div className="min-h-screen pl-64">
-            <main className="min-h-screen bg-gradient-to-b from-gray-50/90 to-gray-100/80 px-5 py-6 sm:px-8 sm:py-8">
+          {/* Main Content with Topbar */}
+          <div className={cn(
+            "flex-1 min-h-screen transition-all duration-300 flex flex-col",
+            sidebarCollapsed ? "ml-20" : "ml-64"
+          )}>
+            {/* Topbar */}
+            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10">
+              <div className="flex-1" />
+              <div className="flex items-center gap-3">
+                <NotificationBell />
+                <div className="h-8 w-px bg-gray-200" />
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="hidden md:block">
+                      <p className="text-sm font-medium text-gray-900">{user?.displayName}</p>
+                      {isAdmin && (
+                        <p className="text-xs text-gray-500">Administrator</p>
+                      )}
+                      {role === 'handler' && !isAdmin && (
+                        <p className="text-xs text-gray-500">Case Handler</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <main className="flex-1 bg-gradient-to-b from-gray-50/90 to-gray-100/80 p-8">
               {children}
             </main>
           </div>
