@@ -42,8 +42,21 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const { user, logout, isAdmin } = useAuth();
   const { role } = useRepresentativeRole();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('adminSidebarCollapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
+
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminSidebarCollapsed', String(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
 
   // Real-time listener for pending reports count
   useEffect(() => {
@@ -141,115 +154,122 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       <>
           {/* Sidebar */}
           <div className={cn(
-            "fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300",
+            "fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-20",
             sidebarCollapsed ? "w-20" : "w-64"
           )}>
             <div className="flex flex-col h-full">
               {/* Logo */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <img
-                    src={gcLogo}
-                    alt="SpeakUp GC Logo"
-                    className="h-8 w-8 object-contain"
-                    onError={(e) => {
-                      console.error('Failed to load logo:', e);
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDIyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
-                    }}
-                  />
-                  {!sidebarCollapsed && <span className="text-lg font-semibold">SpeakUp GC</span>}
-                </div>
+              <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
+                {!sidebarCollapsed && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                      <img
+                        src={gcLogo}
+                        alt="SpeakUp GC Logo"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          console.error('Failed to load logo:', e);
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h1 className="text-base font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
+                      <p className="text-xs text-gray-500 leading-tight mt-0.5">Gordon College DEIU</p>
+                    </div>
+                  </div>
+                )}
+                {sidebarCollapsed && (
+                  <div className="w-full flex justify-center">
+                    <div className="w-9 h-9 flex items-center justify-center">
+                      <img
+                        src={gcLogo}
+                        alt="SpeakUp GC Logo"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Collapse Toggle Button */}
+              <div className="px-4 py-2 border-b border-gray-100">
                 <button
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-                  title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   {sidebarCollapsed ? (
-                    <ChevronRight className="h-5 w-5 text-gray-600" />
+                    <ChevronRight className="h-4 w-4" />
                   ) : (
-                    <ChevronLeft className="h-5 w-5 text-gray-600" />
+                    <>
+                      <ChevronLeft className="h-4 w-4" />
+                      <span>Collapse</span>
+                    </>
                   )}
                 </button>
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 py-6 space-y-1">
-                {navigationItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className={cn(
-                      "relative flex items-center gap-3 px-3 py-2 mx-3 rounded-lg text-sm font-medium transition-colors",
-                      location.pathname === item.href
-                        ? "bg-primary text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                    )}
-                    title={sidebarCollapsed ? item.label : item.description}
-                  >
-                    {location.pathname === item.href && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full" />
-                    )}
-                    <div className="relative">
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {item.label === 'Reports' && pendingReportsCount > 0 && (
-                        <div className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                          <span className="text-[10px] font-bold text-white">{pendingReportsCount}</span>
-                        </div>
+              <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                {navigationItems.map((item) => {
+                  const active = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
+                        sidebarCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
+                        active
+                          ? "bg-[#16A34A] text-white shadow-md"
+                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       )}
-                    </div>
-                    {!sidebarCollapsed && (
-                      <div className="flex-1 min-w-0">
-                        <div>{item.label}</div>
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <div className="relative">
+                        <item.icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white" : "text-gray-400 group-hover:text-gray-600")} />
+                        {item.label === 'Reports' && pendingReportsCount > 0 && (
+                          sidebarCollapsed ? (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                              {pendingReportsCount}
+                            </span>
+                          ) : (
+                            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                              <span className="text-[10px] font-bold text-white">{pendingReportsCount}</span>
+                            </span>
+                          )
+                        )}
                       </div>
-                    )}
-                  </Link>
-                ))}
+                      {!sidebarCollapsed && (
+                        <>
+                          <span className="flex-1 text-sm font-medium">{item.label}</span>
+                          {item.label === 'Reports' && pendingReportsCount > 0 && (
+                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                              {pendingReportsCount}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  );
+                })}
               </nav>
 
               {/* User Section */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex items-center gap-2 py-2">
-                  {!sidebarCollapsed ? (
-                    <>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate mb-1.5">
-                          {user?.displayName}
-                        </p>
-                        <div>
-                          {role === 'handler' && !isAdmin && (
-                            <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
-                              <FileText className="h-3 w-3 mr-1" />
-                              Handler
-                            </Badge>
-                          )}
-                          {isAdmin && (
-                            <Badge variant="default" className="text-[10px] px-2 py-0.5">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Admin
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setShowLogoutDialog(true)}
-                        className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100"
-                        title="Logout"
-                      >
-                        <LogOut className="h-5 w-5" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setShowLogoutDialog(true)}
-                      className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 mx-auto"
-                      title="Logout"
-                    >
-                      <LogOut className="h-5 w-5" />
-                    </button>
+              <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
+                <button
+                  onClick={() => setShowLogoutDialog(true)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600",
+                    sidebarCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5"
                   )}
-                </div>
+                  title={sidebarCollapsed ? "Sign Out" : undefined}
+                >
+                  <LogOut className="h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-red-600" />
+                  {!sidebarCollapsed && <span>Sign Out</span>}
+                </button>
               </div>
             </div>
           </div>
@@ -260,7 +280,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Topbar */}
-            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10">
+            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-50">
               <div className="flex-1" />
               <div className="flex items-center gap-3">
                 <NotificationBell />

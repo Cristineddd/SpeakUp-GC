@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Clock, CheckCircle, AlertTriangle, Eye, Plus, MessageSquare,
   FileText, Search, Calendar as CalendarIcon, User, MapPin, X,
-  FolderOpen
+  FolderOpen, Loader
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Progress } from "../../components/ui/progress";
@@ -274,7 +274,7 @@ export default function MyComplaints() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Total Filed", value: total, icon: FileText },
-            { label: "In Progress", value: inProgress, icon: Clock },
+            { label: "In Progress", value: inProgress, icon: Loader },
             { label: "Resolved", value: resolved, icon: CheckCircle },
             { label: "Dismissed", value: dismissed, icon: AlertTriangle },
           ].map((stat) => {

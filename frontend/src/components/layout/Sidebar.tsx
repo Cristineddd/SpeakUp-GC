@@ -11,7 +11,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   FileText, 
@@ -24,6 +24,8 @@ import {
   HelpCircle,
   Heart,
   Gavel,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUnreadCasesCount } from "../../hooks/useUnreadCasesCount";
@@ -43,6 +45,21 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const unreadCasesCount = useUnreadCasesCount();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Load collapsed state from localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
+
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebarCollapsed', String(isCollapsed));
+    }
+  }, [isCollapsed]);
 
   const navigation: NavItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -86,24 +103,59 @@ export default function Sidebar() {
     <>
     {/* ── Desktop sidebar ── */}
     <aside className="hidden lg:flex lg:flex-shrink-0">
-      <div className="flex flex-col w-68 border-r border-gray-200 bg-white">
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-gray-200">
-          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
-            <img 
-              src={gcLogo} 
-              alt="Gordon College" 
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
-            <p className="text-xs text-gray-500 leading-tight mt-0.5">Gordon College DEIU</p>
-          </div>
+      <div className={cn(
+        "flex flex-col border-r border-gray-200 bg-white transition-all duration-300",
+        isCollapsed ? "w-20" : "w-68"
+      )}>
+        {/* Logo & Collapse Button */}
+        <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
+          {!isCollapsed && (
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                <img 
+                  src={gcLogo} 
+                  alt="Gordon College" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-base font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
+                <p className="text-xs text-gray-500 leading-tight mt-0.5">Gordon College DEIU</p>
+              </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="w-full flex justify-center">
+              <div className="w-9 h-9 flex items-center justify-center">
+                <img 
+                  src={gcLogo} 
+                  alt="Gordon College" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Collapse Toggle Button */}
+        <div className="px-4 py-2 border-b border-gray-100">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -122,22 +174,33 @@ export default function Sidebar() {
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3.5 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative group",
+                    "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
+                    isCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
                     active
                       ? "bg-[#16A34A] text-white shadow-md"
                       : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                   )}
+                  title={isCollapsed ? item.name : undefined}
                 >
                   <Icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white" : "text-gray-400 group-hover:text-gray-600")} />
-                  <span className="flex-1">{item.name}</span>
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                  {!isCollapsed && (
+                    <>
+                      <span className="flex-1 text-sm font-medium">{item.name}</span>
+                      {item.badge !== undefined && item.badge > 0 && (
+                        <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {isCollapsed && item.badge !== undefined && item.badge > 0 && (
+                    <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
                       {item.badge}
                     </span>
                   )}
                 </Link>
                 {/* Sub-navigation for Know Your Rights */}
-                {isKnowYourRights && active && (
+                {isKnowYourRights && active && !isCollapsed && (
                   <div className="mt-1 ml-4 border-l-2 border-[#16A34A]/20 pl-3 space-y-0.5">
                     {subNav.map(sub => {
                       const SubIcon = sub.icon;
@@ -159,14 +222,43 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* Help Center Card */}
+        {!isCollapsed && (
+          <div className="px-4 py-4">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl p-2 bg-white shadow-sm shrink-0">
+                  <HelpCircle className="h-4 w-4 text-[#16A34A]" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#15803D] mb-1">Need Help?</p>
+                  <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                    Contact DEIU for support and guidance.
+                  </p>
+                  <Link
+                    to="/know-your-rights?tab=faq"
+                    className="text-xs font-semibold text-[#16A34A] hover:text-[#15803D] flex items-center gap-1"
+                  >
+                    View FAQs →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3.5 py-3 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all duration-200 w-full group"
+            className={cn(
+              "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600",
+              isCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5"
+            )}
+            title={isCollapsed ? "Sign Out" : undefined}
           >
             <LogOut className="h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-red-600" />
-            <span>Sign Out</span>
+            {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
       </div>

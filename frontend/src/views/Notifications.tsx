@@ -291,195 +291,176 @@ export default function NotificationsPage() {
   if (!currentUser) return null;
 
   return (
-    <PageShell>
-      <PageHeader
-        title="Notifications"
-        subtitle="Stay updated on your cases and account activity"
-        action={
-          <div className="flex gap-2">
-            {unreadCount > 0 && (
-              <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-                <CheckCheck className="h-4 w-4 mr-2" />
-                Mark all read
-              </Button>
-            )}
-            {readCount > 0 && (
-              <Button variant="outline" size="sm" onClick={handleDeleteAllRead}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete read
-              </Button>
-            )}
-          </div>
-        }
-      />
-
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search notifications…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-sm h-10"
-            />
-          </div>
-          <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value as any)}>
-            <SelectTrigger className="w-full md:w-44 h-10 text-sm">
-              <Filter className="h-3.5 w-3.5 mr-2 text-gray-400" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="normal">Normal</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="min-h-full bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {/* Simple, clean header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Notifications</h1>
+          <p className="text-sm text-gray-500 mt-1">Stay updated on your cases and account activity</p>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="all">
-            All ({notifications.length})
-          </TabsTrigger>
-          <TabsTrigger value="unread">
-            Unread ({unreadCount})
-          </TabsTrigger>
-          <TabsTrigger value="read">
-            Read ({readCount})
-          </TabsTrigger>
-        </TabsList>
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-        <TabsContent value={activeTab} className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </CardContent>
-            </Card>
-          ) : filteredNotifications.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Bell className="h-16 w-16 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No notifications found
-                </h3>
-                <p className="text-gray-600">
-                  {searchQuery || priorityFilter !== 'all'
-                    ? 'Try adjusting your filters'
-                    : "You're all caught up!"}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredNotifications.map((notification) => (
-              <Card
-                key={notification.id}
-                className={`hover:shadow-md transition-shadow cursor-pointer ${
-                  notification.status === 'unread' ? 'border-l-4 border-l-blue-500 bg-blue-50' : ''
-                }`}
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div
-                      className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center text-2xl ${getNotificationColor(
-                        notification.priority
-                      )}`}
-                    >
-                      {getNotificationIcon(notification.type)}
-                    </div>
+        {/* Search bar with action buttons */}
+        <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <div className="flex-1 relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search notifications…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 text-sm h-9 border-0 focus-visible:ring-1"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} className="h-9 text-xs">
+                  <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
+                  Mark all read
+                </Button>
+              )}
+              {readCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleDeleteAllRead} className="h-9 text-xs text-red-600 hover:bg-red-50 hover:text-red-700">
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Delete read
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3
-                          className={`text-lg font-semibold ${
-                            notification.status === 'unread' ? 'text-gray-900 font-bold' : 'text-gray-700'
-                          }`}
-                        >
-                          {notification.title}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge className={getNotificationBadgeColor(notification.priority)}>
-                            {notification.priority}
-                          </Badge>
-                          {notification.status === 'unread' && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-full" />
-                          )}
-                        </div>
-                      </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+          <TabsList className="grid w-full grid-cols-3 mb-4 bg-white border border-gray-200">
+            <TabsTrigger value="all" className="data-[state=active]:bg-gray-100">
+              All ({notifications.length})
+            </TabsTrigger>
+            <TabsTrigger value="unread" className="data-[state=active]:bg-gray-100">
+              Unread ({unreadCount})
+            </TabsTrigger>
+            <TabsTrigger value="read" className="data-[state=active]:bg-gray-100">
+              Read ({readCount})
+            </TabsTrigger>
+          </TabsList>
 
-                      <p className="text-gray-700 mb-3">{notification.message}</p>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>{NOTIFICATION_TYPE_LABELS[notification.type]}</span>
-                          <span>•</span>
-                          <span title={format(notification.createdAt, 'PPpp')}>
-                            {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
-                          </span>
-                          {notification.actionUrl && (
-                            <>
-                              <span>•</span>
-                              <span className="text-blue-600 flex items-center gap-1">
-  
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          {notification.status === 'unread' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkAsRead(notification.id);
-                              }}
-                            >
-                              <Check className="h-4 w-4 mr-1" />
-                              Mark read
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteNotification(notification.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          <TabsContent value={activeTab} className="space-y-3">
+            {loading ? (
+              <Card className="w-full">
+                <CardContent className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </TabsContent>
-      </Tabs>
-    </PageShell>
+            ) : filteredNotifications.length === 0 ? (
+              <Card className="w-full">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Bell className="h-16 w-16 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    No notifications found
+                  </h3>
+                  <p className="text-gray-600">
+                    {searchQuery || priorityFilter !== 'all'
+                      ? 'Try adjusting your filters'
+                      : "You're all caught up!"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredNotifications.map((notification) => {
+                // Clean message - remove redundant "Notes:" prefix and truncate
+                const cleanMessage = notification.message.replace(/^Notes:\s*/i, '').trim();
+                const truncatedMessage = cleanMessage.length > 150 
+                  ? cleanMessage.substring(0, 150) + '...' 
+                  : cleanMessage;
+                
+                return (
+                  <Card
+                    key={notification.id}
+                    className={`w-full transition-all cursor-pointer border ${
+                      notification.status === 'unread' 
+                        ? 'bg-blue-50/30 border-blue-100 hover:border-blue-200 hover:shadow-sm' 
+                        : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Unread indicator dot */}
+                        {notification.status === 'unread' && (
+                          <div className="flex-shrink-0 mt-1.5">
+                            <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                          </div>
+                        )}
+
+                        {/* Content - no icons */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <h3 className={`text-sm font-semibold leading-snug ${
+                              notification.status === 'unread' ? 'text-gray-900' : 'text-gray-700'
+                            }`}>
+                              {notification.title}
+                            </h3>
+                          </div>
+
+                          {/* Message */}
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                            {truncatedMessage}
+                          </p>
+
+                          {/* Footer: timestamp + actions */}
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                              <span>{NOTIFICATION_TYPE_LABELS[notification.type]}</span>
+                              <span>•</span>
+                              <span title={format(notification.createdAt, 'PPpp')}>
+                                {formatDistanceToNow(notification.createdAt, { addSuffix: true })}
+                              </span>
+                            </div>
+
+                            {/* Compact action buttons */}
+                            <div className="flex gap-1">
+                              {notification.status === 'unread' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkAsRead(notification.id);
+                                  }}
+                                >
+                                  <Check className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNotification(notification.id);
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
   );
 }

@@ -31,10 +31,13 @@ export class NotificationService {
   private static readonly notificationsCollection = 'notifications';
   private static readonly preferencesCollection = 'notificationPreferences';
 
-  /** In-app only — chat / read receipts should not spam EmailJS (assignment & status still email). */
+  /** In-app only — chat / read receipts should not spam EmailJS (assignment & status still email). 
+   * Internal notes ('new_comment', 'comment_added' for internal use) are also suppressed from email
+   * to prevent complainants from being notified about admin/handler private conversations. */
   private static readonly emailSuppressedTypes: ReadonlySet<NotificationType> = new Set([
     'new_message',
     'message_read',
+    'new_comment',
   ]);
   private static readonly errorHandler = (error: any, context: string) => {
     console.error(`[NotificationService] ${context}:`, error);
@@ -216,6 +219,18 @@ export class NotificationService {
 
   /**
    * Send notification when an internal case note is added
+   * 
+   * ⚠️ IMPORTANT: This notification is ONLY for admin and case handler recipients.
+   * Internal notes are NEVER visible to complainants.
+   * The userId parameter MUST be a userId from the representatives collection (admin or handler).
+   * Email notifications are suppressed for this type to prevent accidental disclosure.
+   * 
+   * @param userId - The userId of the admin or handler recipient (from representatives collection)
+   * @param caseId - The case/complaint ID
+   * @param caseTitle - The title of the case
+   * @param noteBy - Display name of the person who created the note
+   * @param noteByRole - Role of the note creator ('admin' or 'handler')
+   * @param noteText - The content of the internal note
    */
   static async sendCaseNoteNotification(
     userId: string,
@@ -239,7 +254,8 @@ export class NotificationService {
         data: {
           noteBy: noteBy,
           noteByRole: noteByRole,
-          notePreview: noteText.substring(0, 200)
+          notePreview: noteText.substring(0, 200),
+          isInternalNote: true  // Flag to trigger recipient verification
         }
       }
     );
@@ -706,6 +722,35 @@ export class NotificationService {
         }
       }
 
+      // SAFETY CHECK: Prevent internal notes from being sent to complainants
+      // new_comment notifications (when marked as internal) should ONLY go to admin/handler users
+      if (type === 'new_comment' || options?.data?.isInternalNote) {
+        try {
+          // Verify recipient is an admin or handler in the representatives collection
+          const representativesRef = collection(db, 'representatives');
+          const q = query(representativesRef, where('userId', '==', userId));
+          const snapshot = await getDocs(q);
+          
+          if (snapshot.empty) {
+            console.warn(`⚠️ Blocked case_note notification to non-representative user ${userId}`);
+            return ''; // Don't send notification to complainants
+          }
+          
+          const repData = snapshot.docs[0].data();
+          const role = repData.role;
+          
+          if (role !== 'admin' && role !== 'handler') {
+            console.warn(`⚠️ Blocked case_note notification to user ${userId} with role: ${role}`);
+            return ''; // Only admins and handlers should receive internal notes
+          }
+          
+          console.log(`✅ Verified recipient ${userId} is ${role} - proceeding with case_note notification`);
+        } catch (error) {
+          console.error('Error verifying recipient role for case_note:', error);
+          return ''; // Fail safe - don't send if we can't verify
+        }
+      }
+
       // Build notification object WITHOUT undefined fields
       const notificationData: any = {
         userId,
@@ -1144,12 +1189,26 @@ export class NotificationService {
       const isSubmission = notification.type === 'complaint_created';
       const templateId   = isSubmission ? templateSubmitted : templateUpdate;
 
+      // Get formatted Case ID from complaint document
+      let formattedCaseId = 'N/A';
+      if (notification.complaintId) {
+        try {
+          const complaintDoc = await getDoc(doc(db, 'complaints', notification.complaintId));
+          if (complaintDoc.exists()) {
+            formattedCaseId = complaintDoc.data().caseId || notification.complaintId;
+          }
+        } catch (error) {
+          console.warn('Could not fetch complaint caseId, using raw ID:', error);
+          formattedCaseId = notification.complaintId;
+        }
+      }
+
       const templateParams = isSubmission
         ? {
             // template_2ry6qwe variables
             to_email: email,
             to_name:  toName,
-            case_id:  notification.complaintId ?? 'N/A',
+            case_id:  formattedCaseId,
             category: notification.data?.category ?? 'General',
             date:     dateStr,
           }
@@ -1157,7 +1216,7 @@ export class NotificationService {
             // template_z7sdtfq variables
             to_email: email,
             to_name:  toName,
-            case_id:  notification.complaintId ?? 'N/A',
+            case_id:  formattedCaseId,
             status:   notification.data?.newStatus ?? notification.title,
             message:  notification.message,
             date:     dateStr,

@@ -780,7 +780,7 @@ const Reports = () => {
               )}
             </DialogTitle>
             <DialogDescription>
-              Case ID: {selectedReport?.id}
+              Case ID: {(selectedReport as any)?.caseId || selectedReport?.id}
             </DialogDescription>
           </DialogHeader>
 

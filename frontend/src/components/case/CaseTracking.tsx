@@ -845,7 +845,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 mb-0.5">Case ID</p>
-              <p className="text-sm font-mono font-semibold text-gray-700 break-all">{complaint.id}</p>
+              <p className="text-sm font-mono font-semibold text-gray-700 break-all">{(complaint as any).caseId || complaint.id}</p>
               <h2 className="text-lg font-bold text-gray-900 mt-1 leading-tight">{complaint.title}</h2>
               <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />

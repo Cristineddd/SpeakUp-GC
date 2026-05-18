@@ -193,9 +193,10 @@ export function InternalNotesSection({
           
           const { NotificationService } = await import('../../services/notificationService');
           
+          // IMPORTANT: Use 'new_comment' type for internal notes
           await NotificationService.createNotification(
             handler.userId,
-            'comment_added',
+            'new_comment',
             'New Internal Note from Admin',
             `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
             {
@@ -206,7 +207,8 @@ export function InternalNotesSection({
                 caseTitle,
                 noteId,
                 noteAuthor: noteData.userName,
-                notePreview: newNote.trim().substring(0, 200)
+                notePreview: newNote.trim().substring(0, 200),
+                isInternalNote: true  // Flag to identify internal notes
               }
             }
           );
@@ -232,9 +234,10 @@ export function InternalNotesSection({
           
           for (const admin of admins) {
             if (admin.userId) {
+              // IMPORTANT: Use 'new_comment' type for internal notes
               await NotificationService.createNotification(
                 admin.userId,
-                'comment_added',
+                'new_comment',
                 'New Internal Note from Handler',
                 `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
                 {
@@ -245,7 +248,8 @@ export function InternalNotesSection({
                     caseTitle,
                     noteId,
                     noteAuthor: noteData.userName,
-                    notePreview: newNote.trim().substring(0, 200)
+                    notePreview: newNote.trim().substring(0, 200),
+                    isInternalNote: true  // Flag to identify internal notes
                   }
                 }
               );

@@ -266,6 +266,35 @@ export default function Dashboard() {
 
   const isNewUser = !loading && total === 0 && notifications.length === 0 && chatRooms.length === 0;
 
+  // Daily rotating tips
+  const dailyTips = [
+    "You have the right to file anonymously. Your identity will be protected throughout the entire process, and you can choose whether or not to reveal yourself at any time.",
+    "All complaints are handled with strict confidentiality by the DEIU office. Your personal information is secured and encrypted.",
+    "You can file a complaint even if you don't know the full name of the person who harassed you. A description is sufficient.",
+    "The DEIU investigates all complaints fairly and impartially. Both parties will be heard during the process.",
+    "You have the right to withdraw your complaint at any point during the investigation if you feel it's the right decision.",
+    "Evidence such as screenshots, photos, messages, or witness statements can strengthen your case. Keep copies of all relevant materials.",
+    "The Safe Spaces Act (RA 11313) protects you from gender-based harassment in streets, public spaces, online, and workplaces.",
+    "You are entitled to psychological support and counseling services through the Gordon College DEIU office throughout the process.",
+    "Filing a complaint does not automatically reveal your identity to the respondent. You control when and if your identity is disclosed.",
+    "The Anti-Sexual Harassment Act (RA 7877) covers harassment in employment, education, and training environments.",
+    "You can request for a case handler of a specific gender if it makes you more comfortable during the investigation.",
+    "All DEIU proceedings are conducted in a safe, private, and respectful environment. Your dignity is always protected.",
+    "You have the right to be informed of the progress and outcome of your complaint at every stage of the investigation.",
+    "Retaliation against complainants is strictly prohibited and can result in additional charges against the respondent.",
+  ];
+
+  // Get tip based on day of year (rotates daily)
+  const getDayOfYear = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+  };
+
+  const todaysTip = dailyTips[getDayOfYear() % dailyTips.length];
+
   return (
     // ─── Page background: light green-tinted (applied at layout level) ───
     <div className="min-h-full">
@@ -433,6 +462,31 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+
+              {/* ── Know Your Rights (moved here to fill white space) ── */}
+              <div className="px-4 pb-4">
+                <div className="pt-4" style={{ borderTop: "0.5px solid #e8f4ea" }}>
+                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-lg p-2 bg-white shadow-sm shrink-0">
+                        <Lightbulb className="h-5 w-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-amber-900 mb-2">Know Your Rights - Tip of the Day</p>
+                        <p className="text-xs text-amber-800 leading-relaxed">
+                          {todaysTip}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/know-your-rights")}
+                    className="w-full mt-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Learn More About Your Rights
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -599,40 +653,6 @@ export default function Dashboard() {
                     );
                   })
                 )}
-              </div>
-            </div>
-
-            {/* ── Know Your Rights (Tip of the Day) ── */}
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
-            >
-              <div className="px-5 py-3.5" style={{ borderBottom: "0.5px solid #e8f4ea" }}>
-                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-amber-500" />
-                  Know Your Rights
-                </p>
-              </div>
-              <div className="p-4">
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-lg p-2 bg-white shadow-sm shrink-0">
-                      <BookOpen className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-amber-900 mb-2">Tip of the Day</p>
-                      <p className="text-xs text-amber-800 leading-relaxed">
-                        You have the right to file anonymously. Your identity will be protected throughout the entire process, and you can choose whether or not to reveal yourself at any time.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate("/know-your-rights")}
-                  className="w-full mt-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Learn More About Your Rights
-                </button>
               </div>
             </div>
 
