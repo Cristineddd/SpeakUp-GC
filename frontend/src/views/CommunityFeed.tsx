@@ -57,9 +57,8 @@ function Topbar({ onShare }: { onShare: () => void }) {
       </p>
       <div className="flex items-center gap-4">
         {/* Bell */}
-        <button className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-          <Bell className="h-4.5 w-4.5 text-gray-500 h-[18px] w-[18px]" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
+        <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <Bell className="h-[18px] w-[18px] text-gray-700" />
         </button>
         {/* Avatar */}
         <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">

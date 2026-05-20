@@ -1768,6 +1768,9 @@ const FormalComplaint = () => {
               <p className="text-sm font-medium text-gray-700">Add supporting files</p>
               <p className="text-xs text-gray-400 mt-1">Upload files or provide external links</p>
               <p className="text-xs font-medium text-blue-600 mt-0.5">For files larger than 50MB, use external links (Google Drive, Dropbox, etc.)</p>
+              <p className="text-xs font-semibold text-amber-600 mt-1.5 bg-amber-50 border border-amber-200 rounded px-2 py-1 inline-block">
+                ⚠️ Important: Make sure external links are set to "Public" or "Anyone with link can view"
+              </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
                 <button
                   type="button"

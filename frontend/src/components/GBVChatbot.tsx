@@ -2,13 +2,15 @@
 
 /**
  * GBVChatbot — Floating AI assistant (Laya) for the Know Your Rights Hub.
- * Uses Gemini API to answer GBV, legal rights, and reporting questions.
+ * Uses multi-provider AI with automatic fallback (Gemini → Groq → OpenRouter)
+ * to answer GBV, legal rights, and reporting questions with high availability.
  */
 
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Loader2, Minimize2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { config } from "../config/api";
+import { logger } from "../utils/logger";
 
 interface Message {
   role: "user" | "assistant";
@@ -19,9 +21,14 @@ const SYSTEM_CONTEXT = `You are Laya, the compassionate AI assistant of SpeakUp 
 
 - RA 11313 (Safe Spaces Act)
 - RA 7877 (Anti-Sexual Harassment Act)
-- RA 9262 (VAWC Act)
 - RA 10173 (Data Privacy Act)
-- Gordon College CODI (Code of Internal Discipline and Integrity)
+- Gordon College Committee on Decorum and Investigation (GC-CODI)
+
+IMPORTANT ABBREVIATIONS:
+- **GC-CODI** = Gordon College Committee on Decorum and Investigation (or simply CODI = Committee on Decorum and Investigation)
+- **DEIU** = Diversity, Equity, and Inclusion Unit
+
+The DEIU office handles support services and the GC-CODI investigates harassment complaints.
 
 Your role:
 1. Help users understand their legal rights and protections.
@@ -40,37 +47,30 @@ const SUGGESTIONS = [
   "What counts as sexual harassment?",
 ];
 
-async function callGemini(messages: Message[]): Promise<string> {
-  const { apiKey, model, apiVersion, endpoint } = config.gemini;
-  const url = `${endpoint}/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
-
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.text }],
+/**
+ * Call AI with automatic fallback
+ * Tries Gemini → Groq → OpenRouter for high availability
+ */
+async function callAIWithFallback(messages: Message[]): Promise<string> {
+  // Import the fallback AI service
+  const { generateAIResponseWithFallback } = await import('../services/ai.service');
+  
+  // Get the last user message
+  const lastMessage = messages[messages.length - 1];
+  if (!lastMessage || lastMessage.role !== 'user') {
+    throw new Error('No user message found');
+  }
+  
+  // Convert message history to conversation history format
+  // (exclude the last message since it's passed separately)
+  const conversationHistory = messages.slice(0, -1).map(msg => ({
+    isUser: msg.role === 'user',
+    content: msg.text
   }));
-
-  // Prepend system context as first user turn
-  contents.unshift({
-    role: "user",
-    parts: [{ text: SYSTEM_CONTEXT }],
-  });
-  contents.splice(1, 0, {
-    role: "model",
-    parts: [{ text: "Understood. I'm Laya, and I'm here to help. How can I support you today?" }],
-  });
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-    }),
-  });
-
-  if (!res.ok) throw new Error("Gemini API error");
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "I'm sorry, I couldn't generate a response. Please try again.";
+  
+  // Call the AI service with fallback support
+  const response = await generateAIResponseWithFallback(lastMessage.text, conversationHistory);
+  return response;
 }
 
 export default function GBVChatbot() {
@@ -108,10 +108,11 @@ export default function GBVChatbot() {
     setLoading(true);
 
     try {
-      const reply = await callGemini(newMessages);
+      const reply = await callAIWithFallback(newMessages);
       setMessages([...newMessages, { role: "assistant", text: reply }]);
-    } catch {
-      setMessages([...newMessages, { role: "assistant", text: "I'm having trouble connecting right now. Please try again in a moment." }]);
+    } catch (error) {
+      logger.error('AI service error:', error);
+      setMessages([...newMessages, { role: "assistant", text: "I'm having trouble connecting right now. All AI providers are temporarily unavailable. Please try again in a moment." }]);
     } finally {
       setLoading(false);
     }
@@ -124,7 +125,7 @@ export default function GBVChatbot() {
     );
 
   return (
-    <div className="fixed bottom-6 right-5 z-50 flex flex-col items-end gap-2">
+    <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-5 z-50 flex flex-col items-end gap-2">
 
       {/* Greeting bubble */}
       {!open && showBubble && (

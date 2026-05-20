@@ -74,26 +74,10 @@ export const useProfileCompletion = (): ProfileCompletionStatus => {
                                    userData.isProfileComplete === true ||
                                    userData.hasCompletedProfile === true;
 
-        console.log('🔍 useProfileCompletion: Checking profile completion');
-        console.log('🔍 hasBasicProfile:', hasBasicProfile);
-        console.log('🔍 isExplicitlyComplete:', isExplicitlyComplete);
-        console.log('🔍 missingFields:', missingFields);
-        console.log('🔍 userData:', {
-          name: userData.name,
-          email: userData.email,
-          department: userData.department,
-          location: userData.location,
-          phone: userData.phone,
-          userType: userData.userType,
-          profileCompleted: userData.profileCompleted
-        });
-
-        // CRITICAL FIX: Profile is complete if either:
-        // 1. Explicitly marked as complete OR
+        // Profile is complete if EITHER:
+        // 1. Explicitly marked as complete
         // 2. Has all basic required fields
         const isComplete = isExplicitlyComplete || hasBasicProfile;
-
-        console.log('✅ Final isComplete:', isComplete);
 
         setStatus({
           isComplete,

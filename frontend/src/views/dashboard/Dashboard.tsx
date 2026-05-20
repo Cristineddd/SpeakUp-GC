@@ -18,7 +18,7 @@ import { useNavigate, Link } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   FileText, Clock, CheckCircle, Loader, Bell, Shield,
-  MessageSquare, Plus, ArrowRight, User, Lock, X, Lightbulb, BookOpen,
+  MessageSquare, Plus, ArrowRight, User, Lock, X, Lightbulb, BookOpen, Gavel,
 } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
@@ -241,8 +241,8 @@ export default function Dashboard() {
     (c) => isStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
 
-  const resolved = complaints.filter((c) =>
-    isStatus(c, 'resolved', ComplaintStatus.RESOLVED)
+  const decided = complaints.filter((c) =>
+    isStatus(c, 'resolved', 'dismissed', ComplaintStatus.RESOLVED, ComplaintStatus.DISMISSED)
   ).length;
 
   const recentComplaints = complaints.slice(0, 4);
@@ -250,9 +250,9 @@ export default function Dashboard() {
   const getStatusBadge = (status: ComplaintStatus) => {
     switch (status) {
       case ComplaintStatus.RESOLVED:
-        return <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>;
+        return <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>;
       case ComplaintStatus.DISMISSED:
-        return <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Dismissed</Badge>;
+        return <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Decision Already Made</Badge>;
       case ComplaintStatus.INVESTIGATING:
         return <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Investigating</Badge>;
       case ComplaintStatus.UNDER_REVIEW:
@@ -308,12 +308,24 @@ export default function Dashboard() {
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-5">
 
-        {/* ─── Welcome Header ─── */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, <span className="text-[#16A34A]">{userName}</span>
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
+        {/* ─── Welcome Header with Notification Bell ─── */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back, <span className="text-[#16A34A]">{userName}</span>
+            </h1>
+            <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
+          </div>
+          <button
+            onClick={() => navigate("/notifications")}
+            className="relative p-2.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5 text-gray-700" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+            )}
+          </button>
         </div>
 
         {/* ─── Privacy Notice (Dismissible) ─── */}
@@ -343,24 +355,23 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ─── Stats Row (Minimal Outline Style) ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* ─── Stats Row (Horizontal Layout) ─── */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {[
             { label: "Total Filed",  value: total,      icon: FileText },
-            { label: "Pending",      value: pending,    icon: Clock },
-            { label: "In Progress",  value: inProgress, icon: Loader },
-            { label: "Resolved",     value: resolved,   icon: CheckCircle },
+            { label: "Ongoing Investigation",  value: inProgress, icon: Loader },
+            { label: "Decision Already Made", value: decided, icon: Gavel },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
-                className="bg-white rounded-xl p-4 flex flex-col items-center text-center"
+                className="bg-white rounded-xl p-3 sm:p-4 flex flex-col items-center text-center"
                 style={{ border: "0.5px solid #e5e7eb" }}
               >
-                <Icon className="h-7 w-7 text-[#16a34a] mb-3" strokeWidth={1.5} />
-                <p className="text-3xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
-                <p className="text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
+                <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-[#16a34a] mb-2 sm:mb-3" strokeWidth={1.5} />
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
+                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
               </div>
             );
           })}
@@ -389,7 +400,7 @@ export default function Dashboard() {
                     onClick={() => navigate("/complaints")}
                     className="text-xs text-[#16A34A] hover:text-[#15803D] font-medium flex items-center gap-1"
                   >
-                    View all <ArrowRight className="h-3 w-3" />
+                    View all ({total}) <ArrowRight className="h-3 w-3" />
                   </button>
                 )}
               </div>
@@ -416,7 +427,12 @@ export default function Dashboard() {
                             <FileText className="h-4 w-4 text-[#16A34A]" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{complaint.title}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-medium text-gray-900 truncate">{complaint.title}</p>
+                              <span title="Confidential">
+                                <Shield className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              </span>
+                            </div>
                             <p className="text-xs text-gray-400 mt-0.5">
                               CASE-{String(idx + 1).padStart(3, "0")} · {safeToDate(complaint.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                             </p>
@@ -424,17 +440,28 @@ export default function Dashboard() {
                         </div>
                         <div className="shrink-0">
                           {complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW ? (
-                            <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Pending</Badge>
-                          ) : complaint.status === ComplaintStatus.INVESTIGATING ? (
-                            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">In Progress</Badge>
-                          ) : complaint.status === ComplaintStatus.RESOLVED ? (
-                            <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>
+                            <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Submitted</Badge>
+                          ) : complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE || complaint.status === ComplaintStatus.UNDER_DELIBERATION ? (
+                            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">Ongoing Investigation</Badge>
+                          ) : complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED ? (
+                            <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>
                           ) : (
                             getStatusBadge(complaint.status)
                           )}
                         </div>
                       </button>
                     ))}
+                    
+                    {/* Empty state when only 1 case */}
+                    {recentComplaints.length === 1 && (
+                      <div className="mt-6 pt-6 border-t-2 border-gray-200">
+                        <div className="text-center py-4">
+                          <FileText className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                          <p className="text-xs text-gray-400">No other recent cases</p>
+                          <p className="text-xs text-gray-400 mt-0.5">Your cases will appear here as you file them</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full py-10 text-center px-6">
@@ -465,7 +492,7 @@ export default function Dashboard() {
 
               {/* ── Know Your Rights (moved here to fill white space) ── */}
               <div className="px-4 pb-4">
-                <div className="pt-4" style={{ borderTop: "0.5px solid #e8f4ea" }}>
+                <div className="pt-4" style={{ borderTop: "2px solid #d1d5db" }}>
                   <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
                     <div className="flex items-start gap-3">
                       <div className="rounded-lg p-2 bg-white shadow-sm shrink-0">

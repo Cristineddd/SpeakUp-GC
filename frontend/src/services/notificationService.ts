@@ -131,10 +131,10 @@ export class NotificationService {
     notes?: string
   ): Promise<string> {
     const statusMessages = {
-      pending: 'has been marked as pending and is under review',
-      inProgress: 'is now in progress and being handled',
-      resolved: 'has been successfully resolved',
-      dismissed: 'has been dismissed'
+      pending: 'has been submitted and is under review',
+      inProgress: 'is now under ongoing investigation',
+      resolved: 'has a decision already made',
+      dismissed: 'has a decision already made'
     };
 
     const priorityMap = {
@@ -145,10 +145,10 @@ export class NotificationService {
     };
 
     const statusTitles = {
-      pending: 'Complaint Under Review',
-      inProgress: 'Complaint In Progress',
-      resolved: 'Complaint Resolved!',
-      dismissed: 'Complaint Dismissed'
+      pending: 'Complaint Submitted',
+      inProgress: 'Ongoing Investigation',
+      resolved: 'Decision Already Made',
+      dismissed: 'Decision Already Made'
     };
 
     return await this.createNotification(

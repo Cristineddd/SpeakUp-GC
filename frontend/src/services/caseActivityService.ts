@@ -145,12 +145,14 @@ export class CaseActivityService {
   ): Promise<void> {
     try {
       const statusLabels: Record<string, string> = {
-        'pending': 'Pending',
+        'pending': 'Submitted',
         'submitted': 'Submitted',
-        'inProgress': 'In Progress',
-        'investigating': 'Investigating',
-        'resolved': 'Resolved',
-        'dismissed': 'Dismissed'
+        'assigned': 'Submitted',
+        'inProgress': 'Ongoing Investigation',
+        'ongoing': 'Ongoing Investigation',
+        'investigating': 'Ongoing Investigation',
+        'resolved': 'Decision Already Made',
+        'dismissed': 'Decision Already Made'
       };
 
       await this.createActivity(

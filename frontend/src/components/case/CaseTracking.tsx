@@ -72,6 +72,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const [activities, setActivities] = useState<InvestigationActivity[]>([]);
   const [realActivities, setRealActivities] = useState<CaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timelineSortOrder, setTimelineSortOrder] = useState<'latest' | 'oldest'>('latest');
 
   // Fetch real data from Firebase
   useEffect(() => {
@@ -117,6 +118,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 incidentDate: safeToDate(data.incidentDate),
                 incidentLocation: data.incidentLocation || data.location || '',
                 locationVicinity: data.locationVicinity || '', // 'inside' or 'outside'
+                mapAddress: data.mapAddress || '', // Geocoded address from map
+                latitude: data.latitude,
+                longitude: data.longitude,
                 filingDate: safeToDate(data.filingDate || data.reportedAt || data.createdAt),
                 stage: data.stage || ComplaintStage.FILING,
                 status: data.status || ComplaintStatus.SUBMITTED,
@@ -350,8 +354,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               }
             }
 
-            // Sort events by timestamp
-            return events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+            // Sort events by timestamp (default: latest first)
+            return events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
           };
 
           const generatedTimelineEvents = generateTimelineEvents(foundComplaint);
@@ -687,45 +691,41 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [complaint, activities, realActivities]);
 
+  // Sort timeline events based on user preference
+  const sortedTimelineEvents = useMemo(() => {
+    const sorted = [...timelineEvents];
+    if (timelineSortOrder === 'latest') {
+      return sorted.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    } else {
+      return sorted.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    }
+  }, [timelineEvents, timelineSortOrder]);
+
   const getStageProgress = () => {
     if (!complaint) return 0;
     
     // Convert status to string for comparison (admin uses different status values)
     const statusStr = (complaint.status as any) as string;
     
-    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved') return 100;
-    if (complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') return 0;
+    // Simplified 3-stage progress: Submitted (33%), Ongoing Investigation (66%), Decision Already Made (100%)
     
-    // Same 5-stage array as MyComplaints list so progress is consistent
-    const stages = [
-      'filing',
-      'action_on_complaint',
-      'preliminary_investigation',
-      'investigation_report',
-      'final_decision',
-    ];
-    
-    // Get the current stage value (handle both enum and string)
-    const currentStage = (complaint.stage as any) as string;
-    
-    const idx = stages.indexOf(currentStage);
-    
-    // If stage not found, calculate from status (using admin status values)
-    if (idx < 0) {
-      // Admin uses: pending, submitted, inProgress, resolved, dismissed
-      if (statusStr === 'pending' || statusStr === 'submitted' || complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW || complaint.status === ComplaintStatus.REQUIREMENTS_PENDING) {
-        return 20; // Filing stage
-      }
-      if (statusStr === 'inProgress' || complaint.status === ComplaintStatus.VALIDATED || complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE) {
-        return 60; // Investigation stage
-      }
-      if (complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
-        return 80; // Report/Decision stage
-      }
-      return 20;
+    // Stage 3: Decision Already Made (100%)
+    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved' || 
+        complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') {
+      return 100;
     }
     
-    return ((idx + 1) / stages.length) * 100;
+    // Stage 2: Ongoing Investigation (66%)
+    if (statusStr === 'inProgress' || 
+        complaint.status === ComplaintStatus.VALIDATED || 
+        complaint.status === ComplaintStatus.INVESTIGATING || 
+        complaint.status === ComplaintStatus.AWAITING_RESPONSE || 
+        complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
+      return 66;
+    }
+    
+    // Stage 1: Submitted (33%) - default for pending/submitted states
+    return 33;
   };
 
   const getStatusConfig = (status: ComplaintStatus) => {
@@ -813,25 +813,37 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     return 'Not specified';
   };
 
+  // Simplified to 3 stages
   const stageSteps = [
-    { key: ComplaintStage.FILING, label: "Filing" },
-    { key: ComplaintStage.ACTION_ON_COMPLAINT, label: "Action" },
-    { key: ComplaintStage.PRELIMINARY_INVESTIGATION, label: "Investigation" },
-    { key: ComplaintStage.INVESTIGATION_REPORT, label: "Report" },
-    { key: ComplaintStage.FINAL_DECISION, label: "Decision" },
+    { key: 'submitted', label: "Submitted" },
+    { key: 'investigating', label: "Ongoing Investigation" },
+    { key: 'decided', label: "Decision Already Made" },
   ];
 
-  // Map the current stage to an index in stageSteps (PRE_FILING maps to 0 = Filing)
-  const stageOrder = [
-    ComplaintStage.FILING,
-    ComplaintStage.ACTION_ON_COMPLAINT,
-    ComplaintStage.PRELIMINARY_INVESTIGATION,
-    ComplaintStage.INVESTIGATION_REPORT,
-    ComplaintStage.FINAL_DECISION,
-  ];
-  const currentStageIdx = complaint.status === ComplaintStatus.RESOLVED
-    ? stageSteps.length - 1
-    : Math.max(0, stageOrder.indexOf(complaint.stage));
+  // Determine current stage index based on status
+  const getCurrentStageIdx = () => {
+    const statusStr = (complaint.status as any) as string;
+    
+    // Stage 2: Decision Already Made
+    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved' ||
+        complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') {
+      return 2;
+    }
+    
+    // Stage 1: Ongoing Investigation
+    if (statusStr === 'inProgress' ||
+        complaint.status === ComplaintStatus.VALIDATED ||
+        complaint.status === ComplaintStatus.INVESTIGATING ||
+        complaint.status === ComplaintStatus.AWAITING_RESPONSE ||
+        complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
+      return 1;
+    }
+    
+    // Stage 0: Submitted
+    return 0;
+  };
+  
+  const currentStageIdx = getCurrentStageIdx();
 
   return (
     <div className="space-y-3">
@@ -920,12 +932,24 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
         {/* ── Timeline Tab ── */}
         <TabsContent value="timeline" className="mt-4">
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
-            <h3 className="text-base font-semibold text-gray-900 mb-1">Case Timeline</h3>
-            <p className="text-xs text-gray-500 mb-5">Chronological history of your complaint's progress.</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 mb-1">Case Timeline</h3>
+                <p className="text-xs text-gray-500">Chronological history of your complaint's progress.</p>
+              </div>
+              <select
+                value={timelineSortOrder}
+                onChange={(e) => setTimelineSortOrder(e.target.value as 'latest' | 'oldest')}
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+              >
+                <option value="latest">Latest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+            </div>
             <div className="relative">
-              {timelineEvents.map((event, index) => {
+              {sortedTimelineEvents.map((event, index) => {
                 const Icon = getStageIcon(event.stage);
-                const isLast = index === timelineEvents.length - 1;
+                const isLast = index === sortedTimelineEvents.length - 1;
                 return (
                   <div key={event.id} className="relative flex items-start gap-4 pb-7">
                     {!isLast && (
@@ -1063,6 +1087,12 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 <p className="text-xs text-gray-400 mb-0.5">Location</p>
                 <p className="text-sm font-medium text-gray-800">{complaint.incidentLocation || 'Not specified'}</p>
               </div>
+              {(complaint as any).mapAddress && (
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-400 mb-0.5">📍 Exact Location (Map)</p>
+                  <p className="text-sm font-medium text-gray-800">{(complaint as any).mapAddress}</p>
+                </div>
+              )}
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Where it Happened</p>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${

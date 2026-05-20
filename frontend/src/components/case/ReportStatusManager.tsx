@@ -70,12 +70,18 @@ export function ReportStatusManager({
   const handleConfirmUpdate = async () => {
     if (!selectedStatus) return;
 
-    const success = await updateStatus(selectedStatus, notes || undefined);
+    const success = await updateStatus(
+      selectedStatus, 
+      notes || undefined,
+      attachmentFile || undefined
+    );
     
     if (success) {
       setShowConfirmDialog(false);
       setSelectedStatus(null);
       setNotes('');
+      setAttachmentFile(null);
+      setAttachmentPreview(null);
     }
   };
 
@@ -311,6 +317,48 @@ export function ReportStatusManager({
                   </p>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="attachment-compact">Attachment (Optional)</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="attachment-compact"
+                    type="file"
+                    onChange={handleFileSelect}
+                    disabled={isUpdating}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx"
+                  />
+                  <label
+                    htmlFor="attachment-compact"
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                  >
+                    <Upload className="h-4 w-4 text-emerald-700" />
+                    <span className="text-sm text-emerald-700">Choose file</span>
+                  </label>
+                  {attachmentFile && (
+                    <span className="text-sm text-gray-600 flex-1 truncate">
+                      {attachmentFile.name}
+                    </span>
+                  )}
+                </div>
+                
+                {attachmentPreview && (
+                  <div className="relative mt-2">
+                    <img 
+                      src={attachmentPreview} 
+                      alt="Preview" 
+                      className="max-h-40 rounded border border-emerald-200"
+                    />
+                    <button
+                      onClick={handleRemoveAttachment}
+                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <DialogFooter>
@@ -428,6 +476,48 @@ export function ReportStatusManager({
                 <p className="text-xs text-amber-600 font-medium">
                   ⚠️ Required: Please provide investigation summary and resolution details for transparency.
                 </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="attachment-full">Attachment (Optional)</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="attachment-full"
+                  type="file"
+                  onChange={handleFileSelect}
+                  disabled={isUpdating}
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx"
+                />
+                <label
+                  htmlFor="attachment-full"
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                >
+                  <Upload className="h-4 w-4 text-emerald-700" />
+                  <span className="text-sm text-emerald-700">Choose file</span>
+                </label>
+                {attachmentFile && (
+                  <span className="text-sm text-gray-600 flex-1 truncate">
+                    {attachmentFile.name}
+                  </span>
+                )}
+              </div>
+              
+              {attachmentPreview && (
+                <div className="relative mt-2">
+                  <img 
+                    src={attachmentPreview} 
+                    alt="Preview" 
+                    className="max-h-40 rounded border border-emerald-200"
+                  />
+                  <button
+                    onClick={handleRemoveAttachment}
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               )}
             </div>
           </div>

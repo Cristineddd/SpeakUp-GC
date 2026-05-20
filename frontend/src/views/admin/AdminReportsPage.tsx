@@ -19,7 +19,10 @@ import {
   UserPlus,
   MessageCircle,
   X,
-  Lock
+  Lock,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -51,6 +54,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "../../components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
 import { Textarea } from "../../components/ui/textarea";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../contexts/AuthContext";
@@ -111,6 +120,43 @@ const safeFormat = (timestamp: any, formatStr: string, fallback: string = 'N/A')
   } catch (error) {
     console.warn('Failed to format date:', error);
     return fallback;
+  }
+};
+
+// Generate user-friendly file name
+const getUserFriendlyFileName = (url: string, index: number, fileType: string): string => {
+  try {
+    // Get extension from URL
+    const urlWithoutParams = url.split('?')[0];
+    const extension = urlWithoutParams.split('.').pop()?.toLowerCase() || '';
+    
+    // Create friendly name based on file type
+    let baseName = '';
+    switch (fileType) {
+      case 'image':
+        baseName = `Image ${index + 1}`;
+        break;
+      case 'video':
+        baseName = `Video ${index + 1}`;
+        break;
+      case 'document':
+        if (extension === 'pdf') {
+          baseName = `PDF Document ${index + 1}`;
+        } else {
+          baseName = `Document ${index + 1}`;
+        }
+        break;
+      case 'audio':
+        baseName = `Audio ${index + 1}`;
+        break;
+      default:
+        baseName = `File ${index + 1}`;
+    }
+    
+    // Add extension if available
+    return extension ? `${baseName}.${extension}` : baseName;
+  } catch (error) {
+    return `Evidence ${index + 1}`;
   }
 };
 
@@ -191,6 +237,8 @@ const AdminReportsPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [escalationFilter, setEscalationFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<string>('all');
+  const [sortField, setSortField] = useState<string>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const location = useLocation();
   const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
   const [newNote, setNewNote] = useState('');
@@ -309,7 +357,7 @@ const AdminReportsPage = () => {
   // Apply filters when reports or filter values change
   useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter, activeTab]);
+  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter, activeTab, sortField, sortDirection]);
 
   // Auto-open report from URL query parameter (e.g., from notification)
   useEffect(() => {
@@ -390,6 +438,17 @@ const AdminReportsPage = () => {
     }
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to descending
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
   const applyFilters = () => {
     let filtered = reports;
 
@@ -432,16 +491,66 @@ const AdminReportsPage = () => {
       filtered = filtered.filter(report => (report.escalationLevel || 0) === level);
     }
 
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'title':
+          comparison = (safeGet(a, 'title', '') || '').localeCompare(safeGet(b, 'title', '') || '');
+          break;
+        case 'reporter':
+          comparison = (safeGet(a, 'userName', '') || '').localeCompare(safeGet(b, 'userName', '') || '');
+          break;
+        case 'handler':
+          comparison = (safeGet(a, 'assignedToName', '') || '').localeCompare(safeGet(b, 'assignedToName', '') || '');
+          break;
+        case 'status':
+          comparison = (safeGet(a, 'status', '') || '').localeCompare(safeGet(b, 'status', '') || '');
+          break;
+        case 'escalation':
+          comparison = (a.escalationLevel || 0) - (b.escalationLevel || 0);
+          break;
+        case 'date':
+        default:
+          const dateA = safeToDate(a.reportedAt)?.getTime() || 0;
+          const dateB = safeToDate(b.reportedAt)?.getTime() || 0;
+          comparison = dateB - dateA; // Default: newest first
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
     setFilteredReports(filtered);
   };
 
+  // Convert status to simplified user-friendly label
+  const getStatusLabel = (status: string): string => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'submitted':
+        return 'Submitted';
+      case 'inprogress':
+      case 'investigating':
+      case 'awaiting_response':
+      case 'under_deliberation':
+      case 'validated':
+        return 'Ongoing Investigation';
+      case 'resolved':
+      case 'dismissed':
+        return 'Decision Already Made';
+      default:
+        return status || 'Unknown';
+    }
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'submitted': return 'bg-gray-100 text-gray-800';
-      case 'inProgress': return 'bg-gray-100 text-gray-800';
-      case 'resolved': return 'bg-gray-100 text-gray-800';
-      case 'dismissed': return 'bg-gray-100 text-gray-800';
+    const label = getStatusLabel(status);
+    switch (label) {
+      case 'Submitted': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
+      case 'Ongoing Investigation': return 'bg-blue-50 text-blue-700 border border-blue-200';
+      case 'Decision Already Made': return 'bg-green-50 text-green-700 border border-green-200';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -853,13 +962,21 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           </DialogHeader>
           
           {selectedReport && (
-            <div className="overflow-y-auto max-h-[calc(90vh-140px)] sm:max-h-[calc(85vh-140px)] pr-2 sm:pr-3 space-y-4">
-              {/* Quick Info Cards - Responsive Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="details">Case Details</TabsTrigger>
+                <TabsTrigger value="evidence">Evidence & Files</TabsTrigger>
+                <TabsTrigger value="notes">Internal Notes</TabsTrigger>
+              </TabsList>
+
+              {/* DETAILS TAB */}
+              <TabsContent value="details" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3 space-y-4">
+                {/* Quick Info Cards - Responsive Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
                   <p className="text-sm text-gray-600 font-medium mb-2">Status</p>
-                  <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-sm`}>
-                    {safeGet(selectedReport, 'status', 'pending')}
+                  <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-sm font-medium`}>
+                    {getStatusLabel(safeGet(selectedReport, 'status', 'pending'))}
                   </Badge>
                 </div>
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
@@ -1072,16 +1189,34 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 );
               })()}
 
-              {/* Admin Notes */}
-              {safeGet(selectedReport, 'adminNotes') && (
-                <div className="bg-indigo-50 p-4 rounded-lg border-2 border-indigo-200">
-                  <h4 className="font-bold text-base mb-3 text-indigo-700">Admin Notes</h4>
-                  <div className="text-sm bg-white p-3 rounded border max-h-24 overflow-y-auto leading-relaxed">
-                    {safeGet(selectedReport, 'adminNotes')}
-                  </div>
+              {/* Handler Assignment Timeline */}
+              {selectedReport.handlerHistory && selectedReport.handlerHistory.length > 0 && (
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <HandlerTimeline complaint={selectedReport} />
                 </div>
               )}
 
+              {/* Update Status Section - Only visible to Case Handlers */}
+              {isHandler && (
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-4">Update Report Status</h4>
+                  <ReportStatusManager
+                    reportId={selectedReport.id}
+                    currentStatus={selectedReport.status as 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed'}
+                    collectionName="complaints"
+                    onStatusUpdated={() => {
+                      fetchReports();
+                      fetchStats();
+                      setSelectedReport(null);
+                    }}
+                    variant="full"
+                  />
+                </div>
+              )}
+              </TabsContent>
+
+              {/* EVIDENCE TAB */}
+              <TabsContent value="evidence" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3 space-y-4">
               {/* Attachments/Evidence */}
               <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
                 <h4 className="font-bold text-base mb-3 text-purple-700">Attachments & Evidence</h4>
@@ -1118,8 +1253,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           </p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                       {evidenceUrls.map((url: string, index: number) => {
-                        const fileName = url.split('/').pop() || `evidence_${index + 1}`;
                         const fileType = getFileType(url);
+                        const fileName = getUserFriendlyFileName(url, index, fileType);
                         const isImage = fileType === 'image';
                         const isVideo = fileType === 'video';
                         const isPDF = fileType === 'document' && url.toLowerCase().includes('.pdf');
@@ -1266,34 +1401,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   );
                 })()}
               </div>
+              </TabsContent>
 
-              {/* Handler Assignment Timeline */}
-              {selectedReport.handlerHistory && selectedReport.handlerHistory.length > 0 && (
-                <div className="bg-slate-50 p-3 rounded-lg border">
-                  <HandlerTimeline complaint={selectedReport} />
-                </div>
-              )}
-
-              {/* Update Status Section - Only visible to Case Handlers */}
-              {isHandler && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-4">Update Report Status</h4>
-                  <ReportStatusManager
-                    reportId={selectedReport.id}
-                    currentStatus={selectedReport.status as 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed'}
-                    collectionName="complaints"
-                    onStatusUpdated={() => {
-                      fetchReports();
-                      fetchStats();
-                      setSelectedReport(null);
-                    }}
-                    variant="full"
-                  />
-                </div>
-              )}
-
-              {/* Internal Notes Section - Only visible to Admin and Case Handler */}
-              <div className="border-t pt-6 mt-6">
+              {/* INTERNAL NOTES TAB */}
+              <TabsContent value="notes" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3">
                 <InternalNotesSection
                   caseId={selectedReport.id}
                   caseTitle={selectedReport.title || 'Case'}
@@ -1301,8 +1412,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   assignedToRole={selectedReport.assignedToRole as 'admin' | 'handler'}
                   highlightNoteId={highlightNoteId || undefined}
                 />
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
@@ -1446,7 +1557,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950">In Progress</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">Ongoing Investigation</CardTitle>
               <AlertTriangle className="h-4 w-4 text-[#1a7a45]/70" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1459,7 +1570,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
-              <CardTitle className="text-sm font-medium text-emerald-950">Resolved</CardTitle>
+              <CardTitle className="text-sm font-medium text-emerald-950">Decision Already Made</CardTitle>
               <CheckCircle className="h-4 w-4 text-[#1a7a45]" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
@@ -1555,7 +1666,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.inProgressReports}</p>
-                  <p className="text-sm text-emerald-900/55">In Progress</p>
+                  <p className="text-sm text-emerald-900/55">Ongoing Investigation</p>
                 </div>
                 <div className="rounded-xl bg-emerald-100/50 p-2.5 ring-1 ring-emerald-200/40">
                   <AlertTriangle className="h-7 w-7 text-emerald-900/70" aria-hidden />
@@ -1569,7 +1680,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-2xl font-bold tabular-nums text-emerald-950">{stats.resolvedReports}</p>
-                  <p className="text-sm text-emerald-900/55">Resolved</p>
+                  <p className="text-sm text-emerald-900/55">Decision Already Made</p>
                 </div>
                 <div className="rounded-xl bg-emerald-100/60 p-2.5 ring-1 ring-emerald-200/50">
                   <CheckCircle className="h-7 w-7 text-[#1a7a45]" aria-hidden />
@@ -1613,7 +1724,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Active
+            Submitted
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'active' 
                 ? 'bg-green-100 text-green-600' 
@@ -1633,7 +1744,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Under Investigation
+            Ongoing Investigation
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'investigating' 
                 ? 'bg-green-100 text-green-600' 
@@ -1653,7 +1764,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Resolved
+            Decision Already Made
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'resolved' 
                 ? 'bg-green-100 text-green-600' 
@@ -1693,9 +1804,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="inProgress">In Progress</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
-                <SelectItem value="dismissed">Dismissed</SelectItem>
+                <SelectItem value="inProgress">Ongoing Investigation</SelectItem>
+                <SelectItem value="resolved">Decision Already Made</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1789,13 +1899,87 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <Table>
               <TableHeader className="bg-emerald-50/55 [&_tr]:border-emerald-100/80">
                 <TableRow className="border-emerald-100/80 hover:bg-transparent">
-                  <TableHead className="text-emerald-950/75">Report</TableHead>
-                  <TableHead className="text-emerald-950/75">Reporter</TableHead>
+                  <TableHead className="text-emerald-950/75">
+                    <button 
+                      onClick={() => handleSort('title')} 
+                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                    >
+                      Report
+                      {sortField === 'title' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-emerald-950/75">
+                    <button 
+                      onClick={() => handleSort('reporter')} 
+                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                    >
+                      Reporter
+                      {sortField === 'reporter' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
+                    </button>
+                  </TableHead>
                   {/* Only show Handler column for admins, not for handlers */}
-                  {!isHandler && <TableHead className="text-emerald-950/75">Handler</TableHead>}
-                  <TableHead className="text-emerald-950/75">Escalation</TableHead>
-                  <TableHead className="text-emerald-950/75">Status</TableHead>
-                  <TableHead className="text-emerald-950/75">Date</TableHead>
+                  {!isHandler && (
+                    <TableHead className="text-emerald-950/75">
+                      <button 
+                        onClick={() => handleSort('handler')} 
+                        className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                      >
+                        Handler
+                        {sortField === 'handler' ? (
+                          sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40" />
+                        )}
+                      </button>
+                    </TableHead>
+                  )}
+                  <TableHead className="text-emerald-950/75">
+                    <button 
+                      onClick={() => handleSort('escalation')} 
+                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                    >
+                      Escalation
+                      {sortField === 'escalation' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-emerald-950/75">
+                    <button 
+                      onClick={() => handleSort('status')} 
+                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                    >
+                      Status
+                      {sortField === 'status' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-emerald-950/75">
+                    <button 
+                      onClick={() => handleSort('date')} 
+                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
+                    >
+                      Date
+                      {sortField === 'date' ? (
+                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40" />
+                      )}
+                    </button>
+                  </TableHead>
                   <TableHead className="text-emerald-950/75">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1875,8 +2059,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(safeGet(report, 'status', 'pending'))}>
-                          {safeGet(report, 'status', 'pending').replace(/([A-Z])/g, ' $1').trim()}
+                        <Badge className={`${getStatusColor(safeGet(report, 'status', 'pending'))} font-medium`}>
+                          {getStatusLabel(safeGet(report, 'status', 'pending'))}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -2041,26 +2225,16 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       {/* Video Viewer Modal */}
       {selectedVideoUrl && (
         <Dialog open={videoViewerOpen} onOpenChange={setVideoViewerOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] p-0 bg-gradient-to-b from-gray-900 via-gray-950 to-black rounded-lg shadow-2xl border border-gray-700" style={{ height: '90vh' }}>
-            <div className="flex flex-col h-full w-full rounded-lg overflow-hidden">
+          <DialogContent className="max-w-6xl max-h-[90vh] p-0 bg-white rounded-xl shadow-2xl border-2 border-emerald-200" style={{ height: '90vh' }}>
+            <div className="flex flex-col h-full w-full rounded-xl overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                  <DialogTitle className="text-lg font-bold text-white tracking-wide">Video Evidence</DialogTitle>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setVideoViewerOpen(false)}
-                  className="h-9 w-9 text-gray-300 hover:text-white hover:bg-gray-800 rounded-full transition-all"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+              <div className="flex items-center gap-3 p-5 border-b-2 border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50">
+                <div className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></div>
+                <DialogTitle className="text-lg font-bold text-emerald-900 tracking-wide">Video Evidence</DialogTitle>
               </div>
               
               {/* Video Container */}
-              <div className="flex-1 overflow-hidden bg-black relative flex items-center justify-center group">
+              <div className="flex-1 overflow-hidden bg-gray-50 relative flex items-center justify-center group">
                 <video
                   src={selectedVideoUrl}
                   controls
@@ -2074,22 +2248,22 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   className="object-contain"
                 />
                 {/* Subtle corners decoration */}
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-gray-600 rounded-tl-lg opacity-20 pointer-events-none"></div>
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-gray-600 rounded-tr-lg opacity-20 pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-gray-600 rounded-bl-lg opacity-20 pointer-events-none"></div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-gray-600 rounded-br-lg opacity-20 pointer-events-none"></div>
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-emerald-300 rounded-tl-lg opacity-30 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-emerald-300 rounded-tr-lg opacity-30 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-emerald-300 rounded-bl-lg opacity-30 pointer-events-none"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-emerald-300 rounded-br-lg opacity-30 pointer-events-none"></div>
               </div>
               
               {/* Footer */}
-              <div className="flex gap-3 p-5 border-t border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900 justify-end items-center">
-                <div className="text-xs text-gray-400 mr-auto">
+              <div className="flex gap-3 p-5 border-t-2 border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50 justify-end items-center">
+                <div className="text-xs text-emerald-700 mr-auto font-medium">
                   Video Player • Press ESC to close
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   asChild
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 border-blue-500 text-white hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-blue-500/50"
+                  className="bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg"
                 >
                   <a href={selectedVideoUrl} target="_blank" rel="noopener noreferrer" download>
                     <Download className="h-4 w-4 mr-2" />
@@ -2100,7 +2274,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   variant="outline"
                   size="sm"
                   onClick={() => setVideoViewerOpen(false)}
-                  className="bg-gradient-to-r from-gray-700 to-gray-800 border-gray-600 text-white hover:from-gray-600 hover:to-gray-700 transition-all shadow-lg"
+                  className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-all"
                 >
                   Close
                 </Button>

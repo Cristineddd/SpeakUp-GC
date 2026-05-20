@@ -16,7 +16,6 @@ export function useRepresentativeRole() {
 
   useEffect(() => {
     if (!currentUser?.uid) {
-      console.log('🔍 useRepresentativeRole: No current user');
       setRole(null);
       setRepresentativeData(null);
       setLoading(false);
@@ -26,24 +25,19 @@ export function useRepresentativeRole() {
     const fetchRole = async () => {
       try {
         setLoading(true);
-        console.log('🔍 useRepresentativeRole: Fetching role for user:', currentUser.uid);
         
         // Check if user is a representative by their userId
         const representative = await RepresentativeService.getByUserId(currentUser.uid);
         
-        console.log('🔍 useRepresentativeRole: Representative found:', representative);
-        
         if (representative && representative.isActive) {
-          console.log('✅ useRepresentativeRole: Active representative with role:', representative.role);
           setRole(representative.role);
           setRepresentativeData(representative);
         } else {
-          console.log('❌ useRepresentativeRole: No active representative found');
           setRole(null);
           setRepresentativeData(null);
         }
       } catch (error) {
-        console.error('❌ useRepresentativeRole: Error fetching representative role:', error);
+        console.error('Error fetching representative role:', error);
         setRole(null);
         setRepresentativeData(null);
       } finally {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Clock, CheckCircle, AlertTriangle, Eye, Plus, MessageSquare,
   FileText, Search, Calendar as CalendarIcon, User, MapPin, X,
-  FolderOpen, Loader
+  FolderOpen, Loader, Gavel
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Progress } from "../../components/ui/progress";
@@ -112,6 +112,29 @@ const getStageProgress = (stage: ComplaintStage, status?: ComplaintStatus) => {
 };
 
 const formatEnum = (v: string) => v.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+
+// Get human-readable status label
+const getStatusLabel = (status: ComplaintStatus): string => {
+  switch (status) {
+    case ComplaintStatus.SUBMITTED:
+    case ComplaintStatus.DRAFT:
+    case ComplaintStatus.UNDER_REVIEW:
+    case ComplaintStatus.REQUIREMENTS_PENDING:
+    case ComplaintStatus.VALIDATED:
+      return 'Submitted';
+    case ComplaintStatus.INVESTIGATING:
+    case ComplaintStatus.AWAITING_RESPONSE:
+    case ComplaintStatus.UNDER_DELIBERATION:
+      return 'Ongoing Investigation';
+    case ComplaintStatus.RESOLVED:
+    case ComplaintStatus.DISMISSED:
+      return 'Decision Already Made';
+    case ComplaintStatus.WITHDRAWN:
+      return 'Withdrawn';
+    default:
+      return formatEnum(status);
+  }
+};
 
 // ─── Component ───
 export default function MyComplaints() {
@@ -224,8 +247,7 @@ export default function MyComplaints() {
   const inProgress = complaints.filter(
     (c) => hasStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
-  const resolved = complaints.filter((c) => hasStatus(c, 'resolved', ComplaintStatus.RESOLVED)).length;
-  const dismissed = complaints.filter((c) => hasStatus(c, 'dismissed', ComplaintStatus.DISMISSED)).length;
+  const decided = complaints.filter((c) => hasStatus(c, 'resolved', 'dismissed', ComplaintStatus.RESOLVED, ComplaintStatus.DISMISSED)).length;
 
   if (loading) {
     return (
@@ -271,12 +293,11 @@ export default function MyComplaints() {
         </div>
 
         {/* Stats Row (Minimal Outline Style) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { label: "Total Filed", value: total, icon: FileText },
-            { label: "In Progress", value: inProgress, icon: Loader },
-            { label: "Resolved", value: resolved, icon: CheckCircle },
-            { label: "Dismissed", value: dismissed, icon: AlertTriangle },
+            { label: "Ongoing Investigation", value: inProgress, icon: Loader },
+            { label: "Decision Already Made", value: decided, icon: Gavel },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
@@ -312,11 +333,11 @@ export default function MyComplaints() {
             >
               <option value="all">All Status</option>
               <option value={ComplaintStatus.SUBMITTED}>Submitted</option>
-              <option value={ComplaintStatus.UNDER_REVIEW}>Under Review</option>
-              <option value={ComplaintStatus.INVESTIGATING}>Investigating</option>
-              <option value={ComplaintStatus.AWAITING_RESPONSE}>Awaiting Response</option>
-              <option value={ComplaintStatus.RESOLVED}>Resolved</option>
-              <option value={ComplaintStatus.DISMISSED}>Dismissed</option>
+              <option value={ComplaintStatus.UNDER_REVIEW}>Submitted (Under Review)</option>
+              <option value={ComplaintStatus.INVESTIGATING}>Ongoing Investigation</option>
+              <option value={ComplaintStatus.AWAITING_RESPONSE}>Ongoing Investigation (Awaiting Response)</option>
+              <option value={ComplaintStatus.RESOLVED}>Decision Already Made (Resolved)</option>
+              <option value={ComplaintStatus.DISMISSED}>Decision Already Made (Dismissed)</option>
             </select>
             {(searchTerm || statusFilter !== "all") && (
               <button
@@ -347,7 +368,7 @@ export default function MyComplaints() {
                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusCfg.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-                          {formatEnum(complaint.status)}
+                          {getStatusLabel(complaint.status)}
                         </span>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
                           {formatEnum(complaint.type)}

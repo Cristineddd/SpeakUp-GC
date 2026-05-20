@@ -37,11 +37,11 @@ const VALID_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
 
 // Status labels for UI
 export const STATUS_LABELS: Record<ComplaintStatus, string> = {
-  pending: 'Pending',
-  assigned: 'Assigned',
-  ongoing: 'Ongoing',
-  resolved: 'Resolved',
-  dismissed: 'Dismissed',
+  pending: 'Submitted',
+  assigned: 'Submitted',
+  ongoing: 'Ongoing Investigation',
+  resolved: 'Decision Already Made',
+  dismissed: 'Decision Already Made',
 };
 
 // Status colors for badges

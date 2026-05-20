@@ -523,30 +523,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('🔧 AuthProvider: Setting up auth state observer...');
-    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔧 AuthProvider: Auth state changed, user:', user ? user.email : 'null');
       
       if (user) {
         let userData = null;
         let isAdmin = isAdminEmail(user.email); // Default to email-based check
         
         try {
-          console.log('🔧 AuthProvider: Fetching user document for:', user.uid);
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           userData = userDoc.data();
           
           // Method 1: Check Firestore document
           if (userData?.isAdmin) {
             isAdmin = true;
-            console.log('🔧 AuthProvider: Admin status found in Firestore');
           }
           
           // Method 2: Check if email is in admin emails list (flexible admin system)
           if (isAdminEmail(user.email)) {
             isAdmin = true;
-            console.log('🔧 AuthProvider: Admin status set by email configuration');
             
             // Update Firestore if not already set
             if (!userData?.isAdmin) {
@@ -573,18 +567,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           displayName: userData?.displayName || user.displayName
         } as AuthUser;
         
-        console.log('🔧 AuthProvider: Setting current user, isAdmin:', isAdmin, 'displayName:', enhancedUser.displayName);
         setCurrentUser(enhancedUser);
       } else {
-        console.log('🔧 AuthProvider: No user, setting current user to null');
         setCurrentUser(null);
       }
-      console.log('🔧 AuthProvider: Setting loading to false');
       setLoading(false);
     });
 
     return () => {
-      console.log('🔧 AuthProvider: Cleaning up auth observer');
       unsubscribe();
     };
   }, []);

@@ -454,15 +454,15 @@ const AdminDashboard = () => {
           title="Active Cases"
           value={stats.activeIncidents}
           icon={ShieldAlert}
-          description="Under investigation"
+          description="Ongoing investigation"
           trend={trends.activeTrend}
           onClick={() => navigate('/admin/reports?status=active')}
         />
         <StatCard
-          title="Resolved Cases"
+          title="Cases with Decision"
           value={stats.resolvedCases}
           icon={CheckCircle}
-          description="Successfully resolved"
+          description="Decision already made"
           trend={trends.resolvedTrend}
           onClick={() => navigate('/admin/reports?status=resolved')}
         />
@@ -480,7 +480,7 @@ const AdminDashboard = () => {
           title="Resolution Rate"
           value={`${stats.totalReports > 0 ? Math.round((stats.resolvedCases / stats.totalReports) * 100) : 0}%`}
           icon={CheckCircle}
-          description="Of all reports successfully resolved"
+          description="Cases with decisions made"
         />
       </div>
 

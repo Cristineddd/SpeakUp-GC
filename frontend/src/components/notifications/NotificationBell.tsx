@@ -204,18 +204,13 @@ export const NotificationBell: React.FC = () => {
         <Button
           variant="ghost"
           size="icon"
-          className="relative hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="relative hover:bg-gray-100 rounded-lg h-10 w-10"
           disabled={loading}
           title="Notifications"
         >
-          <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+          <Bell className="h-6 w-6 text-gray-700" />
           {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs font-bold"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
+            <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
           )}
           {loading && (
             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">

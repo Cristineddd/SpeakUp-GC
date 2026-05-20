@@ -6,9 +6,9 @@ const FALLBACK_MODEL = 'gemini-2.0-flash';
 
 // Enhanced response extraction with comprehensive debugging
 const extractTextFromResponse = (data: any): string => {
-  console.log('🔍 Starting response extraction...');
-  console.log('📊 Full response structure:', JSON.stringify(data, null, 2));
-  console.log('📊 Root keys:', Object.keys(data));
+  // console.log('🔍 Starting response extraction...');
+  // console.log('📊 Full response structure:', JSON.stringify(data, null, 2));
+  // console.log('📊 Root keys:', Object.keys(data));
 
   let rawText = null;
   let extractionMethod = 'none';
@@ -35,14 +35,14 @@ const extractTextFromResponse = (data: any): string => {
   }
   // Method 5: Check all candidates systematically
   else if (data.candidates && Array.isArray(data.candidates)) {
-    console.log(`📊 Searching through ${data.candidates.length} candidates...`);
+    // console.log(`📊 Searching through ${data.candidates.length} candidates...`);
     
     for (let i = 0; i < data.candidates.length; i++) {
       const candidate = data.candidates[i];
-      console.log(`📊 Candidate[${i}] keys:`, candidate ? Object.keys(candidate) : 'null');
+      // console.log(`📊 Candidate[${i}] keys:`, candidate ? Object.keys(candidate) : 'null');
       
       if (candidate?.content?.parts && Array.isArray(candidate.content.parts)) {
-        console.log(`📊 Candidate[${i}] has ${candidate.content.parts.length} parts`);
+        // console.log(`📊 Candidate[${i}] has ${candidate.content.parts.length} parts`);
         // Check if parts array has text
         for (let j = 0; j < candidate.content.parts.length; j++) {
           if (candidate.content.parts[j]?.text) {
@@ -80,7 +80,7 @@ const extractTextFromResponse = (data: any): string => {
     throw new Error('EMPTY_RESPONSE: Response contains usage data but no text content. The API may be overloaded or the request was blocked.');
   }
 
-  console.log(`📝 Extraction result: method=${extractionMethod}, text=${rawText ? `"${rawText.substring(0, 50)}..."` : 'null'}`);
+  // console.log(`📝 Extraction result: method=${extractionMethod}, text=${rawText ? `"${rawText.substring(0, 50)}..."` : 'null'}`);
 
   if (!rawText) {
     // Comprehensive debugging for failed extraction
@@ -115,12 +115,12 @@ async function generateAIResponseWithRetry(
   try {
     const currentModel = useFallback ? FALLBACK_MODEL : MODEL;
     
-    console.log('🚀 === GEMINI SERVICE START ===');
-    console.log('💬 User message:', message);
-    console.log('📝 Conversation history:', conversationHistory.length, 'messages');
-    console.log('🤖 Using model:', currentModel);
-    console.log('🔑 API Key available:', !!config.gemini.apiKey);
-    console.log('🌐 Base URL:', BASE_URL);
+    // console.log('🚀 === GEMINI SERVICE START ===');
+    // console.log('💬 User message:', message);
+    // console.log('📝 Conversation history:', conversationHistory.length, 'messages');
+    // console.log('🤖 Using model:', currentModel);
+    // console.log('🔑 API Key available:', !!config.gemini.apiKey);
+    // console.log('🌐 Base URL:', BASE_URL);
 
     // Validate configuration
     if (!config.gemini.apiKey) {
@@ -161,6 +161,11 @@ WHAT IS SPEAKUP GC:
 - Allows anonymous and identified messaging
 - Includes case reporting and tracking capabilities
 - Has a dashboard for overview and case tracking after login
+
+IMPORTANT ABBREVIATIONS:
+- **GC-CODI** = Gordon College Committee on Decorum and Investigation (or simply CODI = Committee on Decorum and Investigation)
+- **DEIU** = Diversity, Equity, and Inclusion Unit
+- The DEIU office handles support services and the GC-CODI investigates harassment complaints
 
 REPORTING FLOW (CORRECT):
 If user is NOT logged in:
@@ -322,8 +327,8 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
 
     const API_URL = `${BASE_URL}/models/${currentModel}:generateContent?key=${config.gemini.apiKey}`;
     
-    console.log('📡 Making API request to:', API_URL.replace(config.gemini.apiKey, '***'));
-    console.log('📦 Request payload:', JSON.stringify(payload, null, 2));
+    // console.log('📡 Making API request to:', API_URL.replace(config.gemini.apiKey, '***'));
+    // console.log('📦 Request payload:', JSON.stringify(payload, null, 2));
 
     // Make the API request
     const startTime = Date.now();
@@ -336,12 +341,12 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
     });
     const requestDuration = Date.now() - startTime;
 
-    console.log('📨 Response received:', {
-      status: response.status,
-      statusText: response.statusText,
-      duration: `${requestDuration}ms`,
-      ok: response.ok
-    });
+    // console.log('📨 Response received:', {
+    //   status: response.status,
+    //   statusText: response.statusText,
+    //   duration: `${requestDuration}ms`,
+    //   ok: response.ok
+    // });
 
     // Handle HTTP errors
     if (!response.ok) {
@@ -408,18 +413,18 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
 
     // Parse successful response
     const responseData = await response.json();
-    console.log('✅ Raw API response received successfully');
+    // console.log('✅ Raw API response received successfully');
     
     // Extract text from response
     const aiResponse = extractTextFromResponse(responseData);
     
-    console.log('🤖 AI Response extracted:', {
-      length: aiResponse.length,
-      preview: aiResponse.substring(0, 100) + (aiResponse.length > 100 ? '...' : ''),
-      extractionTime: `${Date.now() - startTime}ms total`
-    });
+    // console.log('🤖 AI Response extracted:', {
+    //   length: aiResponse.length,
+    //   preview: aiResponse.substring(0, 100) + (aiResponse.length > 100 ? '...' : ''),
+    //   extractionTime: `${Date.now() - startTime}ms total`
+    // });
 
-    console.log('🎉 === GEMINI SERVICE COMPLETE ===');
+    // console.log('🎉 === GEMINI SERVICE COMPLETE ===');
     return aiResponse;
 
   } catch (error: any) {

@@ -131,22 +131,55 @@ export default function LeafletMap({
     }
   }, [initialLat, initialLng]);
 
-  // Reverse geocoding to get human-readable address
+  // Reverse geocoding to get human-readable address with retry mechanism
   useEffect(() => {
     if (position) {
       setIsLoadingAddress(true);
-      // Use Nominatim for reverse geocoding
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position[0]}&lon=${position[1]}&zoom=18&addressdetails=1`)
-        .then(res => res.json())
-        .then(data => {
-          const address = data.display_name || `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`;
+      
+      const reverseGeocode = async (retries = 3): Promise<string> => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            // Add User-Agent header and delay between retries
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${position[0]}&lon=${position[1]}&zoom=18&addressdetails=1`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                },
+                referrerPolicy: 'no-referrer-when-downgrade',
+              }
+            );
+            
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data && data.display_name) {
+              return data.display_name;
+            }
+            
+            // If no display_name, throw to retry
+            throw new Error('No display_name in response');
+          } catch (error) {
+            console.warn(`Geocoding attempt ${i + 1} failed:`, error);
+            
+            // Wait before retry (exponential backoff)
+            if (i < retries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
+          }
+        }
+        
+        // All retries failed - return a descriptive fallback
+        return `Near Gordon College, Olongapo City (${position[0].toFixed(4)}, ${position[1].toFixed(4)})`;
+      };
+      
+      reverseGeocode()
+        .then(address => {
           setHumanAddress(address);
           onLocationSelect(position[0], position[1], address);
-        })
-        .catch(() => {
-          const fallback = `${position[0].toFixed(6)}, ${position[1].toFixed(6)}`;
-          setHumanAddress(fallback);
-          onLocationSelect(position[0], position[1], fallback);
         })
         .finally(() => setIsLoadingAddress(false));
     }
@@ -159,7 +192,13 @@ export default function LeafletMap({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Olongapo City')}&limit=1`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Olongapo City')}&limit=1`,
+        {
+          headers: {
+            'Accept': 'application/json',
+          },
+          referrerPolicy: 'no-referrer-when-downgrade',
+        }
       );
       const data = await response.json();
       if (data && data[0]) {

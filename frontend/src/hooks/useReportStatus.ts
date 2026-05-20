@@ -73,7 +73,8 @@ export function useReportStatus(
    */
   const updateStatus = async (
     newStatus: ReportStatus,
-    notes?: string
+    notes?: string,
+    attachmentFile?: File
   ): Promise<boolean> => {
     if (!currentUser) {
       toast({
@@ -99,6 +100,32 @@ export function useReportStatus(
     setIsUpdating(true);
 
     try {
+      // Upload attachment file if provided
+      let attachmentUrl: string | null = null;
+      if (attachmentFile) {
+        try {
+          const formData = new FormData();
+          formData.append('file', attachmentFile);
+          formData.append('upload_preset', 'speakup_evidence');
+          
+          const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dqhxq5a4n/upload';
+          const response = await fetch(cloudinaryUrl, {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            attachmentUrl = data.secure_url;
+          } else {
+            console.warn('Failed to upload attachment, continuing without it');
+          }
+        } catch (uploadError) {
+          console.error('Error uploading attachment:', uploadError);
+          // Continue without attachment rather than failing the whole update
+        }
+      }
+
       // CLIENT-SIDE: Direct Firestore update (no Cloud Functions)
       const { getFirestore, doc, updateDoc, arrayUnion, serverTimestamp } = await import('firebase/firestore');
       const db = getFirestore();
@@ -116,7 +143,9 @@ export function useReportStatus(
           updatedAt: new Date(),
           updatedBy: currentUser.uid,
           updatedByName: currentUser.displayName || currentUser.email || 'Unknown User',
-          notes: notes || null
+          notes: notes || null,
+          attachmentUrl: attachmentUrl || null,
+          attachmentFileName: attachmentFile?.name || null
         })
       };
 
@@ -166,9 +195,11 @@ export function useReportStatus(
             const admins = await RepresentativeService.getAllAdmins();
             
             const statusLabels = {
-              'inProgress': 'In Progress',
-              'resolved': 'Resolved',
-              'dismissed': 'Dismissed'
+              'pending': 'Submitted',
+              'submitted': 'Submitted',
+              'inProgress': 'Ongoing Investigation',
+              'resolved': 'Decision Already Made',
+              'dismissed': 'Decision Already Made'
             };
             
             for (const admin of admins) {
@@ -233,11 +264,11 @@ export function useReportStatus(
    */
   const getStatusLabel = (status: ReportStatus): string => {
     const labels: Record<ReportStatus, string> = {
-      pending: 'Pending',
+      pending: 'Submitted',
       submitted: 'Submitted',
-      inProgress: 'In Progress',
-      resolved: 'Resolved',
-      dismissed: 'Dismissed'
+      inProgress: 'Ongoing Investigation',
+      resolved: 'Decision Already Made',
+      dismissed: 'Decision Already Made'
     };
     return labels[status];
   };
