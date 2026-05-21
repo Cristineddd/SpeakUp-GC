@@ -38,7 +38,7 @@ export function InternalNotesSection({
   const [submitting, setSubmitting] = useState(false);
   const [registering, setRegistering] = useState(false);
   const { currentUser } = useAuth();
-  const { role, representativeData } = useRepresentativeRole();
+  const { role, representativeData, loading: roleLoading } = useRepresentativeRole();
   const { toast } = useToast();
 
   const handleAutoRegister = async () => {
@@ -382,8 +382,8 @@ export function InternalNotesSection({
 
         {/* Add Note Form */}
         <div className="border-t-2 border-gray-200 pt-6">
-          {/* Show register button if user is not registered */}
-          {!role && currentUser && (
+          {/* Show register button if user is not registered - only after loading completes */}
+          {!roleLoading && !role && currentUser && (
             <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
               <div className="flex items-start gap-3">
                 <UserPlus className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />

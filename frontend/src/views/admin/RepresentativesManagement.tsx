@@ -28,9 +28,10 @@ import {
 } from "../../components/ui/select";
 import { useToast } from "../../hooks/use-toast";
 import { RepresentativeService } from "../../services/representativeService";
+import { recalculateAllRepresentativeCases } from "../../services/representativeStatsService";
 import type { Representative, RepresentativeRole, CreateRepresentativeData } from "../../types/representative";
 import { ROLE_LABELS, ROLE_COLORS } from "../../types/representative";
-import { UserPlus, User, Briefcase, Mail, Phone, Edit, Trash2, CheckCircle, XCircle, Info, BarChart3, MoreVertical, Shield, Users } from 'lucide-react';
+import { UserPlus, User, Briefcase, Mail, Phone, Edit, Trash2, CheckCircle, XCircle, Info, BarChart3, MoreVertical, Shield, Users, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,7 @@ const RepresentativesManagement = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRep, setEditingRep] = useState<Representative | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
 
   // Form state
@@ -169,6 +171,30 @@ const RepresentativesManagement = () => {
     }
   };
 
+  const handleRefreshStats = async () => {
+    try {
+      setRefreshing(true);
+      const result = await recalculateAllRepresentativeCases();
+      
+      toast({
+        title: 'Stats Refreshed',
+        description: `Updated ${result.updated} representative(s). ${result.errors > 0 ? `${result.errors} error(s).` : ''}`,
+      });
+      
+      // Refresh the list to show updated counts
+      await fetchRepresentatives();
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh statistics',
+        variant: 'destructive'
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleToggleActive = async (rep: Representative) => {
     try {
       await RepresentativeService.update(rep.id, {
@@ -226,14 +252,25 @@ const RepresentativesManagement = () => {
               Manage Administrators and Case Handlers
             </p>
           </div>
-          <Button 
-            onClick={() => setDialogOpen(true)} 
-            className="bg-white text-green-600 hover:bg-white/90 font-bold shadow-lg"
-            size="lg"
-          >
-            <UserPlus className="h-5 w-5 mr-2" />
-            Add Staff
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleRefreshStats}
+              disabled={refreshing}
+              className="bg-white/20 text-white hover:bg-white/30 font-bold shadow-lg backdrop-blur-sm border border-white/30"
+              size="lg"
+            >
+              <RefreshCw className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh Stats'}
+            </Button>
+            <Button 
+              onClick={() => setDialogOpen(true)} 
+              className="bg-white text-green-600 hover:bg-white/90 font-bold shadow-lg"
+              size="lg"
+            >
+              <UserPlus className="h-5 w-5 mr-2" />
+              Add Staff
+            </Button>
+          </div>
         </div>
       </div>
 

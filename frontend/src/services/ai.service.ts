@@ -171,7 +171,7 @@ async function callGroqAPI(message: string, conversationHistory: any[]): Promise
       model: config.groq.model,
       messages,
       temperature: 0.7,
-      max_tokens: 800,
+      max_tokens: 2048,
       top_p: 0.95,
     })
   });
@@ -220,7 +220,7 @@ async function callOpenRouterAPI(message: string, conversationHistory: any[]): P
       model: config.openrouter.model,
       messages,
       temperature: 0.7,
-      max_tokens: 800,
+      max_tokens: 2048,
       top_p: 0.95,
     })
   });

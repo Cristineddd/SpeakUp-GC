@@ -168,9 +168,9 @@ const Account = () => {
       <div className="max-w-2xl mx-auto space-y-6">
 
         {/* ── Header ── */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage your identity, notifications, and security settings.</p>
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+          <p className="mt-2 text-sm text-gray-600">Manage your identity, notifications, and security settings.</p>
         </div>
 
         {/* ── Profile Setup Status Banner ── */}
@@ -270,70 +270,42 @@ const Account = () => {
 
             {/* ── Notification Preference Card ── */}
             <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3 border-b">
-                <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-gray-500" />
-                  Notification Preference
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  How you receive updates about your case status.
-                </CardDescription>
+              <CardHeader className="pb-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Bell className="h-4 w-4 text-blue-600" />
+                      Notification Preference
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-1">
+                      How you receive updates about your case status.
+                    </CardDescription>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs font-semibold">
+                    System Default
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="pt-4">
-                {editingNotif ? (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      {NOTIF_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setNotifInput(opt.value)}
-                          className={cn(
-                            "w-full text-left px-4 py-3 rounded-xl border text-sm transition-all",
-                            notifInput === opt.value
-                              ? "border-[#16A34A] bg-[#F0FDF4] text-[#15803D]"
-                              : "border-gray-200 hover:border-gray-300 text-gray-700"
-                          )}
-                        >
-                          <span className="font-medium">{opt.label}</span>
-                          <span className="block text-xs text-gray-400 mt-0.5">{opt.desc}</span>
-                        </button>
-                      ))}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Bell className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleSaveNotif}
-                        disabled={savingNotif}
-                        className="bg-[#16A34A] hover:bg-[#15803D] text-white rounded-lg"
-                      >
-                        {savingNotif ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditingNotif(false)} className="rounded-lg">
-                        Cancel
-                      </Button>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-sm">
+                        Both (Recommended)
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Email + in-app notifications
+                      </p>
+                      <div className="mt-3 flex items-center gap-2 text-xs text-blue-700">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="font-medium">This setting is locked to ensure you never miss important case updates</span>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-gray-900 capitalize">
-                        {NOTIF_OPTIONS.find(o => o.value === notifPref)?.label ?? "Not set"}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {NOTIF_OPTIONS.find(o => o.value === notifPref)?.desc ?? ""}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setNotifInput(notifPref); setEditingNotif(true); }}
-                      className="shrink-0 rounded-lg flex items-center gap-1.5"
-                    >
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Button>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
 

@@ -198,15 +198,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <div className="px-4 py-2 border-b border-gray-100">
                 <button
                   onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-full flex items-center justify-center px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                 >
                   {sidebarCollapsed ? (
                     <ChevronRight className="h-4 w-4" />
                   ) : (
-                    <>
-                      <ChevronLeft className="h-4 w-4" />
-                      <span>Collapse</span>
-                    </>
+                    <ChevronLeft className="h-4 w-4" />
                   )}
                 </button>
               </div>

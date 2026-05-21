@@ -525,21 +525,22 @@ const AdminReportsPage = () => {
     setFilteredReports(filtered);
   };
 
-  // Convert status to simplified user-friendly label
+  // Convert status to simplified user-friendly label (shorter for better UX)
   const getStatusLabel = (status: string): string => {
     switch (status?.toLowerCase()) {
       case 'pending':
       case 'submitted':
-        return 'Submitted';
+        return 'Pending';
       case 'inprogress':
       case 'investigating':
       case 'awaiting_response':
       case 'under_deliberation':
       case 'validated':
-        return 'Ongoing Investigation';
+        return 'Investigating';
       case 'resolved':
+        return 'Resolved';
       case 'dismissed':
-        return 'Decision Already Made';
+        return 'Closed';
       default:
         return status || 'Unknown';
     }
@@ -548,9 +549,10 @@ const AdminReportsPage = () => {
   const getStatusColor = (status: string) => {
     const label = getStatusLabel(status);
     switch (label) {
-      case 'Submitted': return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
-      case 'Ongoing Investigation': return 'bg-blue-50 text-blue-700 border border-blue-200';
-      case 'Decision Already Made': return 'bg-green-50 text-green-700 border border-green-200';
+      case 'Pending': return 'bg-amber-50 text-amber-700 border border-amber-200';
+      case 'Investigating': return 'bg-blue-50 text-blue-700 border border-blue-200';
+      case 'Resolved': return 'bg-green-50 text-green-700 border border-green-200';
+      case 'Closed': return 'bg-gray-50 text-gray-700 border border-gray-200';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -898,38 +900,44 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
     // ESCALATION BUTTON - Visible to Admin only
     if (isAdmin) {
       baseButtons.push(
-        <Button 
-          key="escalation"
-          variant="outline" 
-          size="sm"
-          onClick={() => {
-            setReportToEscalate(report);
-            setEscalationDialogOpen(true);
-          }}
-          title="Manage Escalation"
-          className={(report.escalationLevel || 0) > 0 ? "text-orange-600" : "text-gray-600"}
-        >
-          <AlertTriangle className="h-4 w-4" />
-        </Button>
+        <div key="escalation" className="relative group">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setReportToEscalate(report);
+              setEscalationDialogOpen(true);
+            }}
+            className={(report.escalationLevel || 0) > 0 ? "text-orange-600 hover:bg-orange-50" : "text-gray-600 hover:bg-gray-50"}
+          >
+            <AlertTriangle className="h-4 w-4" />
+          </Button>
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+            Manage Escalation
+          </span>
+        </div>
       );
     }
 
     // ASSIGN HANDLER BUTTON - Visible to Admin only
     if (isAdmin) {
       baseButtons.push(
-        <Button 
-          key="assign"
-          variant="outline" 
-          size="sm"
-          onClick={() => {
-            setReportToAssign(report);
-            setAssignDialogOpen(true);
-          }}
-          title="Assign Handler"
-          className={report.assignedToName ? "text-blue-600" : "text-gray-600"}
-        >
-          <UserPlus className="h-4 w-4" />
-        </Button>
+        <div key="assign" className="relative group">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setReportToAssign(report);
+              setAssignDialogOpen(true);
+            }}
+            className={report.assignedToName ? "text-blue-600 hover:bg-blue-50" : "text-gray-600 hover:bg-gray-50"}
+          >
+            <UserPlus className="h-4 w-4" />
+          </Button>
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+            {report.assignedToName ? 'Reassign Handler' : 'Assign Handler'}
+          </span>
+        </div>
       );
     }
 
@@ -1724,7 +1732,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Submitted
+            Pending
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'active' 
                 ? 'bg-green-100 text-green-600' 
@@ -1744,7 +1752,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Ongoing Investigation
+            Investigating
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'investigating' 
                 ? 'bg-green-100 text-green-600' 
@@ -1764,7 +1772,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               }
             `}
           >
-            Decision Already Made
+            Resolved
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'resolved' 
                 ? 'bg-green-100 text-green-600' 
@@ -1803,9 +1811,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="inProgress">Ongoing Investigation</SelectItem>
-                <SelectItem value="resolved">Decision Already Made</SelectItem>
+                <SelectItem value="submitted">Pending</SelectItem>
+                <SelectItem value="inProgress">Investigating</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
               </SelectContent>
             </Select>
 
@@ -1899,6 +1907,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <Table>
               <TableHeader className="bg-emerald-50/55 [&_tr]:border-emerald-100/80">
                 <TableRow className="border-emerald-100/80 hover:bg-transparent">
+                  <TableHead className="text-emerald-950/75 w-16">#</TableHead>
                   <TableHead className="text-emerald-950/75">
                     <button 
                       onClick={() => handleSort('title')} 
@@ -1943,19 +1952,6 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   )}
                   <TableHead className="text-emerald-950/75">
                     <button 
-                      onClick={() => handleSort('escalation')} 
-                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                    >
-                      Escalation
-                      {sortField === 'escalation' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-emerald-950/75">
-                    <button 
                       onClick={() => handleSort('status')} 
                       className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
                     >
@@ -1984,17 +1980,33 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredReports.map((report) => {
+                {filteredReports.map((report, index) => {
                   const reportEvidence = processEvidence(safeGet(report, 'evidence'));
+                  const isEscalated = (report.escalationLevel || 0) > 0;
                   
                   return (
                     <TableRow
                       key={report.id}
-                      className="border-b border-emerald-100/50 transition-colors hover:bg-emerald-50/35"
+                      className={`border-b border-emerald-100/50 transition-colors ${
+                        isEscalated 
+                          ? 'bg-red-100 hover:bg-red-200/80 border-red-200' 
+                          : 'hover:bg-emerald-50/35'
+                      }`}
                     >
+                      <TableCell className="font-semibold text-gray-600">
+                        {index + 1}
+                      </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
+                            {/* Inline escalation badge - only show when escalated */}
+                            {(report.escalationLevel || 0) > 0 && (
+                              <Badge className="bg-red-100 text-red-700 border border-red-300 text-xs font-semibold px-2">
+                                {report.hoursUnprocessed || 0}h
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500 flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
                             {safeGet(report, 'location', 'No location')}
@@ -2002,19 +2014,17 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
-                            <>
-                              <Lock className="h-4 w-4 text-amber-600" />
-                              <span className="text-amber-700 font-medium">Anonymous</span>
-                            </>
-                          ) : (
-                            <>
-                              <User className="h-4 w-4 text-gray-400" />
-                              {safeGet(report, 'userName', 'Unknown')}
-                            </>
-                          )}
-                        </div>
+                        {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
+                          <div className="flex items-center gap-1.5" title="Anonymous Reporter">
+                            <Lock className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-gray-500 text-sm">Anonymous</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium">{safeGet(report, 'userName', 'Unknown')}</span>
+                          </div>
+                        )}
                       </TableCell>
                       {/* Only show Handler column for admins */}
                       {!isHandler && (
@@ -2044,20 +2054,6 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           )}
                         </TableCell>
                       )}
-                      {/* Escalation Column */}
-                      <TableCell>
-                        {(report.escalationLevel || 0) > 0 ? (
-                          <CompactEscalationInfo
-                            level={(report.escalationLevel || 0) as EscalationLevel}
-                            hoursUnprocessed={report.hoursUnprocessed || 0}
-                            slaBreached={report.slaBreached || false}
-                          />
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-gray-500 border-gray-300">
-                            None
-                          </Badge>
-                        )}
-                      </TableCell>
                       <TableCell>
                         <Badge className={`${getStatusColor(safeGet(report, 'status', 'pending'))} font-medium`}>
                           {getStatusLabel(safeGet(report, 'status', 'pending'))}

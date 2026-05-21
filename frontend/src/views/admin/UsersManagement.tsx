@@ -53,6 +53,7 @@ import { startOfMonth, startOfDay } from 'date-fns';
 import { RepresentativeService } from '../../services/representativeService';
 import type { RepresentativeRole } from '../../types/representative';
 import { ROLE_LABELS, ROLE_COLORS } from '../../types/representative';
+import { DeleteUserModal } from '../../components/admin/DeleteUserModal';
 
 interface User {
   uid: string;
@@ -82,6 +83,8 @@ const UsersManagement = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false);
   const [userReports, setUserReports] = useState<any[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const { toast } = useToast();
 
   const fetchUsers = async () => {
@@ -186,10 +189,15 @@ const UsersManagement = () => {
   };
 
 
-  const deleteUser = async (uid: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? This will also delete all their reports and complaints.')) {
-      return;
-    }
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setDeleteModalOpen(true);
+  };
+
+  const deleteUser = async () => {
+    if (!userToDelete) return;
+
+    const uid = userToDelete.uid;
 
     try {
       const batch = writeBatch(db);
@@ -206,7 +214,17 @@ const UsersManagement = () => {
         where('userId', '==', uid)
       );
       const reportsSnapshot = await getDocs(reportsQuery);
+      
+      // Track which representatives need their case counts updated
+      const representativesToUpdate = new Map<string, number>();
+      
       reportsSnapshot.docs.forEach((reportDoc) => {
+        const reportData = reportDoc.data();
+        // Track assigned handler for active cases
+        if (reportData.assignedTo && reportData.status !== 'resolved' && reportData.status !== 'dismissed') {
+          const currentCount = representativesToUpdate.get(reportData.assignedTo) || 0;
+          representativesToUpdate.set(reportData.assignedTo, currentCount + 1);
+        }
         batch.delete(reportDoc.ref);
       });
       
@@ -217,8 +235,78 @@ const UsersManagement = () => {
       );
       const complaintsSnapshot = await getDocs(complaintsQuery);
       complaintsSnapshot.docs.forEach((complaintDoc) => {
+        const complaintData = complaintDoc.data();
+        // Track assigned handler for active cases
+        if (complaintData.assignedTo && complaintData.status !== 'resolved' && complaintData.status !== 'dismissed') {
+          const currentCount = representativesToUpdate.get(complaintData.assignedTo) || 0;
+          representativesToUpdate.set(complaintData.assignedTo, currentCount + 1);
+        }
         batch.delete(complaintDoc.ref);
       });
+      
+      // Delete all notifications for this user
+      const notificationsQuery = query(
+        collection(db, 'notifications'),
+        where('userId', '==', uid)
+      );
+      const notificationsSnapshot = await getDocs(notificationsQuery);
+      notificationsSnapshot.docs.forEach((notifDoc) => {
+        batch.delete(notifDoc.ref);
+      });
+      
+      // Delete all chat messages sent by this user
+      const messagesQuery = query(
+        collection(db, 'messages'),
+        where('senderId', '==', uid)
+      );
+      const messagesSnapshot = await getDocs(messagesQuery);
+      messagesSnapshot.docs.forEach((msgDoc) => {
+        batch.delete(msgDoc.ref);
+      });
+      
+      // Delete all internal notes created by this user
+      const notesQuery = query(
+        collection(db, 'internalNotes'),
+        where('createdBy', '==', uid)
+      );
+      const notesSnapshot = await getDocs(notesQuery);
+      notesSnapshot.docs.forEach((noteDoc) => {
+        batch.delete(noteDoc.ref);
+      });
+      
+      // Delete all activity logs for this user
+      const activityQuery = query(
+        collection(db, 'activities'),
+        where('userId', '==', uid)
+      );
+      const activitySnapshot = await getDocs(activityQuery);
+      activitySnapshot.docs.forEach((activityDoc) => {
+        batch.delete(activityDoc.ref);
+      });
+      
+      // Delete chat rooms where this user is a participant
+      const chatRoomsQuery = query(
+        collection(db, 'chatRooms'),
+        where('participantIds', 'array-contains', uid)
+      );
+      const chatRoomsSnapshot = await getDocs(chatRoomsQuery);
+      chatRoomsSnapshot.docs.forEach((chatDoc) => {
+        batch.delete(chatDoc.ref);
+      });
+      
+      // Update representative activeCases counts
+      for (const [repId, casesToSubtract] of representativesToUpdate.entries()) {
+        const repRef = doc(db, 'representatives', repId);
+        const repSnap = await getDoc(repRef);
+        if (repSnap.exists()) {
+          const repData = repSnap.data();
+          const newActiveCases = Math.max(0, (repData.activeCases || 0) - casesToSubtract);
+          batch.update(repRef, {
+            activeCases: newActiveCases,
+            updatedAt: new Date()
+          });
+        }
+      }
       
       // Delete user document
       const userRef = doc(db, 'users', uid);
@@ -229,9 +317,14 @@ const UsersManagement = () => {
       
       setUsers(users.filter(user => user.uid !== uid));
       
+      const totalDeleted = reportsSnapshot.size + complaintsSnapshot.size + 
+                          notificationsSnapshot.size + messagesSnapshot.size + 
+                          notesSnapshot.size + activitySnapshot.size + 
+                          chatRoomsSnapshot.size;
+      
       toast({
-        title: "Success",
-        description: `User deleted successfully along with ${reportsSnapshot.size} report(s) and ${complaintsSnapshot.size} complaint(s)`,
+        title: "User Completely Deleted",
+        description: `Removed user and ${totalDeleted} associated records (${reportsSnapshot.size} reports, ${complaintsSnapshot.size} complaints, ${notificationsSnapshot.size} notifications, ${messagesSnapshot.size} messages, ${notesSnapshot.size} notes, ${activitySnapshot.size} activities, ${chatRoomsSnapshot.size} chat rooms)`,
       });
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -379,18 +472,24 @@ const UsersManagement = () => {
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'Invalid Date';
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return 'Invalid Date';
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
     } catch {
-      return 'Invalid Date';
+      return 'N/A';
     }
+  };
+
+  // Mask email for privacy (show first 4 chars + **** + domain)
+  const maskEmail = (email: string) => {
+    const [localPart, domain] = email.split('@');
+    if (!domain) return email;
+    const visibleChars = Math.min(4, localPart.length);
+    const masked = localPart.substring(0, visibleChars) + '****';
+    return `${masked}@${domain}`;
   };
 
   if (loading) {
@@ -552,7 +651,14 @@ const UsersManagement = () => {
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-gray-600">{user.email}</TableCell>
+                <TableCell className="text-sm text-gray-600">
+                  <span className="group relative cursor-help" title={user.email}>
+                    {maskEmail(user.email)}
+                    <span className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+                      {user.email}
+                    </span>
+                  </span>
+                </TableCell>
                 <TableCell>
                   {user.isSuspended ? (
                     <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700 px-3 py-1 text-xs font-bold">
@@ -609,10 +715,10 @@ const UsersManagement = () => {
                         <UserCog className="mr-2 h-4 w-4" />
                         Assign as Representative
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
+                      <DropdownMenuSeparator className="my-1" />
                       <DropdownMenuItem
-                        className="text-red-600 focus:text-red-600"
-                        onClick={() => deleteUser(user.uid)}
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                        onClick={() => handleDeleteClick(user)}
                       >
                         <UserX className="mr-2 h-4 w-4" />
                         Delete User
@@ -757,6 +863,17 @@ const UsersManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Modal */}
+      {userToDelete && (
+        <DeleteUserModal
+          open={deleteModalOpen}
+          onOpenChange={setDeleteModalOpen}
+          username={userToDelete.alias || userToDelete.displayName}
+          reportCount={userToDelete.reportsCount || 0}
+          onConfirmDelete={deleteUser}
+        />
+      )}
     </div>
   );
 };

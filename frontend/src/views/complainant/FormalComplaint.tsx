@@ -1536,8 +1536,8 @@ const FormalComplaint = () => {
             </div>
 
             {/* Date + Time row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full">
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Date of incident *
                   {hasFieldError('incidentDate') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
@@ -1572,7 +1572,7 @@ const FormalComplaint = () => {
                   </p>
                 )}
                 {formData.incidentDate && !dateError && (
-                  <p className="text-xs text-gray-500 mt-1.5">
+                  <p className="text-xs text-gray-500 mt-1.5 break-words">
                     {new Date(formData.incidentDate + 'T00:00:00').toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       year: 'numeric', 
@@ -1582,7 +1582,7 @@ const FormalComplaint = () => {
                   </p>
                 )}
               </div>
-              <div>
+              <div className="w-full">
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Time of incident <span className="font-normal text-gray-400">(optional)</span>
                 </label>
@@ -1618,8 +1618,8 @@ const FormalComplaint = () => {
             </div>
 
             {/* Location */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full">
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">Where it happened *</label>
                 <Select value={locationVicinity} onValueChange={setLocationVicinity}>
                   <SelectTrigger className="w-full text-sm border-gray-300">
@@ -1632,7 +1632,7 @@ const FormalComplaint = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="w-full">
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   {locationVicinity === "online" ? "Platform *" : "Location details"} {locationVicinity === "outside" && <span className="text-red-500">*</span>}
                 </label>

@@ -217,7 +217,7 @@ const Landing = () => {
                       </div>
                     </div>
 
-                    {/* Timeline */}
+                    {/* Timeline - Matching actual system workflow */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -242,14 +242,14 @@ const Landing = () => {
                           <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-bold text-[#1a7a45]">Mediation Ongoing</p>
+                          <p className="text-sm font-bold text-[#1a7a45]">Investigation Ongoing</p>
                           <p className="text-xs text-green-600 font-medium">In progress</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 opacity-40">
                         <div className="w-6 h-6 bg-gray-200 rounded-full flex-shrink-0" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-400">Resolution Pending</p>
+                          <p className="text-sm font-medium text-gray-400">Decision Pending</p>
                         </div>
                       </div>
                     </div>

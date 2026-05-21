@@ -555,6 +555,7 @@ const Reports = () => {
                 <TableCaption>A list of all reports in the system.</TableCaption>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-16">#</TableHead>
                     <TableHead>Report ID</TableHead>
                     <TableHead>Title</TableHead>
                     <TableHead>Type</TableHead>
@@ -567,75 +568,82 @@ const Reports = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentReports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell className="font-medium">{report.id}</TableCell>
-                      <TableCell>{report.title}</TableCell>
-                      <TableCell>{report.type}</TableCell>
-                      <TableCell>{report.complainant}</TableCell>
-                      <TableCell>{report.dateReported}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(report.status)}>
-                          {report.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getPriorityColor(report.priority)}>
-                          {report.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{report.assignedTo}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {/* Always show View button */}
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleViewReport(report)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          
-                          {/* Show Delete and Archive buttons for resolved or dismissed reports */}
-                          {(report.status === 'resolved' || report.status === 'dismissed') && (
-                            <>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleArchiveReport(report.id, report.title)}
-                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                title="Archive Report"
-                              >
-                                <Archive className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleDeleteReport(report.id, report.title)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Delete Report"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                          
-                          {/* Show Resolve button for non-resolved/non-archived/non-dismissed reports */}
-                          {report.status !== 'resolved' && report.status !== 'archived' && report.status !== 'dismissed' && (
+                  {recentReports.map((report, index) => {
+                    const isEscalated = (report.escalationLevel || 0) > 0;
+                    return (
+                      <TableRow 
+                        key={report.id}
+                        className={isEscalated ? 'bg-red-100 hover:bg-red-200/80 border-red-200' : ''}
+                      >
+                        <TableCell className="font-semibold text-gray-600">{index + 1}</TableCell>
+                        <TableCell className="font-medium">{report.id}</TableCell>
+                        <TableCell>{report.title}</TableCell>
+                        <TableCell>{report.type}</TableCell>
+                        <TableCell>{report.complainant}</TableCell>
+                        <TableCell>{report.dateReported}</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(report.status)}>
+                            {report.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityColor(report.priority)}>
+                            {report.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{report.assignedTo}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {/* Always show View button */}
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => handleResolveReport(report.id, report.title)}
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                              title="Mark as Resolved"
+                              onClick={() => handleViewReport(report)}
                             >
-                              <CheckCircle2 className="h-4 w-4" />
+                              <Eye className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            
+                            {/* Show Delete and Archive buttons for resolved or dismissed reports */}
+                            {(report.status === 'resolved' || report.status === 'dismissed') && (
+                              <>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleArchiveReport(report.id, report.title)}
+                                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                  title="Archive Report"
+                                >
+                                  <Archive className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDeleteReport(report.id, report.title)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Delete Report"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+                            
+                            {/* Show Resolve button for non-resolved/non-archived/non-dismissed reports */}
+                            {report.status !== 'resolved' && report.status !== 'archived' && report.status !== 'dismissed' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleResolveReport(report.id, report.title)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                title="Mark as Resolved"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

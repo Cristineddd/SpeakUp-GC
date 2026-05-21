@@ -16,7 +16,8 @@ import {
   orderBy,
   Timestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type {
@@ -285,9 +286,68 @@ export class RepresentativeService {
 
       await updateDoc(docRef, updateData);
       console.log(`✅ Representative updated: ${id}`);
+
+      // If displayName was updated, update it in all assigned complaints
+      if (data.displayName) {
+        await this.updateHandlerNameInComplaints(id, data.displayName);
+      }
     } catch (error) {
       console.error(`❌ Error updating representative ${id}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Update handler name in all complaints and reports assigned to this representative
+   */
+  private static async updateHandlerNameInComplaints(representativeId: string, newDisplayName: string): Promise<void> {
+    try {
+      console.log(`🔄 Updating handler name in all complaints and reports for representative: ${representativeId}`);
+      
+      // Update complaints collection
+      const complaintsRef = collection(db, 'complaints');
+      const complaintsQuery = query(complaintsRef, where('assignedTo', '==', representativeId));
+      const complaintsSnapshot = await getDocs(complaintsQuery);
+      
+      // Update reports collection
+      const reportsRef = collection(db, 'reports');
+      const reportsQuery = query(reportsRef, where('assignedTo', '==', representativeId));
+      const reportsSnapshot = await getDocs(reportsQuery);
+      
+      const totalDocs = complaintsSnapshot.size + reportsSnapshot.size;
+      
+      if (totalDocs === 0) {
+        console.log(`ℹ️ No complaints or reports assigned to representative ${representativeId}`);
+        return;
+      }
+
+      console.log(`📋 Found ${complaintsSnapshot.size} complaints and ${reportsSnapshot.size} reports to update`);
+      
+      // Update all documents in batch
+      const batch = writeBatch(db);
+      
+      // Add complaints to batch
+      complaintsSnapshot.docs.forEach(doc => {
+        batch.update(doc.ref, {
+          assignedToName: newDisplayName,
+          updatedAt: Timestamp.now()
+        });
+      });
+      
+      // Add reports to batch
+      reportsSnapshot.docs.forEach(doc => {
+        batch.update(doc.ref, {
+          assignedToName: newDisplayName,
+          updatedAt: Timestamp.now()
+        });
+      });
+      
+      await batch.commit();
+      console.log(`✅ Updated handler name in ${complaintsSnapshot.size} complaints and ${reportsSnapshot.size} reports`);
+    } catch (error) {
+      console.error(`❌ Error updating handler name in complaints/reports:`, error);
+      // Don't throw - this is a secondary operation
+      console.warn('⚠️ Handler name update in complaints/reports failed, but representative was updated');
     }
   }
 

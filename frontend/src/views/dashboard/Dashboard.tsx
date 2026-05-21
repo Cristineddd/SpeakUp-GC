@@ -416,17 +416,17 @@ export default function Dashboard() {
                       <button
                         key={complaint.id}
                         type="button"
-                        className="w-full text-left flex items-center justify-between gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                        className="w-full text-left p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
                         style={{ border: "0.5px solid transparent" }}
                         onMouseEnter={e => (e.currentTarget.style.borderColor = "#86EFAC")}
                         onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
                         onClick={() => navigate(`/case-tracking/${complaint.id}`)}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-start gap-3">
                           <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
                             <FileText className="h-4 w-4 text-[#16A34A]" />
                           </div>
-                          <div className="min-w-0">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <p className="text-sm font-medium text-gray-900 truncate">{complaint.title}</p>
                               <span title="Confidential">
@@ -436,18 +436,18 @@ export default function Dashboard() {
                             <p className="text-xs text-gray-400 mt-0.5">
                               CASE-{String(idx + 1).padStart(3, "0")} · {safeToDate(complaint.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                             </p>
+                            <div className="mt-2">
+                              {complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW ? (
+                                <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Submitted</Badge>
+                              ) : complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE || complaint.status === ComplaintStatus.UNDER_DELIBERATION ? (
+                                <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">Ongoing Investigation</Badge>
+                              ) : complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED ? (
+                                <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>
+                              ) : (
+                                getStatusBadge(complaint.status)
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="shrink-0">
-                          {complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW ? (
-                            <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Submitted</Badge>
-                          ) : complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE || complaint.status === ComplaintStatus.UNDER_DELIBERATION ? (
-                            <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">Ongoing Investigation</Badge>
-                          ) : complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED ? (
-                            <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>
-                          ) : (
-                            getStatusBadge(complaint.status)
-                          )}
                         </div>
                       </button>
                     ))}
@@ -532,9 +532,8 @@ export default function Dashboard() {
                 </div>
                 <div className="p-4 space-y-2">
                   {[
-                    { step: 1, label: "Complete your profile",      desc: "Add your details so we can contact you if needed", link: "/account" },
-                    { step: 2, label: "File your first complaint",   desc: "Submit a case — it only takes a few minutes",       link: "/complaints/new" },
-                    { step: 3, label: "Track its status",           desc: "Once filed, monitor updates in My Cases",           link: "/complaints" },
+                    { step: 1, label: "File your first complaint",   desc: "Submit a case — it only takes a few minutes",       link: "/complaints/new" },
+                    { step: 2, label: "Track its status",           desc: "Once filed, monitor updates in My Cases",           link: "/complaints" },
                   ].map((item) => (
                     <button
                       key={item.step}

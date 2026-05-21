@@ -133,16 +133,17 @@ async function generateAIResponseWithRetry(
       throw new Error('INVALID_CONFIG: Gemini endpoint or API version is missing');
     }
 
-    // Build conversation context
+    // Build conversation context with better formatting
     let conversationContext = '';
     if (conversationHistory && conversationHistory.length > 0) {
-      conversationContext = '\n\nRECENT CONVERSATION:\n';
-      // Include last 5 messages for context (excluding current message)
-      const recentMessages = conversationHistory.slice(-5);
-      recentMessages.forEach(msg => {
-        const role = msg.isUser ? 'User' : 'Assistant';
-        conversationContext += `${role}: ${msg.content}\n`;
+      conversationContext = '\n\n=== CONVERSATION HISTORY ===\n';
+      // Include last 8 messages for better context (excluding current message)
+      const recentMessages = conversationHistory.slice(-8);
+      recentMessages.forEach((msg, idx) => {
+        const role = msg.isUser ? 'User' : 'Laya';
+        conversationContext += `[${idx + 1}] ${role}: ${msg.content}\n`;
       });
+      conversationContext += '=== END HISTORY ===\n';
     }
 
     // Construct the API payload with enhanced training context
@@ -302,8 +303,8 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 800, // Reduced to avoid MAX_TOKENS issues
-        stopSequences: ["\n\n"]
+        maxOutputTokens: 2048, // Increased to allow complete responses
+        // Removed stopSequences to prevent premature truncation
       },
       safetySettings: [
         {
