@@ -31,6 +31,7 @@ import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCate
 import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
+import { RepresentativeService } from '../../services/representativeService';
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/FormAssistant";
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
@@ -1111,6 +1112,39 @@ const FormalComplaint = () => {
         );
       } catch (notifyError) {
         console.warn('⚠️ Could not send complaint created notification:', notifyError);
+      }
+
+      // Send notifications to ALL admins about new complaint
+      try {
+        const admins = await RepresentativeService.getAllAdmins();
+        console.log(`📧 Notifying ${admins.length} admin(s) about new complaint`);
+        
+        for (const admin of admins) {
+          try {
+            await NotificationService.createNotification(
+              admin.userId,
+              'complaint_created',
+              'New Complaint Submitted',
+              `A new ${formData.category || 'formal'} complaint has been submitted. Case ID: ${formattedCaseId}`,
+              {
+                priority: 'high',
+                complaintId: complaintId,
+                actionUrl: `/admin/reports?id=${complaintId}`,
+                actionLabel: 'View Complaint',
+                data: {
+                  category: formData.category,
+                  severity: formData.severity,
+                  isAnonymous: isAnonymous
+                }
+              }
+            );
+          } catch (adminNotifyError) {
+            console.warn(`⚠️ Could not notify admin ${admin.email}:`, adminNotifyError);
+          }
+        }
+        console.log('✅ Admin notifications sent');
+      } catch (adminError) {
+        console.warn('⚠️ Could not send admin notifications:', adminError);
       }
       
       toast({

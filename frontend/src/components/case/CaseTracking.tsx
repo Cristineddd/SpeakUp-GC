@@ -870,9 +870,6 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
               {statusCfg.label}
             </span>
-            <span className="text-xs text-gray-500">
-              Stage: <span className="font-medium text-gray-700">{complaint.stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-            </span>
           </div>
         </div>
 
