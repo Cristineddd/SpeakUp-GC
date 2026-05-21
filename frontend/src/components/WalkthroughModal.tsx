@@ -672,7 +672,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
           <div><h3 className="font-semibold mb-2">Acceptance of Terms</h3><p className="text-muted-foreground">By accessing and using SpeakUp GC, you accept and agree to be bound by these Terms and Conditions.</p></div>
           <div><h3 className="font-semibold mb-2">User Responsibilities</h3><p className="text-muted-foreground">You agree to provide accurate information, maintain the confidentiality of your account, and use SpeakUp GC only for lawful purposes.</p></div>
           <div><h3 className="font-semibold mb-2">Reporting & Confidentiality</h3><p className="text-muted-foreground">All reports are treated confidentially and reviewed by authorized personnel.</p></div>
-          <p className="text-sm text-muted-foreground italic">Last updated: November 7, 2025</p>
+          <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
 

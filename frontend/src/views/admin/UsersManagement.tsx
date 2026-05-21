@@ -81,6 +81,7 @@ const UsersManagement = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showRepresentatives, setShowRepresentatives] = useState(false);
   const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false);
   const [userReports, setUserReports] = useState<any[]>([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -108,22 +109,28 @@ const UsersManagement = () => {
         }
       });
       
-      const usersData = snapshot.docs
-        .map(doc => {
-          const userData = doc.data();
-          const rep = representativeMap.get(doc.id);
-          
-          return {
-            uid: doc.id,
-            ...userData,
-            representativeRole: rep?.role || null,
-            department: rep?.department || userData.department,
-            position: rep?.position || userData.position,
-            isSuspended: userData.isSuspended || false,
-            reportsCount: reportCounts.get(doc.id) || 0
-          };
-        })
-        .filter(user => !user.representativeRole) as User[]; // Exclude representatives
+      const allUsersData = snapshot.docs.map(doc => {
+        const userData = doc.data();
+        const rep = representativeMap.get(doc.id);
+        
+        return {
+          uid: doc.id,
+          ...userData,
+          representativeRole: rep?.role || null,
+          department: rep?.department || userData.department,
+          position: rep?.position || userData.position,
+          isSuspended: userData.isSuspended || false,
+          reportsCount: reportCounts.get(doc.id) || 0
+        };
+      });
+      
+      console.log('📊 Total users from Firestore:', allUsersData.length);
+      console.log('📊 Users with representative roles:', allUsersData.filter(u => u.representativeRole).length);
+      
+      // Store all users (we'll filter by showRepresentatives in the filter effect)
+      const usersData = allUsersData as User[];
+      
+      console.log('📊 All users loaded:', usersData.length);
       
       setUsers(usersData);
       setFilteredUsers(usersData);
@@ -147,6 +154,11 @@ const UsersManagement = () => {
   useEffect(() => {
     let result = [...users];
 
+    // Filter representatives
+    if (!showRepresentatives) {
+      result = result.filter(user => !user.representativeRole);
+    }
+
     // Apply status filter
     if (statusFilter === 'active') {
       result = result.filter(user => !user.isSuspended);
@@ -166,7 +178,7 @@ const UsersManagement = () => {
     }
 
     setFilteredUsers(result);
-  }, [users, searchTerm, statusFilter]);
+  }, [users, searchTerm, statusFilter, showRepresentatives]);
 
   // Calculate stats (only regular users, no representatives)
   const stats = {
