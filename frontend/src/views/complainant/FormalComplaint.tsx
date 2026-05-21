@@ -1125,15 +1125,15 @@ const FormalComplaint = () => {
               admin.userId,
               'complaint_created',
               'New Complaint Submitted',
-              `A new ${formData.category || 'formal'} complaint has been submitted. Case ID: ${formattedCaseId}`,
+              `A new ${formData.type || 'formal'} complaint has been submitted. Case ID: ${formattedCaseId}`,
               {
                 priority: 'high',
                 complaintId: complaintId,
                 actionUrl: `/admin/reports?id=${complaintId}`,
                 actionLabel: 'View Complaint',
                 data: {
-                  category: formData.category,
-                  severity: formData.severity,
+                  category: formData.type,
+                  severity: 'high',
                   isAnonymous: isAnonymous
                 }
               }
