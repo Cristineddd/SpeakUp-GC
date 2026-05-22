@@ -131,13 +131,8 @@ export default function Sidebar() {
     logout();
   };
 
-  // Don't render sidebar for non-complainant roles
-  if (!roleLoading && userRole && userRole !== 'complainant') {
-    return null;
-  }
-
-  // Show loading skeleton while checking role
-  if (roleLoading) {
+  // Show loading skeleton while checking role OR if role hasn't been determined yet
+  if (roleLoading || !userRole) {
     return (
       <>
       {/* Desktop loading skeleton */}
@@ -170,6 +165,11 @@ export default function Sidebar() {
       </div>
       </>
     );
+  }
+
+  // Don't render sidebar for non-complainant roles
+  if (userRole !== 'complainant') {
+    return null;
   }
 
   return (

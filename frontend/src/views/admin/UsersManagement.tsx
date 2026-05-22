@@ -707,19 +707,6 @@ const UsersManagement = () => {
                         <Eye className="mr-2 h-4 w-4" />
                         View User
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => toggleSuspendUser(user)}>
-                        {user.isSuspended ? (
-                          <>
-                            <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                            <span>Activate User</span>
-                          </>
-                        ) : (
-                          <>
-                            <Ban className="mr-2 h-4 w-4 text-orange-600" />
-                            <span>Suspend User</span>
-                          </>
-                        )}
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => openAssignRoleDialog(user)}
@@ -765,7 +752,7 @@ const UsersManagement = () => {
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Email</Label>
-                  <p className="font-medium">{selectedUser.email}</p>
+                  <p className="font-medium">{maskEmail(selectedUser.email)}</p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Position</Label>
@@ -835,7 +822,7 @@ const UsersManagement = () => {
           <DialogHeader>
             <DialogTitle>Assign Representative Role</DialogTitle>
             <DialogDescription>
-              Assign a role to {selectedUser?.alias || selectedUser?.displayName} ({selectedUser?.email}). This user will be moved to the Representatives page.
+              Assign a role to {selectedUser?.alias || selectedUser?.displayName} ({selectedUser?.email ? maskEmail(selectedUser.email) : ''}). This user will be moved to the Representatives page.
             </DialogDescription>
           </DialogHeader>
 
