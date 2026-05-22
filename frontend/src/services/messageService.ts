@@ -106,12 +106,7 @@ export class MessageService {
 
       const docRef = await addDoc(chatRoomsRef, chatRoomData);
 
-      // Send welcome system message
-      await this.sendSystemMessage(
-        docRef.id,
-        complaintId,
-        'Welcome to the case chat. A handler will respond to you shortly.'
-      );
+      // Don't send automatic welcome message - let handler initiate conversation
 
       return {
         id: docRef.id,
@@ -228,12 +223,27 @@ export class MessageService {
             : chatRoom.complainantId;
           
           if (recipientId) {
+            // Check if complaint is anonymous
+            let isAnonymous = false;
+            try {
+              const complaintRef = doc(db, 'complaints', complaintId);
+              const complaintSnap = await getDoc(complaintRef);
+              if (complaintSnap.exists()) {
+                isAnonymous = complaintSnap.data()?.isAnonymous === true;
+              }
+            } catch (err) {
+              console.warn('Could not check anonymous status:', err);
+            }
+
+            // Use "Anonymous" if complaint is anonymous, otherwise use sender name
+            const displayName = isAnonymous ? 'Anonymous' : senderName;
             const preview = content.length > 50 ? `${content.substring(0, 50)}...` : content;
+            
             await NotificationService.createNotification(
               recipientId,
               'new_message',
               'New Message',
-              `${senderName} sent you a message: "${preview}"`,
+              `${displayName} sent you a message: "${preview}"`,
               {
                 priority: 'normal',
                 complaintId,

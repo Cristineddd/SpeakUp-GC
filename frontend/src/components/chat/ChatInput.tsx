@@ -1,9 +1,41 @@
 import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
-import { Send, Paperclip, X, Smile, Image as ImageIcon } from 'lucide-react';
+import { Send, Paperclip, X, Smile, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import { Button } from '../ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '../ui/dropdown-menu';
 import { useToast } from '../../hooks/use-toast';
 import { MESSAGE_CONSTRAINTS, formatFileSize, getFileIcon } from '../../types/message';
 import type { MessageAttachment } from '../../types/message';
+
+// Quick response templates for handlers
+const QUICK_RESPONSES = [
+  {
+    label: 'Initial Greeting',
+    message: 'Hello, I am your assigned case handler. I have reviewed your complaint and will be assisting you throughout this process. Please feel free to share any additional information or evidence that may help with the investigation.',
+  },
+  {
+    label: 'Request More Info',
+    message: 'Thank you for your patience. To better assist you, could you please provide more details about the incident? Specifically, any additional context, dates, times, or witnesses would be helpful.',
+  },
+  {
+    label: 'Acknowledge Receipt',
+    message: 'I have received your message and the information you provided. I will review it carefully and get back to you shortly with next steps.',
+  },
+  {
+    label: 'Schedule Meeting',
+    message: 'I would like to schedule a meeting to discuss your case in more detail. Please let me know your available times, and we can arrange a confidential discussion.',
+  },
+  {
+    label: 'Case Update',
+    message: 'I wanted to provide you with an update on your case. We are currently in the investigation phase and gathering all necessary information. I will keep you informed of any developments.',
+  },
+];
 
 interface ChatInputProps {
   onSendMessage: (content: string, attachments?: MessageAttachment[]) => Promise<void>;
@@ -13,6 +45,7 @@ interface ChatInputProps {
   placeholder?: string;
   allowAttachments?: boolean;
   maxAttachments?: number;
+  showQuickResponses?: boolean; // New prop for handlers
 }
 
 export function ChatInput({
@@ -23,6 +56,7 @@ export function ChatInput({
   placeholder = 'Type a message...',
   allowAttachments = true,
   maxAttachments = MESSAGE_CONSTRAINTS.MAX_ATTACHMENTS,
+  showQuickResponses = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
@@ -31,6 +65,18 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+
+  // Handle quick response selection
+  const handleQuickResponse = (responseMessage: string) => {
+    setMessage(responseMessage);
+    // Focus textarea after selecting
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      // Auto-resize
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  };
 
   // Handle text input change
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -261,6 +307,42 @@ export function ChatInput({
       {/* Input area */}
       <div className="px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center gap-2">
+        {/* Quick response dropdown for handlers */}
+        {showQuickResponses && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={disabled}
+                title="Quick Responses"
+                className="h-10 w-10 hover:bg-green-50 transition-colors flex-shrink-0"
+              >
+                <MessageSquare className="h-5 w-5 text-gray-500 hover:text-[#1a7a45]" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80">
+              <DropdownMenuLabel>Quick Responses</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {QUICK_RESPONSES.map((response, index) => (
+                <DropdownMenuItem
+                  key={index}
+                  onClick={() => handleQuickResponse(response.message)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium text-sm">{response.label}</span>
+                    <span className="text-xs text-gray-500 line-clamp-2">
+                      {response.message}
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         {/* File attachment button */}
         {allowAttachments && (
           <>

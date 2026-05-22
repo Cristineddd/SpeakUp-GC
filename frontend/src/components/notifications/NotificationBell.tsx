@@ -157,6 +157,9 @@ export const NotificationBell: React.FC = () => {
   const handleNotificationClick = async (notification: Notification) => {
     console.log('🔔 [BELL] Notification clicked:', notification.id);
 
+    // Close dropdown immediately for better UX
+    setOpen(false);
+
     // Mark as read if unread
     if (notification.status === 'unread') {
       console.log('🔔 [BELL] Auto-marking as read');
@@ -174,6 +177,9 @@ export const NotificationBell: React.FC = () => {
       }
     }
 
+    // Small delay for smooth transition
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Navigate to action URL or notifications page
     if (notification.actionUrl) {
       console.log('🔔 [BELL] Navigating to:', notification.actionUrl);
@@ -188,7 +194,6 @@ export const NotificationBell: React.FC = () => {
       // Default to notifications page
       navigate('/notifications');
     }
-    setOpen(false);
   };
 
   if (!currentUser) {

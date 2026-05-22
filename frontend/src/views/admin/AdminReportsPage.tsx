@@ -241,6 +241,8 @@ const AdminReportsPage = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const location = useLocation();
   const [selectedReport, setSelectedReport] = useState<AdminReport | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState<string>('details');
   const [newNote, setNewNote] = useState('');
   const [newStatus, setNewStatus] = useState<string>('');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -272,6 +274,14 @@ const AdminReportsPage = () => {
       setActiveTab(statusParam);
     }
   }, [location.search]);
+
+  // Reset modal tab and close modal when selectedReport becomes null
+  useEffect(() => {
+    if (!selectedReport) {
+      setModalTab('details');
+      setModalOpen(false);
+    }
+  }, [selectedReport]);
 
   // Get representative ID for handlers (use representativeData from hook)
   useEffect(() => {
@@ -365,15 +375,35 @@ const AdminReportsPage = () => {
     const reportId = params.get('reportId');
     const noteId = params.get('noteId');
     
-    if (reportId && reports.length > 0) {
+    if (reportId) {
+      // If reportId is present, refresh reports first to ensure we have the latest data
+      if (reports.length === 0) {
+        console.log('📬 Report ID in URL, fetching reports first...');
+        fetchReports();
+        return;
+      }
+      
       const report = reports.find(r => r.id === reportId);
       if (report) {
         console.log('📬 Opening report from notification:', reportId, noteId ? `with note: ${noteId}` : '');
+        
+        // Get tab parameter from URL
+        const tabParam = params.get('tab');
+        if (tabParam && ['details', 'evidence', 'notes'].includes(tabParam)) {
+          setModalTab(tabParam);
+          console.log('📑 Setting modal tab to:', tabParam);
+        } else {
+          setModalTab('details'); // Default to details tab
+        }
+        
         setSelectedReport(report);
+        setModalOpen(true); // CRITICAL: Open the modal!
+        console.log('✅ Modal opened with report:', report.id);
         
         // Set highlight note ID if present
         if (noteId) {
           setHighlightNoteId(noteId);
+          setModalTab('notes'); // Switch to notes tab if noteId is present
         }
         
         // Clean up URL after opening (delayed to allow scroll to complete)
@@ -381,6 +411,42 @@ const AdminReportsPage = () => {
           const newUrl = window.location.pathname;
           window.history.replaceState({}, '', newUrl);
         }, 2000);
+      } else {
+        // Report not found in current list, wait and retry
+        console.log('⚠️ Report not found in current list, waiting for Firestore sync...');
+        
+        // Retry after 1 second to allow Firestore real-time listener to update
+        setTimeout(() => {
+          const retryReport = reports.find(r => r.id === reportId);
+          if (retryReport) {
+            console.log('✅ Report found after retry, opening...');
+            
+            // Set modal tab
+            const tabParam = params.get('tab');
+            if (tabParam && ['details', 'evidence', 'notes'].includes(tabParam)) {
+              setModalTab(tabParam);
+            } else {
+              setModalTab('details');
+            }
+            
+            setSelectedReport(retryReport);
+            setModalOpen(true); // CRITICAL: Open the modal!
+            console.log('✅ Modal opened after retry:', retryReport.id);
+            
+            if (noteId) {
+              setHighlightNoteId(noteId);
+              setModalTab('notes');
+            }
+            
+            setTimeout(() => {
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, '', newUrl);
+            }, 2000);
+          } else {
+            console.error('❌ Report still not found after retry. Refreshing reports...');
+            fetchReports();
+          }
+        }, 1500);
       }
     }
   }, [location.search, reports]);
@@ -943,22 +1009,57 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
     // VIEW BUTTON - Different views for Admin and Handler
     baseButtons.push(
-      <Dialog key="view">
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              setSelectedReport(report);
-            }}
-            className="relative group"
-          >
-            <Eye className="h-4 w-4" />
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-              View Details
-            </span>
-          </Button>
-        </DialogTrigger>
+      <Button 
+        key="view"
+        variant="outline" 
+        size="sm"
+        onClick={() => {
+          setSelectedReport(report);
+          setModalOpen(true);
+        }}
+        className="relative group"
+      >
+        <Eye className="h-4 w-4" />
+        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+          View Details
+        </span>
+      </Button>
+    );
+
+    // CHAT BUTTON - Visible to Handler only
+    if (isHandler) {
+      baseButtons.push(
+        <Button 
+          key="chat"
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate(`/case-chat/${report.id}`)}
+          className="text-blue-600 hover:text-blue-700 relative group"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+            Open Chat
+          </span>
+        </Button>
+      );
+    }
+
+    return baseButtons;
+  };
+
+  // Render the shared Dialog OUTSIDE the loop
+  const renderReportDetailsDialog = () => {
+    if (!selectedReport) return null;
+    
+    const report = selectedReport;
+    
+    return (
+      <Dialog open={modalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedReport(null);
+          setModalOpen(false);
+        }
+      }}>
         <DialogContent className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl sm:text-2xl font-bold">
@@ -970,7 +1071,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           </DialogHeader>
           
           {selectedReport && (
-            <Tabs defaultValue="details" className="w-full">
+            <Tabs value={modalTab} onValueChange={setModalTab} className="w-full">
               <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="details">Case Details</TabsTrigger>
                 <TabsTrigger value="evidence">Evidence & Files</TabsTrigger>
@@ -1426,28 +1527,6 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         </DialogContent>
       </Dialog>
     );
-
-    // CHAT BUTTON - Visible to Handler only
-    if (isHandler) {
-      baseButtons.push(
-        <Button 
-          key="chat"
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate(`/case-chat/${report.id}`)}
-          className="text-blue-600 hover:text-blue-700 relative group"
-        >
-          <MessageCircle className="h-4 w-4" />
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Open Chat
-          </span>
-        </Button>
-      );
-    }
-
-    // No quick status action buttons for handlers - only Eye and Chat icons
-
-    return baseButtons;
   };
 
   if (loading) {
@@ -2079,6 +2158,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           )}
         </CardContent>
       </Card>
+
+      {/* Report Details Dialog - Shared across all reports */}
+      {renderReportDetailsDialog()}
 
       {/* Assign Handler Dialog */}
       {reportToAssign && (

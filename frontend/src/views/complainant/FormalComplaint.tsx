@@ -1129,7 +1129,7 @@ const FormalComplaint = () => {
               {
                 priority: 'high',
                 complaintId: complaintId,
-                actionUrl: `/admin/reports?id=${complaintId}`,
+                actionUrl: `/admin/reports?reportId=${complaintId}&tab=details`,
                 actionLabel: 'View Complaint',
                 data: {
                   category: formData.type,

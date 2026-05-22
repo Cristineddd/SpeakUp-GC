@@ -45,6 +45,8 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const unreadCasesCount = useUnreadCasesCount();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Load collapsed state from localStorage
     if (typeof window !== 'undefined') {
@@ -53,6 +55,36 @@ export default function Sidebar() {
     }
     return false;
   });
+
+  // Fetch user role on mount
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (!user) {
+        // Keep loading until user is available
+        return;
+      }
+
+      try {
+        const { getFirestore, doc, getDoc } = await import('firebase/firestore');
+        const db = getFirestore();
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (userDoc.exists()) {
+          const role = userDoc.data()?.role || 'complainant';
+          setUserRole(role);
+        } else {
+          setUserRole('complainant');
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error);
+        setUserRole('complainant');
+      } finally {
+        setRoleLoading(false);
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
 
   // Save collapsed state to localStorage
   useEffect(() => {
@@ -98,6 +130,47 @@ export default function Sidebar() {
     setShowLogoutDialog(false);
     logout();
   };
+
+  // Don't render sidebar for non-complainant roles
+  if (!roleLoading && userRole && userRole !== 'complainant') {
+    return null;
+  }
+
+  // Show loading skeleton while checking role
+  if (roleLoading) {
+    return (
+      <>
+      {/* Desktop loading skeleton */}
+      <aside className="hidden lg:flex lg:flex-shrink-0">
+        <div className="w-68 flex flex-col border-r border-gray-200 bg-white">
+          <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-11 h-11 bg-gray-200 rounded animate-pulse"></div>
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 px-4 py-6 space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </aside>
+      
+      {/* Mobile loading skeleton */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex justify-around items-center h-16 px-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="w-12 h-12 bg-gray-200 rounded animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+      </>
+    );
+  }
 
   return (
     <>

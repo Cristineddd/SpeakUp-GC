@@ -52,6 +52,12 @@ export function ChatInterface({
   const userRole = currentUser?.role || 'complainant'; // Default to complainant if no role
   const isHandler = userRole === 'handler' || chatRoom?.handlerId === currentUser?.uid;
   const isComplainant = userRole === 'complainant';
+  
+  // DEBUG: Log handler status
+  console.log('🔍 [CHAT] User role:', userRole);
+  console.log('🔍 [CHAT] Is handler:', isHandler);
+  console.log('🔍 [CHAT] Current user ID:', currentUser?.uid);
+  console.log('🔍 [CHAT] Chat room handler ID:', chatRoom?.handlerId);
 
   // Initialize chat room and subscribe to messages
   useEffect(() => {
@@ -483,6 +489,7 @@ export function ChatInterface({
           }
           allowAttachments={chatRoom.settings?.allowAttachments}
           maxAttachments={5}
+          showQuickResponses={isHandler}
         />
       </div>
     </Card>

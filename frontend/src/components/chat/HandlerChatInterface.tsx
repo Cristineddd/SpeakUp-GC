@@ -21,6 +21,12 @@ import {
   Mail,
   ChevronDown,
   ChevronUp,
+  Flame,
+  MailX,
+  Info,
+  Shield,
+  Tag,
+  FileQuestion,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
@@ -83,12 +89,27 @@ export function HandlerChatInterface({
   const scrollToBottomRef = useRef<() => void>(() => {});
   const { toast } = useToast();
 
-  // Get safe property values
-  const complainantName = getSafeProperty(complaint, 'userName', 'complainantName', 'Complainant');
-  const complainantEmail = getSafeProperty(complaint, 'userEmail', 'complainantEmail', 'Not provided');
+  // Check if complaint is anonymous
+  const isAnonymous = complaint.complainantName === 'Anonymous' || complaint.userName === 'Anonymous';
+  
+  // Get safe property values with anonymity protection
+  const complainantName = isAnonymous ? 'Anonymous' : getSafeProperty(complaint, 'userName', 'complainantName', 'Complainant');
+  const complainantEmail: string = getSafeProperty(complaint, 'userEmail', 'complainantEmail', '');
   const complainantId = getSafeProperty(complaint, 'userId', 'complainantId', 'unknown');
-  const incidentLocation = getSafeProperty(complaint, 'location', 'incidentLocation', 'Not specified');
-  const createdAt = getSafeProperty(complaint, 'reportedAt', 'createdAt', '');
+  const incidentLocation: string = getSafeProperty(complaint, 'location', 'incidentLocation', '');
+  const createdAt: string = getSafeProperty(complaint, 'reportedAt', 'createdAt', '');
+  
+  // Check for invalid dates
+  const isInvalidReportedDate = createdAt && (new Date(createdAt).toString() === 'Invalid Date' || isNaN(new Date(createdAt).getTime()));
+  const isInvalidIncidentDate = complaint.incidentDate && (new Date(complaint.incidentDate).toString() === 'Invalid Date' || isNaN(new Date(complaint.incidentDate).getTime()));
+  
+  // Severity guide data
+  const severityGuide: Record<string, { description: string; timeframe: string }> = {
+    low: { description: 'Minor issue', timeframe: 'within 10-15 business days' },
+    medium: { description: 'Requires timely investigation', timeframe: 'within 5-7 business days' },
+    high: { description: 'Serious matter', timeframe: 'within 2-3 business days' },
+    critical: { description: 'Urgent action required', timeframe: 'within 24 hours' },
+  };
 
   // Scroll only the messages pane — scrollIntoView() on the anchor can scroll the
   // window/document and leave a gap under h-screen layouts.
@@ -428,71 +449,75 @@ export function HandlerChatInterface({
             </div>
           </CardHeader>
           {showCaseDetails && (
-            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-2 sm:space-y-3">
-              {/* Status & Severity */}
-              <div className="space-y-1.5 sm:space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">Status</span>
-                  <Badge className={`${getStatusColor(complaint.status || '')} text-xs px-1.5 sm:px-2 py-0.5`}>
-                    {formatStatus(complaint.status || '')}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-600">Severity</span>
-                  <Badge className={`${getSeverityColor(complaint.severity || '')} text-xs px-1.5 sm:px-2 py-0.5 flex items-center gap-0.5 sm:gap-1`}>
-                    <Flag className="h-2.5 w-2.5" />
-                    {complaint.severity || 'Unknown'}
-                  </Badge>
-                </div>
+            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
+              {/* Status Badge */}
+              <div>
+                <Badge className={`${getStatusColor(complaint.status || '')} text-xs px-2 py-0.5`}>
+                  {formatStatus(complaint.status || '')}
+                </Badge>
               </div>
 
               {/* Category */}
-              <div>
-                <p className="text-xs text-gray-600 mb-0.5 sm:mb-1">Category</p>
-                <p className="text-xs sm:text-sm font-medium">{complaint.category || 'Uncategorized'}</p>
+              <div className="flex items-start gap-2">
+                <Tag className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Category</p>
+                  <p className="text-sm font-medium">{complaint.category || 'Uncategorized'}</p>
+                </div>
               </div>
 
-              {/* Location & Date */}
-              <div className="space-y-1.5 sm:space-y-2">
-                <div className="flex items-start gap-1.5 sm:gap-2">
-                  <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-600">Location</p>
-                    <p className="text-xs sm:text-sm font-medium truncate">{incidentLocation}</p>
-                  </div>
+              {/* Incident Date */}
+              <div className="flex items-start gap-2">
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Incident date</p>
+                  <p className="text-sm font-medium">
+                    {isInvalidIncidentDate 
+                      ? 'Invalid Date' 
+                      : complaint.incidentDate 
+                        ? new Date(complaint.incidentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : <span className="italic text-gray-500">Not specified</span>
+                    }
+                  </p>
                 </div>
-                <div className="flex items-start gap-1.5 sm:gap-2">
-                  <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-600">Incident Date</p>
-                    <p className="text-xs sm:text-sm font-medium">
-                      {complaint.incidentDate 
-                        ? new Date(complaint.incidentDate).toLocaleDateString() 
-                        : 'Not specified'
-                      }
-                    </p>
-                  </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Location</p>
+                  <p className="text-sm font-medium">
+                    {incidentLocation || <span className="italic text-gray-500">Not specified</span>}
+                  </p>
                 </div>
-                <div className="flex items-start gap-1.5 sm:gap-2">
-                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-600">Reported</p>
-                    <p className="text-xs sm:text-sm font-medium">
-                      {createdAt
-                        ? new Date(createdAt).toLocaleDateString()
-                        : 'Not specified'
-                      }
-                    </p>
-                  </div>
+              </div>
+
+              {/* Reported Date */}
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Reported</p>
+                  <p className="text-sm font-medium">
+                    {isInvalidReportedDate
+                      ? 'Invalid Date'
+                      : createdAt
+                        ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : <span className="italic text-gray-500">Not specified</span>
+                    }
+                  </p>
                 </div>
               </div>
 
               {/* Description */}
-              <div>
-                <p className="text-xs text-gray-600 mb-0.5 sm:mb-1">Description</p>
-                <p className="text-xs text-gray-700 line-clamp-3">
-                  {complaint.description || 'No description provided'}
-                </p>
+              <div className="flex items-start gap-2">
+                <FileQuestion className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-600">Description</p>
+                  <p className="text-sm text-gray-700 line-clamp-3">
+                    {complaint.description || 'No description provided'}
+                  </p>
+                </div>
               </div>
             </CardContent>
           )}
@@ -507,17 +532,43 @@ export function HandlerChatInterface({
               <span className="sm:hidden">User</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-1.5 sm:space-y-2">
-            <div>
-              <p className="text-xs text-gray-600 mb-0.5 sm:mb-1">Name</p>
-              <p className="text-xs sm:text-sm font-medium truncate">{complainantName}</p>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
+            {/* Anonymity Warning */}
+            {isAnonymous && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-blue-900">Anonymous Complaint</p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    This complaint was filed anonymously. Identity is protected — do not attempt to identify the complainant.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Name */}
+            <div className="flex items-start gap-2">
+              <User className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600">Name</p>
+                <p className="text-sm font-medium">{complainantName}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-600 mb-0.5 sm:mb-1">Email</p>
-              <div className="flex items-center gap-1">
-                <Mail className="h-3 w-3 text-gray-500 flex-shrink-0" />
-                <p className="text-xs sm:text-sm font-medium break-all">
-                  {complainantEmail}
+
+            {/* Email */}
+            <div className="flex items-start gap-2">
+              {complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@') ? (
+                <Mail className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+              ) : (
+                <MailX className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-600">Email</p>
+                <p className="text-sm font-medium">
+                  {complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@')
+                    ? complainantEmail 
+                    : <span className="italic text-gray-500">No email provided</span>
+                  }
                 </p>
               </div>
             </div>

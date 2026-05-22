@@ -286,15 +286,16 @@ export function AssignHandlerDialog({
 
       // Send notification to assigned handler
       try {
+        // Use handler.userId (Firebase Auth UID) for notification, not handler.id (representative doc ID)
         await NotificationService.sendHandlerCaseAssignedNotification(
-          handler.id,
+          handler.userId,
           complaint.id,
           complaint.title,
           complaint.userName || 'Anonymous',
           complaint.category || 'General',
           complaint.severity || 'Medium'
         );
-        console.log('✅ Notification sent to handler');
+        console.log('✅ Notification sent to handler:', handler.userId);
       } catch (notifError) {
         console.error('⚠️ Failed to send handler notification:', notifError);
       }
@@ -310,8 +311,9 @@ export function AssignHandlerDialog({
       // Close dialog first
       onOpenChange(false);
       
-      // Wait a bit to ensure Firestore has propagated the change
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait longer to ensure Firestore has propagated the change to all clients
+      // This is important so the handler can see the case when they click the notification
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Then call callback to refresh the list
       if (onAssigned) {
