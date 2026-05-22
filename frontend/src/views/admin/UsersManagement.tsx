@@ -664,12 +664,7 @@ const UsersManagement = () => {
                   </div>
                 </TableCell>
                 <TableCell className="text-sm text-gray-600">
-                  <span className="group relative cursor-help" title={user.email}>
-                    {maskEmail(user.email)}
-                    <span className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
-                      {user.email}
-                    </span>
-                  </span>
+                  {maskEmail(user.email)}
                 </TableCell>
                 <TableCell>
                   {user.isSuspended ? (
