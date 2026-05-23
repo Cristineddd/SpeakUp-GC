@@ -259,8 +259,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, additionalData: any = {}) => {
     try {
-      // Validate Gordon College email domain
-      if (!email.endsWith('@gordoncollege.edu.ph')) {
+      // Validate Gordon College email domain (except for admins)
+      if (!email.endsWith('@gordoncollege.edu.ph') && !isAdminEmail(email)) {
         throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
       }
 
@@ -359,17 +359,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Google login attempted for:', user.email);
       
       if (user) {
-        // Check Gordon College email domain
-        if (!user.email?.endsWith('@gordoncollege.edu.ph')) {
+        // Check Gordon College email domain (except for admins and registered representatives)
+        const isAdmin = isAdminEmail(user.email);
+        const isGordonEmail = user.email?.endsWith('@gordoncollege.edu.ph');
+        
+        // Check if user is already registered (could be a representative)
+        const registeredUserDoc = await getDoc(doc(db, 'registeredUsers', user.email!));
+        const isRegistered = registeredUserDoc.exists();
+        
+        if (!isGordonEmail && !isAdmin && !isRegistered) {
           await signOut(auth);
           throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
         }
 
         // Google-authenticated accounts are automatically verified
         // No need to check emailVerified for Google sign-in
-        
-        // Check if this email is in our registered users list
-        const registeredUserDoc = await getDoc(doc(db, 'registeredUsers', user.email!));
         
         if (!registeredUserDoc.exists()) {
           // User is not registered - sign them out and reject
@@ -436,15 +440,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Google sign-up attempted for:', user.email);
       
       if (user) {
-        // Check Gordon College email domain
-        if (!user.email?.endsWith('@gordoncollege.edu.ph')) {
+        // Check Gordon College email domain (except for admins and registered representatives)
+        const isAdmin = isAdminEmail(user.email);
+        const isGordonEmail = user.email?.endsWith('@gordoncollege.edu.ph');
+        
+        // Check if user is already registered (could be a representative)
+        const registeredUserDoc = await getDoc(doc(db, 'registeredUsers', user.email!));
+        const isRegistered = registeredUserDoc.exists();
+        
+        if (!isGordonEmail && !isAdmin && !isRegistered) {
           await signOut(auth);
           throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
         }
 
         try {
-          // Check if user is already registered
-          const registeredUserDoc = await getDoc(doc(db, 'registeredUsers', user.email!));
           
           if (registeredUserDoc.exists()) {
             console.log('User already registered, proceeding with login');
