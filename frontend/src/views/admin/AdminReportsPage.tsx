@@ -98,6 +98,15 @@ const safeToDate = (timestamp: any): Date | null => {
       return timestamp.toDate();
     }
     
+    // Handle YYYY-MM-DD string format (from formal complaint date inputs)
+    if (typeof timestamp === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(timestamp)) {
+      // Add time to avoid timezone issues
+      const date = new Date(timestamp + 'T00:00:00');
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    
     // Handle regular date objects or strings
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
@@ -112,6 +121,18 @@ const safeToDate = (timestamp: any): Date | null => {
 };
 
 const safeFormat = (timestamp: any, formatStr: string, fallback: string = 'N/A'): string => {
+  // Handle YYYY-MM-DD string format directly first
+  if (typeof timestamp === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(timestamp)) {
+    try {
+      const date = new Date(timestamp + 'T00:00:00');
+      if (!isNaN(date.getTime())) {
+        return format(date, formatStr);
+      }
+    } catch (error) {
+      console.warn('Failed to format YYYY-MM-DD date:', error);
+    }
+  }
+  
   const date = safeToDate(timestamp);
   if (!date) return fallback;
   
@@ -1131,8 +1152,48 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         );
                       })()}
                       <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Incident Date</p>
-                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</p>
+                        <p className="text-sm text-gray-600 mb-1 font-medium">
+                          {safeGet(selectedReport, 'incidentTime') ? 'Incident Date & Time' : 'Incident Date'}
+                        </p>
+                        <p className="text-base font-semibold">
+                          {(() => {
+                            const rawDate = safeGet(selectedReport, 'incidentDate');
+                            const formattedDate = safeFormat(rawDate, 'MMM dd, yyyy');
+                            
+                            // If formatting failed, try to display the raw value
+                            if (formattedDate === 'N/A' && rawDate) {
+                              console.log('Failed to format incident date:', rawDate, typeof rawDate);
+                              // Try direct formatting
+                              try {
+                                if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                                  const date = new Date(rawDate + 'T00:00:00');
+                                  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                                }
+                              } catch (e) {
+                                console.error('Date formatting error:', e);
+                              }
+                            }
+                            
+                            return formattedDate;
+                          })()}
+                          {(() => {
+                            const time = safeGet(selectedReport, 'incidentTime');
+                            if (time && time.trim() !== '') {
+                              try {
+                                // Format HH:MM to 12-hour format
+                                const formattedTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { 
+                                  hour: 'numeric', 
+                                  minute: '2-digit',
+                                  hour12: true 
+                                });
+                                return <span className="text-gray-600"> • {formattedTime}</span>;
+                              } catch {
+                                return null;
+                              }
+                            }
+                            return null;
+                          })()}
+                        </p>
                       </div>
                       <div className="pb-3 border-b">
                         <p className="text-sm text-gray-600 mb-1 font-medium">Reporter</p>
@@ -2266,14 +2327,13 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </div>
               <div className="flex-1 overflow-hidden bg-gray-200 relative">
                 <iframe
-                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdfUrl)}&embedded=true`}
+                  src={selectedPdfUrl}
                   style={{ 
                     width: '100%', 
                     height: '100%',
                     border: 'none'
                   }}
                   title="PDF Viewer"
-                  allow="autoplay"
                 />
               </div>
               <div className="flex gap-2 p-4 border-t bg-gray-50 justify-end">

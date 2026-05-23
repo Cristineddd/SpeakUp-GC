@@ -63,6 +63,16 @@ const Login = () => {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@gordoncollege\.edu\.ph$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Invalid Email Domain",
+        description: "Only @gordoncollege.edu.ph email addresses are allowed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsEmailLoading(true);
 
     try {
@@ -127,7 +137,9 @@ const Login = () => {
     } catch (error: any) {
       let errorMessage = "Google Sign-In failed. Please try again.";
       
-      if (error.message?.includes('not registered')) {
+      if (error.message?.includes('@gordoncollege.edu.ph')) {
+        errorMessage = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
+      } else if (error.message?.includes('not registered')) {
         errorMessage = "This Google account is not registered. Please sign up first.";
       } else if (error.message?.includes('No account found')) {
         errorMessage = "No account found. Please sign up first using Google on the signup page.";

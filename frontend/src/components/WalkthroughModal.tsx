@@ -114,7 +114,8 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       navigate("/dashboard");
     } catch (error: any) {
       let msg = "Google Sign-In failed.";
-      if (error.message?.includes("not registered")) msg = "This Google account is not registered. Please sign up first.";
+      if (error.message?.includes('@gordoncollege.edu.ph')) msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
+      else if (error.message?.includes("not registered")) msg = "This Google account is not registered. Please sign up first.";
       else if (error.message) msg = error.message;
       toast({ title: "Sign-In Failed", description: msg, variant: "destructive" });
     } finally {
@@ -125,9 +126,9 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   // ─── Signup handlers ───
   const handleSignupEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@gordoncollege\.edu\.ph$/;
     if (!emailRegex.test(signupData.email)) {
-      toast({ title: "Error", description: "Please enter a valid email address", variant: "destructive" });
+      toast({ title: "Invalid Email Domain", description: "Only @gordoncollege.edu.ph email addresses are allowed.", variant: "destructive" });
       return;
     }
     if (!signupData.agreeTerms) {
@@ -175,7 +176,11 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       handleDismiss();
       navigate("/dashboard");
     } catch (error: any) {
-      toast({ title: "Sign up failed", description: error.message || "Failed to sign up with Google", variant: "destructive" });
+      let msg = error.message || "Failed to sign up with Google";
+      if (error.message?.includes('@gordoncollege.edu.ph')) {
+        msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
+      }
+      toast({ title: "Sign Up Failed", description: msg, variant: "destructive" });
     } finally {
       setIsSignupGoogleLoading(false);
     }

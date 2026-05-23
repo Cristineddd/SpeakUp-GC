@@ -43,9 +43,9 @@ export default function SignUp() {
   const handleVerifyEmail = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@gordoncollege\.edu\.ph$/;
     if (!emailRegex.test(formData.email)) {
-      toast({ title: "Error", description: "Please enter a valid email address", variant: "destructive" });
+      toast({ title: "Invalid Email Domain", description: "Only @gordoncollege.edu.ph email addresses are allowed.", variant: "destructive" });
       return;
     }
 
@@ -239,8 +239,18 @@ export default function SignUp() {
               <button
                 type="button"
                 onClick={async () => {
-                  try { setIsGoogleLoading(true); await signUpWithGoogle(); navigate('/dashboard'); }
-                  catch (error: any) { toast({ title: "Sign up failed", description: error.message || "Failed to sign up with Google", variant: "destructive" }); }
+                  try { 
+                    setIsGoogleLoading(true); 
+                    await signUpWithGoogle(); 
+                    navigate('/dashboard'); 
+                  }
+                  catch (error: any) { 
+                    let msg = error.message || "Failed to sign up with Google";
+                    if (error.message?.includes('@gordoncollege.edu.ph')) {
+                      msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
+                    }
+                    toast({ title: "Sign Up Failed", description: msg, variant: "destructive" }); 
+                  }
                   finally { setIsGoogleLoading(false); }
                 }}
                 disabled={isGoogleLoading}

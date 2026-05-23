@@ -259,6 +259,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, password: string, additionalData: any = {}) => {
     try {
+      // Validate Gordon College email domain
+      if (!email.endsWith('@gordoncollege.edu.ph')) {
+        throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
+      }
+
       // Validate password strength before attempting registration
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
@@ -354,6 +359,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Google login attempted for:', user.email);
       
       if (user) {
+        // Check Gordon College email domain
+        if (!user.email?.endsWith('@gordoncollege.edu.ph')) {
+          await signOut(auth);
+          throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
+        }
+
         // Google-authenticated accounts are automatically verified
         // No need to check emailVerified for Google sign-in
         
@@ -425,6 +436,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Google sign-up attempted for:', user.email);
       
       if (user) {
+        // Check Gordon College email domain
+        if (!user.email?.endsWith('@gordoncollege.edu.ph')) {
+          await signOut(auth);
+          throw new Error('Only @gordoncollege.edu.ph email addresses are allowed.');
+        }
+
         try {
           // Check if user is already registered
           const registeredUserDoc = await getDoc(doc(db, 'registeredUsers', user.email!));

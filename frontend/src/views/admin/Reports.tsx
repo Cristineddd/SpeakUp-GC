@@ -1080,14 +1080,13 @@ const Reports = () => {
               </div>
               <div className="flex-1 overflow-hidden bg-gray-200 relative">
                 <iframe
-                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdfUrl)}&embedded=true`}
+                  src={selectedPdfUrl}
                   style={{ 
                     width: '100%', 
                     height: '100%',
                     border: 'none'
                   }}
                   title="PDF Viewer"
-                  allow="autoplay"
                 />
               </div>
               <div className="flex gap-2 p-4 border-t bg-gray-50 justify-end">

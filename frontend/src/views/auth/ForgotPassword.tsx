@@ -41,11 +41,11 @@ const ForgotPassword = () => {
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@gordoncollege\.edu\.ph$/;
     if (!emailRegex.test(email)) {
       toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address.",
+        title: "Invalid Email Domain",
+        description: "Only @gordoncollege.edu.ph email addresses are allowed.",
         variant: "destructive"
       });
       return;
