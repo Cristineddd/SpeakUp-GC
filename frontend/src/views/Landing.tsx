@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Lock, GraduationCap, Menu, X, MessageCircle, ClipboardList,
   Activity, EyeOff, BookOpen, HeadphonesIcon, CheckCircle2,
-  ArrowRight, ShieldCheck, Users, ChevronDown,
+  ArrowRight, ShieldCheck, Users, ChevronDown, Shield,
 } from "lucide-react";
 import { Link, useLocation, useSearchParams, useNavigate } from "../compat/router";
 import WalkthroughModal from "../components/WalkthroughModal";
@@ -599,23 +599,82 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Call to Action */}
-          <div className="mt-16 text-center">
-            <div className="max-w-2xl mx-auto">
-              <p className="text-xl font-bold text-gray-900 mb-2">
-                Know your rights. Speak up.
-              </p>
-              <p className="text-gray-600 mb-6">
-                You are not alone.
-              </p>
-              <Link
-                to="/awareness"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-              >
-                <BookOpen className="h-5 w-5" />
-                Learn More About Your Rights
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+          {/* Know Your Rights Preview with Login Prompt */}
+          <div className="mt-16">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <p className="text-2xl font-bold text-gray-900 mb-2">
+                  Know your rights. Speak up.
+                </p>
+                <p className="text-gray-600">
+                  You are not alone. Learn about your legal protections and institutional policies.
+                </p>
+              </div>
+
+              {/* Preview Content with Fade Overlay */}
+              <div className="relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-lg">
+                {/* Preview Content */}
+                <div className="p-8 space-y-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-[#1D9E75]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">How to File a Complaint at Gordon College</h3>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        Learn the step-by-step process for reporting incidents through SpeakUp GC. Understand what information you need, how to submit evidence, and what happens after you file. You can choose to remain anonymous or identify yourself.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-6 h-6 text-[#1D9E75]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Your Rights as a Gordon College Student</h3>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        Know your protections under RA 11313 (Safe Spaces Act) and RA 7877 (Anti-Sexual Harassment Act) as they apply to campus life. Understand what behaviors are prohibited, your right to confidentiality, and the support available from DEIU.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 opacity-60">
+                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <GraduationCap className="w-6 h-6 text-[#1D9E75]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">Investigation & Resolution Process</h3>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        What happens after you file? Learn about the CODI (Committee on Decorum and Investigation) process, expected timelines, your role in the investigation, and how decisions are made...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Gradient Fade Overlay with Login Prompt */}
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white pointer-events-none" style={{ top: '60%' }}></div>
+                
+                {/* Login Prompt */}
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-center pointer-events-auto">
+                  <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-6 shadow-xl">
+                    <Lock className="w-8 h-8 text-[#1D9E75] mx-auto mb-3" />
+                    <p className="text-gray-900 font-semibold mb-2">Sign in to access full knowledge base</p>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Get complete guides, policies, FAQs, and step-by-step procedures
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Link
+                        to="/?auth=login"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                      >
+                        Sign In to Continue
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
