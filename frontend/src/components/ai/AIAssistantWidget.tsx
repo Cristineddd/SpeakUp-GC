@@ -114,7 +114,7 @@ export default function AIAssistantWidget() {
         <button
           type="button"
           onClick={() => { setOpen(true); setMinimized(false); }}
-          className="group flex items-center gap-2 rounded-full bg-[#1a7a45] text-white px-4 py-3 shadow-lg hover:bg-[#155f36] transition-colors"
+          className="group flex items-center gap-2 rounded-full bg-[#1D9E75] text-white px-4 py-3 shadow-lg hover:bg-[#178F65] transition-colors"
           aria-label="Open SpeakUp GC AI assistant"
         >
           <Bot className="h-5 w-5" />
@@ -128,8 +128,8 @@ export default function AIAssistantWidget() {
         )}>
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="h-9 w-9 rounded-xl bg-[#e8f5ee] border border-[#1a7a45]/20 flex items-center justify-center">
-                <Bot className="h-5 w-5 text-[#1a7a45]" />
+              <div className="h-9 w-9 rounded-xl bg-[#e8f5ee] border border-[#1D9E75]/20 flex items-center justify-center">
+                <Bot className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">SpeakUp GC AI</p>
@@ -173,7 +173,7 @@ export default function AIAssistantWidget() {
                       className={cn(
                         "max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
                         m.role === "user"
-                          ? "bg-[#1a7a45] text-white"
+                          ? "bg-[#1D9E75] text-white"
                           : "bg-gray-100 text-gray-800"
                       )}
                     >
@@ -204,7 +204,7 @@ export default function AIAssistantWidget() {
                     type="button"
                     onClick={() => void send()}
                     disabled={loading || input.trim().length === 0}
-                    className="bg-[#1a7a45] hover:bg-[#155f36] text-white"
+                    className="bg-[#1D9E75] hover:bg-[#178F65] text-white"
                     aria-label="Send"
                   >
                     <Send className="h-4 w-4" />

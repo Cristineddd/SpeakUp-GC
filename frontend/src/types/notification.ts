@@ -12,6 +12,7 @@ export type NotificationType =
   | 'complaint_resolved'
   | 'complaint_escalated'
   | 'complaint_reopened'
+  | 'case_closed'          // Case officially closed and archived
   | 'new_comment'
   | 'evidence_requested'
   | 'deadline_reminder'
@@ -145,6 +146,8 @@ export function getNotificationIcon(type: NotificationType): string {
       return '📈';
     case 'complaint_reopened':
       return '🔓';
+    case 'case_closed':
+      return '🔒';
     case 'new_comment':
       return '💬';
     case 'evidence_requested':
@@ -261,6 +264,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   complaint_resolved: 'Complaint Resolved',
   complaint_escalated: 'Complaint Escalated',
   complaint_reopened: 'Complaint Reopened',
+  case_closed: 'Case Closed',
   new_comment: 'New Comment',
   evidence_requested: 'Evidence Requested',
   deadline_reminder: 'Deadline Reminder',

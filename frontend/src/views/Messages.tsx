@@ -79,7 +79,7 @@ export default function Messages() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {/* Card header */}
           <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-[#16A34A]" />
+            <MessageSquare className="h-5 w-5 text-[#1D9E75]" />
             <h2 className="text-base font-semibold text-gray-900">Case Conversations</h2>
           </div>
 
@@ -87,7 +87,7 @@ export default function Messages() {
           <div className="p-4">
             {loading ? (
               <div className="flex items-center justify-center py-12 gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-[#16A34A]" />
+                <Loader2 className="h-6 w-6 animate-spin text-[#1D9E75]" />
                 <span className="text-sm text-gray-500">Loading conversations…</span>
               </div>
             ) : chatRooms.length === 0 ? (
@@ -100,7 +100,7 @@ export default function Messages() {
                 <Button
                   variant="outline"
                   onClick={() => navigate('/complaints')}
-                  className="border-[#16A34A]/30 text-[#16A34A] hover:bg-green-50"
+                  className="border-[#1D9E75]/30 text-[#1D9E75] hover:bg-green-50"
                 >
                   View My Cases
                 </Button>
@@ -118,7 +118,7 @@ export default function Messages() {
                       key={room.id}
                       type="button"
                       onClick={() => navigate(`/case-chat/${room.complaintId}`)}
-                      className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-[#16A34A]/40 hover:bg-green-50/50 transition-all group"
+                      className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-[#1D9E75]/40 hover:bg-green-50/50 transition-all group"
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 flex-shrink-0">
@@ -143,11 +143,11 @@ export default function Messages() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               {unread > 0 && (
-                                <Badge className="bg-[#16A34A] text-white text-xs">
+                                <Badge className="bg-[#1D9E75] text-white text-xs">
                                   {unread > 9 ? '9+' : unread}
                                 </Badge>
                               )}
-                              <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-[#16A34A] transition-colors" />
+                              <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-[#1D9E75] transition-colors" />
                             </div>
                           </div>
 

@@ -25,7 +25,7 @@
 
     /* SpeakUp GC Green Palette – empowerment + action */
     /* Primary – Vibrant green */
-    --primary: 142 76% 36%;          /* Green #16A34A */
+    --primary: 142 76% 36%;          /* Green #1D9E75 */
     --primary-foreground: 0 0% 98%;
 
     /* Secondary – Soft green for gradients */
@@ -40,7 +40,7 @@
     --muted-foreground: 0 0% 45%;
 
     /* Status Colors */
-    --success: 142 76% 36%;         /* Green #16A34A */
+    --success: 142 76% 36%;         /* Green #1D9E75 */
     --success-foreground: 0 0% 98%;
 
     --warning: 42 100% 50%;

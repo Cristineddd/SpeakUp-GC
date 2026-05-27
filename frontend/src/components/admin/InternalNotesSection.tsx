@@ -105,7 +105,7 @@ export function InternalNotesSection({
           noteElement.style.transition = 'all 0.3s ease-in-out';
           noteElement.style.backgroundColor = 'rgba(26, 122, 69, 0.15)';
           noteElement.style.boxShadow = '0 0 20px 8px rgba(26, 122, 69, 0.3)';
-          noteElement.style.border = '2px solid #1a7a45';
+          noteElement.style.border = '2px solid #1D9E75';
           
           // Remove highlight after 3 seconds
           setTimeout(() => {
@@ -305,7 +305,7 @@ export function InternalNotesSection({
       <Card className="border-2 border-gray-200">
         <CardContent className="p-8">
           <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a7a45]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9E75]"></div>
           </div>
         </CardContent>
       </Card>
@@ -432,7 +432,7 @@ export function InternalNotesSection({
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               rows={4}
-              className="resize-none border-2 border-gray-300 focus:border-[#1a7a45] focus:ring-[#1a7a45]"
+              className="resize-none border-2 border-gray-300 focus:border-[#1D9E75] focus:ring-[#1D9E75]"
               disabled={submitting}
             />
 
@@ -444,7 +444,7 @@ export function InternalNotesSection({
               <Button
                 onClick={handleSubmitNote}
                 disabled={submitting || !newNote.trim()}
-                className="bg-[#1a7a45] hover:bg-[#155f36] text-white"
+                className="bg-[#1D9E75] hover:bg-[#178F65] text-white"
               >
                 {submitting ? (
                   <>

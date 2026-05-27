@@ -101,10 +101,10 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a7a45] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#1D9E75] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#155f36] opacity-60 blur-3xl" />
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#178F65] opacity-60 blur-3xl" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#22a05a] opacity-40 blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[#176840] opacity-30 blur-3xl" />
         <div className="absolute top-[10%] right-[15%] w-16 h-16 rounded-xl bg-white/5 rotate-12 animate-pulse" />
@@ -136,7 +136,7 @@ export default function SignUp() {
             /* ──── Account Created ──── */
             <div className="space-y-5 text-center">
               <div className="flex justify-center">
-                <div className="w-16 h-16 bg-[#1a7a45]/30 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-[#1D9E75]/30 rounded-full flex items-center justify-center">
                   <Mail className="w-8 h-8 text-[#6ee7a0]" />
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function SignUp() {
                     } catch (err: any) { toast({ title: 'Check Failed', description: err.message, variant: 'destructive' }); }
                     finally { setLoading(false); }
                   }}
-                  className="flex-1 h-10 bg-[#1a7a45] hover:bg-[#155f36] text-white font-medium text-sm rounded-[4px] transition-colors"
+                  className="flex-1 h-10 bg-[#1D9E75] hover:bg-[#178F65] text-white font-medium text-sm rounded-[4px] transition-colors"
                 >Check Verification</button>
                 <button
                   onClick={async () => {

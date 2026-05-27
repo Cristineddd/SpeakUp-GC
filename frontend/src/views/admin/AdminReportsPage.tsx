@@ -1,4 +1,6 @@
 import React, { useState, useEffect, type JSX } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { NotificationService } from "../../services/notificationService";
 import { InternalNotesSection } from "../../components/admin/InternalNotesSection";
 import { 
@@ -67,7 +69,6 @@ import { useRepresentativeRole } from "../../hooks/useRepresentativeRole";
 import { AdminReportService, AdminReport, ReportStats } from "../../services/adminReportService";
 import { format } from "date-fns";
 import { useNavigate, useLocation } from "../../compat/router";
-import { AssignHandlerDialog } from "../../components/admin/AssignHandlerDialog";
 import { HandlerTimeline } from "../../components/admin/HandlerTimeline";
 import { ReportStatusManager } from "../../components/case/ReportStatusManager";
 import { ROLE_LABELS, ROLE_COLORS } from "../../types/representative";
@@ -77,6 +78,7 @@ import { ESCALATION_LABELS } from "../../types/escalation";
 import type { EscalationLevel } from "../../types/escalation";
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FORMAL_COMPLAINT_CATEGORIES, getFormalComplaintCategoryLabel } from "../../constants/formalComplaintCategories";
+import { PDFViewerModal } from "../../components/common/PDFViewerModal";
 
 // Safe data access helper
 const safeGet = (obj: any, path: string, fallback: any = 'N/A') => {
@@ -268,8 +270,7 @@ const AdminReportsPage = () => {
   const [newStatus, setNewStatus] = useState<string>('');
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [reportToAssign, setReportToAssign] = useState<AdminReport | null>(null);
+  // NOTE: Removed assignDialogOpen and reportToAssign - no longer assigning handlers
   const [escalationDialogOpen, setEscalationDialogOpen] = useState(false);
   const [reportToEscalate, setReportToEscalate] = useState<AdminReport | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<{url: string; index: number; total: number} | null>(null);
@@ -284,8 +285,14 @@ const AdminReportsPage = () => {
   
   const { toast } = useToast();
 
-  // Check if user is a handler (not admin)
-  const isHandler = role === 'handler' && !isAdmin;
+  // CODI (Committee on Decorum and Investigation) = Case Handler role
+  // They are the same - CODI is the official term for Case Handlers in this system
+  // Support both 'codi' and 'handler' role values in Firestore
+  const isCODI = (role as string) === 'codi' || role === 'handler';
+  const isHandler = isCODI; // Alias for backward compatibility
+  
+  // Debug: Log role information
+  console.log('AdminReportsPage - Role Info:', { role, isAdmin, isCODI, isHandler: isCODI });
 
   // Read URL query params on mount to pre-select tab
   useEffect(() => {
@@ -332,50 +339,11 @@ const AdminReportsPage = () => {
     const unsubscribe = AdminReportService.subscribeToAllReports((fetchedReports) => {
       console.log(`🔄 Real-time update: ${fetchedReports.length} reports received`);
       
-      // Filter reports for handlers
-      let displayReports = fetchedReports;
+      // CODI sees ALL cases (no filtering by assignment)
+      // They can take any unassigned case or work on cases assigned to them
+      console.log(`📊 Total cases visible: ${fetchedReports.length}`);
       
-      if (isHandler && representativeId) {
-        console.log('🔍 Filtering reports for handler:', representativeId);
-        console.log('🔍 Handler info:', {
-          representativeId,
-          representativeEmail: representativeData?.email,
-          representativeName: representativeData?.displayName
-        });
-        
-        // Show all assigned cases for debugging
-        const allAssignedCases = fetchedReports.filter(r => r.assignedTo);
-        console.log('📋 All assigned cases:', allAssignedCases.map(r => ({
-          id: r.id,
-          title: r.title,
-          assignedTo: r.assignedTo,
-          assignedToName: r.assignedToName,
-          matches: r.assignedTo === representativeId
-        })));
-        
-        displayReports = fetchedReports.filter(report => 
-          report.assignedTo === representativeId
-        );
-        console.log(`📊 Handler has ${displayReports.length} assigned cases out of ${fetchedReports.length} total`);
-        
-        if (displayReports.length === 0 && allAssignedCases.length > 0) {
-          console.warn('⚠️ MISMATCH: Cases are assigned but not to this handler ID');
-          console.warn('💡 Check if representative ID matches the assigned handler ID');
-        }
-      }
-      
-      // DEBUG: Log assignment info
-      fetchedReports.forEach(report => {
-        if (report.assignedTo) {
-          console.log(`🔍 ${report.id}: ${report.title}`, {
-            assignedTo: report.assignedTo,
-            assignedToName: report.assignedToName,
-            status: report.status
-          });
-        }
-      });
-      
-      setReports(displayReports);
+      setReports(fetchedReports);
       setLoading(false);
     });
 
@@ -491,19 +459,9 @@ const AdminReportsPage = () => {
       setLoading(true);
       const fetchedReports = await AdminReportService.getAllReports();
       
-      // Filter reports for handlers
-      let displayReports = fetchedReports;
-      
-      if (isHandler && representativeId) {
-        console.log('🔍 Filtering reports for handler:', representativeId);
-        displayReports = fetchedReports.filter(report => 
-          report.assignedTo === representativeId
-        );
-        console.log(`📊 Handler has ${displayReports.length} assigned cases out of ${fetchedReports.length} total`);
-      }
-      
-      setReports(displayReports);
-      console.log('📊 Fetched reports:', displayReports);
+      // CODI sees ALL cases (no filtering)
+      setReports(fetchedReports);
+      console.log('📊 Fetched reports:', fetchedReports.length);
     } catch (error) {
       console.error('Error fetching reports:', error);
       toast({
@@ -549,8 +507,10 @@ const AdminReportsPage = () => {
       filtered = filtered.filter(report => safeGet(report, 'status') === 'inProgress');
     } else if (activeTab === 'resolved') {
       filtered = filtered.filter(report => safeGet(report, 'status') === 'resolved');
+    } else if (activeTab === 'all') {
+      // "All" tab excludes closed cases - closed cases only appear in Case Archive page
+      filtered = filtered.filter(report => safeGet(report, 'status') !== 'closed');
     }
-    // If activeTab is 'all', no tab-based filtering
 
     // Search filter
     if (searchTerm) {
@@ -625,7 +585,7 @@ const AdminReportsPage = () => {
       case 'validated':
         return 'Investigating';
       case 'resolved':
-        return 'Resolved';
+        return 'Decision Already Made';
       case 'dismissed':
         return 'Closed';
       default:
@@ -636,10 +596,10 @@ const AdminReportsPage = () => {
   const getStatusColor = (status: string) => {
     const label = getStatusLabel(status);
     switch (label) {
-      case 'Pending': return 'bg-amber-50 text-amber-700 border border-amber-200';
-      case 'Investigating': return 'bg-blue-50 text-blue-700 border border-blue-200';
-      case 'Resolved': return 'bg-green-50 text-green-700 border border-green-200';
-      case 'Closed': return 'bg-gray-50 text-gray-700 border border-gray-200';
+      case 'Pending': return 'bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full text-xs';
+      case 'Investigating': return 'bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-xs';
+      case 'Decision Already Made': return 'bg-[#1D9E75]/10 text-[#1D9E75] border border-[#1D9E75]/20 px-3 py-1 rounded-full text-xs';
+      case 'Closed': return 'bg-gray-50 text-gray-700 border border-gray-200 px-3 py-1 rounded-full text-xs';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -1000,35 +960,72 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             <AlertTriangle className="h-4 w-4" />
           </Button>
           <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Manage Escalation
+            Escalate Case
           </span>
         </div>
       );
     }
 
-    // ASSIGN HANDLER BUTTON - Visible to Admin only
-    if (isAdmin) {
+    // TAKE CASE BUTTON - Visible to CODI for unassigned cases
+    if (isCODI && !report.assignedTo) {
       baseButtons.push(
-        <div key="assign" className="relative group">
+        <div key="take-case" className="relative group">
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => {
-              setReportToAssign(report);
-              setAssignDialogOpen(true);
+            onClick={async () => {
+              try {
+                // Self-assign the case
+                const reportRef = doc(db, 'complaints', report.id);
+                await updateDoc(reportRef, {
+                  assignedTo: representativeId,
+                  assignedToName: currentUser?.displayName || currentUser?.email || 'CODI Member',
+                  assignedToRole: 'codi',
+                  assignedAt: new Date(),
+                  status: 'inProgress' // Auto-start investigation
+                });
+
+                // Notify complainant
+                const { NotificationService } = await import('../../services/notificationService');
+                await NotificationService.createNotification(
+                  report.userId,
+                  'case_assigned',
+                  'CODI is Investigating Your Case',
+                  `A CODI member has started investigating your case: "${report.title}". You will be contacted for updates.`,
+                  {
+                    priority: 'high',
+                    actionUrl: `/case-tracking/${report.id}`,
+                    data: { reportId: report.id }
+                  }
+                );
+
+                toast({
+                  title: 'Case Taken',
+                  description: 'You are now assigned to this case. The complainant has been notified.',
+                });
+
+                fetchReports();
+              } catch (error) {
+                console.error('Error taking case:', error);
+                toast({
+                  title: 'Error',
+                  description: 'Failed to take case. Please try again.',
+                  variant: 'destructive'
+                });
+              }
             }}
-            className={report.assignedToName ? "text-blue-600 hover:bg-blue-50" : "text-gray-600 hover:bg-gray-50"}
+            className="text-green-600 hover:bg-green-50 border-green-300"
           >
             <UserPlus className="h-4 w-4" />
           </Button>
           <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            {report.assignedToName ? 'Reassign Handler' : 'Assign Handler'}
+            Take Case
           </span>
         </div>
       );
     }
 
-    // VIEW BUTTON - Different views for Admin and Handler
+    // VIEW BUTTON - Visible to all roles
     baseButtons.push(
       <Button 
         key="view"
@@ -1042,13 +1039,13 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       >
         <Eye className="h-4 w-4" />
         <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-          View Details
+          View Report
         </span>
       </Button>
     );
 
-    // CHAT BUTTON - Visible to Handler only
-    if (isHandler) {
+    // CHAT BUTTON - Only visible to CODI assigned to this case AND case is not closed
+    if (isCODI && report.assignedTo === representativeId && (report.status as string) !== 'closed') {
       baseButtons.push(
         <Button 
           key="chat"
@@ -1059,7 +1056,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         >
           <MessageCircle className="h-4 w-4" />
           <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Open Chat
+            Chat with Complainant
           </span>
         </Button>
       );
@@ -1116,7 +1113,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   </p>
                 </div>
                 <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
-                  <p className="text-sm text-gray-600 font-medium mb-2">Handler</p>
+                  <p className="text-sm text-gray-600 font-medium mb-2">Assigned CODI</p>
                   <p className="text-sm font-semibold">{safeGet(selectedReport, 'assignedToName', 'Unassigned')}</p>
                 </div>
               </div>
@@ -1366,13 +1363,18 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 </div>
               )}
 
-              {/* Update Status Section - Only visible to Case Handlers */}
-              {isHandler && (
+              {/* Update Status Section - Only visible to CODI assigned to this case AND not closed */}
+              {isCODI && selectedReport.assignedTo === representativeId && (selectedReport.status as string) !== 'closed' && (
                 <div className="border-t pt-4">
-                  <h4 className="font-medium mb-4">Update Report Status</h4>
+                  <h4 className="font-medium mb-4 text-gray-900">
+                    Case Handler - Decision & Status Management
+                  </h4>
+                  <p className="text-xs text-gray-600 mb-3">
+                    You are assigned to this case. You can investigate, update status, and close this case.
+                  </p>
                   <ReportStatusManager
                     reportId={selectedReport.id}
-                    currentStatus={selectedReport.status as 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed'}
+                    currentStatus={selectedReport.status as 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed'}
                     collectionName="complaints"
                     onStatusUpdated={() => {
                       fetchReports();
@@ -1389,7 +1391,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               <TabsContent value="evidence" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3 space-y-4">
               {/* Attachments/Evidence */}
               <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                <h4 className="font-bold text-base mb-3 text-purple-700">Attachments & Evidence</h4>
+                <h4 className="font-bold text-base mb-3 text-gray-900">Attachments & Evidence</h4>
                 
                 {(() => {
                   // Use cached version to avoid repetitive processing
@@ -1613,9 +1615,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
   const reportCardClass =
     'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
 
-  // Calculate tab counts
+  // Calculate tab counts (closed cases excluded - they go to separate Case Archive page)
   const tabCounts = {
-    all: reports.length,
+    all: reports.filter(r => (r.status as string) !== 'closed').length, // Exclude closed from "All"
     active: reports.filter(r => r.status === 'pending' || (r.status as string) === 'submitted').length,
     investigating: reports.filter(r => r.status === 'inProgress').length,
     resolved: reports.filter(r => r.status === 'resolved').length,
@@ -1680,7 +1682,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
               <CardTitle className="text-sm font-medium text-emerald-950">Total Cases</CardTitle>
-              <FileText className="h-4 w-4 text-[#1a7a45]" aria-hidden />
+              <FileText className="h-4 w-4 text-[#1D9E75]" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.total || 0}</div>
@@ -1693,7 +1695,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
               <CardTitle className="text-sm font-medium text-emerald-950">Pending Review</CardTitle>
-              <Clock className="h-4 w-4 text-[#1a7a45]/75" aria-hidden />
+              <Clock className="h-4 w-4 text-[#1D9E75]/75" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.pending || 0}</div>
@@ -1706,7 +1708,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
               <CardTitle className="text-sm font-medium text-emerald-950">Ongoing Investigation</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-[#1a7a45]/70" aria-hidden />
+              <AlertTriangle className="h-4 w-4 text-[#1D9E75]/70" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.inProgress || 0}</div>
@@ -1719,7 +1721,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           <Card className={reportCardClass}>
             <CardHeader className="flex flex-row items-center justify-between border-b border-emerald-100/60 bg-emerald-50/30 pb-3">
               <CardTitle className="text-sm font-medium text-emerald-950">Decision Already Made</CardTitle>
-              <CheckCircle className="h-4 w-4 text-[#1a7a45]" aria-hidden />
+              <CheckCircle className="h-4 w-4 text-[#1D9E75]" aria-hidden />
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold tabular-nums text-emerald-950">{getHandlerStats()?.resolved || 0}</div>
@@ -1746,36 +1748,32 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="relative rounded-xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-6 py-6 shadow-lg overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-        <div className="relative flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-              <FileText className="h-4 w-4 text-white" />
-              <p className="text-xs font-bold uppercase tracking-wider text-white">Case Intake</p>
-            </div>
-            <h1 className="text-3xl font-bold text-white drop-shadow-lg">
-              {isHandler ? 'My Assigned Cases' : 'Reports Management'}
-            </h1>
-            <p className="text-sm text-white/90 font-medium mt-1">
-              {isHandler 
-                ? 'View and manage cases assigned to you'
-                : 'View and manage all incident reports submitted by users'
-              }
-            </p>
-          </div>
-          {!isHandler && (
-            <Button 
-              onClick={handleExportConfirmation}
-              className="bg-white text-green-600 hover:bg-white/90 font-bold shadow-lg"
-              size="lg"
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Export PDF
-            </Button>
-          )}
+      {/* Header and Export Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+            {isHandler ? 'Case Management' : 'Reports'}
+          </p>
+          <h1 className="text-xl font-bold text-gray-900">
+            {isHandler ? 'Case Queue' : 'Reports Management'}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isHandler 
+              ? 'View all cases and take cases to investigate'
+              : 'View and manage all incident reports submitted by users'
+            }
+          </p>
         </div>
+        {!isHandler && (
+          <Button 
+            onClick={handleExportConfirmation}
+            size="sm"
+            style={{ backgroundColor: '#1D9E75', color: 'white' }}
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Export PDF
+          </Button>
+        )}
       </div>
 
       {/* Statistics Cards */}
@@ -1789,7 +1787,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   <p className="text-sm text-emerald-900/55">Total Reports</p>
                 </div>
                 <div className="rounded-xl bg-emerald-100/60 p-2.5 ring-1 ring-emerald-200/50">
-                  <FileText className="h-7 w-7 text-[#1a7a45]" aria-hidden />
+                  <FileText className="h-7 w-7 text-[#1D9E75]" aria-hidden />
                 </div>
               </div>
             </CardContent>
@@ -1831,7 +1829,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   <p className="text-sm text-emerald-900/55">Decision Already Made</p>
                 </div>
                 <div className="rounded-xl bg-emerald-100/60 p-2.5 ring-1 ring-emerald-200/50">
-                  <CheckCircle className="h-7 w-7 text-[#1a7a45]" aria-hidden />
+                  <CheckCircle className="h-7 w-7 text-[#1D9E75]" aria-hidden />
                 </div>
               </div>
             </CardContent>
@@ -1847,7 +1845,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             className={`
               py-4 px-1 border-b-2 font-medium text-sm transition-colors
               ${activeTab === 'all'
-                ? 'border-green-600 text-green-600'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
@@ -1855,7 +1853,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             All
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'all' 
-                ? 'bg-green-100 text-green-600' 
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]' 
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.all}
@@ -1867,7 +1865,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             className={`
               py-4 px-1 border-b-2 font-medium text-sm transition-colors
               ${activeTab === 'active'
-                ? 'border-green-600 text-green-600'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
@@ -1875,7 +1873,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             Pending
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'active' 
-                ? 'bg-green-100 text-green-600' 
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]' 
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.active}
@@ -1887,7 +1885,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             className={`
               py-4 px-1 border-b-2 font-medium text-sm transition-colors
               ${activeTab === 'investigating'
-                ? 'border-green-600 text-green-600'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
@@ -1895,7 +1893,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             Investigating
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'investigating' 
-                ? 'bg-green-100 text-green-600' 
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]' 
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.investigating}
@@ -1907,15 +1905,15 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             className={`
               py-4 px-1 border-b-2 font-medium text-sm transition-colors
               ${activeTab === 'resolved'
-                ? 'border-green-600 text-green-600'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }
             `}
           >
-            Resolved
+            Decision Made
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
               activeTab === 'resolved' 
-                ? 'bg-green-100 text-green-600' 
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]' 
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.resolved}
@@ -1926,11 +1924,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
       {/* Filters */}
       <Card className={reportCardClass}>
-        <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/45 to-transparent pb-4 pt-5">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold text-emerald-950">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1a7a45]/10 text-[#1a7a45]">
-              <Filter className="h-4 w-4" aria-hidden />
-            </span>
+        <CardHeader className="border-b border-gray-100 pb-4 pt-5">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <Filter className="h-4 w-4 text-gray-500" aria-hidden />
             Filters
           </CardTitle>
         </CardHeader>
@@ -1941,24 +1937,24 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 placeholder="Search reports..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border-emerald-100/90 bg-white focus-visible:border-[#1a7a45]/40 focus-visible:ring-[#1a7a45]/20"
+                className="w-full border-emerald-100/90 bg-white focus-visible:border-[#1D9E75]/40 focus-visible:ring-[#1D9E75]/20"
               />
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="submitted">Pending</SelectItem>
                 <SelectItem value="inProgress">Investigating</SelectItem>
-                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="resolved">Decision Already Made</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -1973,7 +1969,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
             {/* Escalation Filter */}
             <Select value={escalationFilter} onValueChange={setEscalationFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1a7a45]/20">
+              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Escalations" />
               </SelectTrigger>
               <SelectContent>
@@ -2032,7 +2028,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           {filteredReports.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100/70 ring-1 ring-emerald-200/50">
-                <FileText className="h-7 w-7 text-[#1a7a45]/70" aria-hidden />
+                <FileText className="h-7 w-7 text-[#1D9E75]/70" aria-hidden />
               </div>
               <h3 className="mb-2 text-lg font-semibold text-emerald-950">No reports found</h3>
               <p className="text-sm text-emerald-900/55">
@@ -2074,14 +2070,14 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       )}
                     </button>
                   </TableHead>
-                  {/* Only show Handler column for admins, not for handlers */}
+                  {/* CODI (Case Handler) Column - Only show for admins */}
                   {!isHandler && (
                     <TableHead className="text-emerald-950/75">
                       <button 
                         onClick={() => handleSort('handler')} 
                         className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
                       >
-                        Handler
+                        CODI
                         {sortField === 'handler' ? (
                           sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                         ) : (
@@ -2166,13 +2162,13 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           </div>
                         )}
                       </TableCell>
-                      {/* Only show Handler column for admins */}
+                      {/* CODI (Case Handler) Column - Only show for admins */}
                       {!isHandler && (
                         <TableCell>
                           {report.assignedToName ? (
                             <div className="space-y-1">
                               <div className="font-medium text-sm flex items-center gap-2">
-                                <User className="h-4 w-4 text-[#1a7a45]" />
+                                <User className="h-4 w-4 text-[#1D9E75]" />
                                 {report.assignedToName}
                               </div>
                               {report.assignedToRole && (
@@ -2223,22 +2219,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       {/* Report Details Dialog - Shared across all reports */}
       {renderReportDetailsDialog()}
 
-      {/* Assign Handler Dialog */}
-      {reportToAssign && (
-        <AssignHandlerDialog
-          open={assignDialogOpen}
-          onOpenChange={setAssignDialogOpen}
-          complaint={reportToAssign}
-          onAssigned={() => {
-            // Refresh reports after assignment
-            fetchReports();
-            toast({
-              title: "Success",
-              description: "Handler assigned successfully",
-            });
-          }}
-        />
-      )}
+      {/* NOTE: Removed AssignHandlerDialog - All CODI members now see all cases automatically */}
 
       {/* Escalation Controls Dialog */}
       {reportToEscalate && (
@@ -2291,7 +2272,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             <Button
               onClick={exportReports}
               disabled={exporting}
-              className="bg-[#16A34A] hover:bg-[#15803D]"
+              className="bg-[#1D9E75] hover:bg-[#178F65]"
             >
               {exporting ? (
                 <>
@@ -2310,54 +2291,13 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       </Dialog>
 
       {/* PDF Viewer Modal */}
-      {selectedPdfUrl && (
-        <Dialog open={pdfViewerOpen} onOpenChange={setPdfViewerOpen}>
-          <DialogContent className="max-w-5xl max-h-[95vh] p-0 bg-white" style={{ height: '95vh' }}>
-            <div className="flex flex-col h-full w-full">
-              <div className="flex items-center justify-between p-4 border-b bg-white">
-                <DialogTitle className="text-lg font-semibold">PDF Viewer</DialogTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPdfViewerOpen(false)}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-hidden bg-gray-200 relative">
-                <iframe
-                  src={selectedPdfUrl}
-                  style={{ 
-                    width: '100%', 
-                    height: '100%',
-                    border: 'none'
-                  }}
-                  title="PDF Viewer"
-                />
-              </div>
-              <div className="flex gap-2 p-4 border-t bg-gray-50 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <a href={selectedPdfUrl} target="_blank" rel="noopener noreferrer" download>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPdfViewerOpen(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {pdfViewerOpen && selectedPdfUrl && (
+        <PDFViewerModal
+          isOpen={pdfViewerOpen}
+          onClose={() => setPdfViewerOpen(false)}
+          pdfUrl={selectedPdfUrl}
+          fileName="Evidence Document"
+        />
       )}
 
       {/* Video Viewer Modal */}

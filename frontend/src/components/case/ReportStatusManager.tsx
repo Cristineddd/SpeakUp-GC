@@ -35,6 +35,7 @@ interface ReportStatusManagerProps {
   onStatusUpdated?: () => void;
   showLabel?: boolean;
   variant?: 'full' | 'compact' | 'buttons-only';
+  caseTitle?: string; // For displaying in closure form
 }
 
 export function ReportStatusManager({
@@ -43,7 +44,8 @@ export function ReportStatusManager({
   collectionName = 'reports',
   onStatusUpdated,
   showLabel = true,
-  variant = 'full'
+  variant = 'full',
+  caseTitle
 }: ReportStatusManagerProps) {
   const {
     isUpdating,
@@ -59,6 +61,12 @@ export function ReportStatusManager({
   const [notes, setNotes] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  
+  // Closure form fields
+  const [decisionSummary, setDecisionSummary] = useState('');
+  const [actionTaken, setActionTaken] = useState('');
+  const [closureDocument, setClosureDocument] = useState<File | null>(null);
+  const [finalNotes, setFinalNotes] = useState('');
 
   const transitionButtons = getTransitionButtons();
 
@@ -70,10 +78,24 @@ export function ReportStatusManager({
   const handleConfirmUpdate = async () => {
     if (!selectedStatus) return;
 
+    // Validate closure form if closing case
+    if (selectedStatus === 'closed') {
+      if (!decisionSummary.trim() || !actionTaken.trim()) {
+        return; // Validation messages shown in UI
+      }
+    }
+
     const success = await updateStatus(
       selectedStatus, 
       notes || undefined,
-      attachmentFile || undefined
+      attachmentFile || undefined,
+      // Pass closure data if closing
+      selectedStatus === 'closed' ? {
+        decisionSummary: decisionSummary.trim(),
+        actionTaken: actionTaken.trim(),
+        closureDocument,
+        finalNotes: finalNotes.trim() || undefined
+      } : undefined
     );
     
     if (success) {
@@ -82,6 +104,10 @@ export function ReportStatusManager({
       setNotes('');
       setAttachmentFile(null);
       setAttachmentPreview(null);
+      setDecisionSummary('');
+      setActionTaken('');
+      setClosureDocument(null);
+      setFinalNotes('');
     }
   };
 
@@ -91,6 +117,10 @@ export function ReportStatusManager({
     setNotes('');
     setAttachmentFile(null);
     setAttachmentPreview(null);
+    setDecisionSummary('');
+    setActionTaken('');
+    setClosureDocument(null);
+    setFinalNotes('');
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

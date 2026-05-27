@@ -13,15 +13,16 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type ReportStatus = 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed';
+export type ReportStatus = 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed';
 
 // Define valid transitions - must match backend
 const VALID_TRANSITIONS: Record<ReportStatus, ReportStatus[]> = {
   pending: ['inProgress'],
   submitted: ['inProgress'], // Treat 'submitted' same as 'pending'
   inProgress: ['resolved', 'dismissed'],
-  resolved: [], // Final status - cannot be changed
-  dismissed: [] // Final status - cannot be changed
+  resolved: ['closed'], // Can be closed after resolution
+  dismissed: ['closed'], // Can be closed after dismissal
+  closed: [] // Final status - cannot be changed
 };
 
 interface UpdateStatusData {
@@ -74,7 +75,13 @@ export function useReportStatus(
   const updateStatus = async (
     newStatus: ReportStatus,
     notes?: string,
-    attachmentFile?: File
+    attachmentFile?: File,
+    closureData?: {
+      decisionSummary: string;
+      actionTaken: string;
+      closureDocument?: File | null;
+      finalNotes?: string;
+    }
   ): Promise<boolean> => {
     if (!currentUser) {
       toast({
@@ -126,13 +133,36 @@ export function useReportStatus(
         }
       }
 
+      // Upload closure document if provided
+      let closureDocumentUrl: string | null = null;
+      if (closureData?.closureDocument) {
+        try {
+          const formData = new FormData();
+          formData.append('file', closureData.closureDocument);
+          formData.append('upload_preset', 'speakup_evidence');
+          
+          const cloudinaryUrl = 'https://api.cloudinary.com/v1_1/dqhxq5a4n/upload';
+          const response = await fetch(cloudinaryUrl, {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            closureDocumentUrl = data.secure_url;
+          }
+        } catch (uploadError) {
+          console.error('Error uploading closure document:', uploadError);
+        }
+      }
+
       // CLIENT-SIDE: Direct Firestore update (no Cloud Functions)
       const { getFirestore, doc, updateDoc, arrayUnion, serverTimestamp } = await import('firebase/firestore');
       const db = getFirestore();
       
       const reportRef = doc(db, collectionName, reportId);
       
-      const statusUpdate = {
+      const statusUpdate: any = {
         status: newStatus,
         updatedAt: serverTimestamp(),
         updatedBy: currentUser.uid,
@@ -149,7 +179,34 @@ export function useReportStatus(
         })
       };
 
+      // Add closure-specific fields if closing case
+      if (newStatus === 'closed' && closureData) {
+        statusUpdate.dateResolved = serverTimestamp();
+        statusUpdate.decisionSummary = closureData.decisionSummary;
+        statusUpdate.actionTaken = closureData.actionTaken;
+        statusUpdate.closedBy = currentUser.uid;
+        statusUpdate.closedByName = currentUser.displayName || currentUser.email || 'Unknown User';
+        
+        if (closureDocumentUrl) {
+          statusUpdate.closureDocument = closureDocumentUrl;
+          statusUpdate.closureDocumentName = closureData.closureDocument?.name || null;
+        }
+        
+        if (closureData.finalNotes) {
+          statusUpdate.finalNotes = closureData.finalNotes;
+        }
+        
+        console.log('🔒 [CLOSE CASE] Updating with closure data:', {
+          reportId,
+          newStatus,
+          closureData,
+          statusUpdate
+        });
+      }
+
+      console.log('📝 [STATUS UPDATE] Updating report:', { reportId, newStatus, statusUpdate });
       await updateDoc(reportRef, statusUpdate);
+      console.log('✅ [STATUS UPDATE] Successfully updated to:', newStatus);
 
       // Send notification to complainant about status change
       try {
@@ -184,6 +241,23 @@ export function useReportStatus(
                 reportId,
                 reportData.title || 'Your complaint',
                 'Your complaint has been reviewed and dismissed. Please check the details for more information.'
+              );
+            } else if (newStatus === 'closed') {
+              await NotificationService.createNotification(
+                complainantId,
+                'case_closed',
+                'Case Officially Closed',
+                `Your case "${reportData.title || 'Untitled'}" has been officially closed and archived. Final decision: ${closureData?.decisionSummary?.substring(0, 100) || 'See case details'}`,
+                {
+                  priority: 'high',
+                  actionUrl: `/case-tracking/${reportId}`,
+                  data: {
+                    reportId,
+                    reportTitle: reportData.title,
+                    decisionSummary: closureData?.decisionSummary,
+                    actionTaken: closureData?.actionTaken
+                  }
+                }
               );
             }
           }
@@ -234,8 +308,10 @@ export function useReportStatus(
       }
 
       toast({
-        title: 'Status Updated',
-        description: `Report status changed to ${getStatusLabel(newStatus)}`,
+        title: newStatus === 'closed' ? 'Case Closed Successfully' : 'Status Updated',
+        description: newStatus === 'closed' 
+          ? 'Case has been officially closed and archived. The complainant has been notified.'
+          : `Report status changed to ${getStatusLabel(newStatus)}`,
       });
 
       // Trigger callback to refresh data
@@ -268,7 +344,8 @@ export function useReportStatus(
       submitted: 'Submitted',
       inProgress: 'Ongoing Investigation',
       resolved: 'Decision Already Made',
-      dismissed: 'Decision Already Made'
+      dismissed: 'Decision Already Made',
+      closed: 'Closed'
     };
     return labels[status];
   };
@@ -282,7 +359,8 @@ export function useReportStatus(
       submitted: 'bg-blue-100 text-blue-800',
       inProgress: 'bg-blue-100 text-blue-800',
       resolved: 'bg-green-100 text-green-800',
-      dismissed: 'bg-gray-100 text-gray-800'
+      dismissed: 'bg-gray-100 text-gray-800',
+      closed: 'bg-gray-200 text-gray-900'
     };
     return colors[status];
   };

@@ -19,18 +19,15 @@ const ComplianceReportsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">
-            Compliance Reports
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Generate privacy-compliant analytics and compliance reports
-          </p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Compliance</p>
+          <h1 className="text-xl font-bold text-gray-900">Compliance Reports</h1>
+          <p className="text-sm text-gray-500 mt-1">Generate privacy-compliant analytics and compliance reports</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl shadow-sm">
-          <Shield className="h-5 w-5 text-green-600" />
-          <span className="text-sm font-semibold text-green-700">GDPR Compliant</span>
+        <div className="flex items-center gap-1.5 text-xs text-green-700">
+          <Shield className="h-3.5 w-3.5" />
+          <span className="font-medium">GDPR Compliant</span>
         </div>
       </div>
 
@@ -47,26 +44,26 @@ const ComplianceReportsPage: React.FC = () => {
       {/* Info Section */}
       {!currentReport && (
         <>
-          <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+          <div className="p-5 bg-gray-50 border border-gray-200 rounded-xl">
             <div className="flex items-center gap-2 mb-3">
-              <Shield className="h-5 w-5 text-green-600" />
-              <h3 className="font-semibold text-green-900">About Compliance Reports</h3>
+              <Shield className="h-4 w-4" style={{ color: '#1D9E75' }} />
+              <h3 className="font-semibold text-gray-900 text-sm">About Compliance Reports</h3>
             </div>
-            <ul className="space-y-2.5 text-sm text-green-800">
-              <li className="flex items-start gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li className="flex items-start gap-2">
+                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
                 <span>All reports are <strong>GDPR and data privacy compliant</strong></span>
               </li>
-              <li className="flex items-start gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>
+              <li className="flex items-start gap-2">
+                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
                 <span>Personal data can be <strong>anonymized automatically</strong></span>
               </li>
-              <li className="flex items-start gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>
+              <li className="flex items-start gap-2">
+                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
                 <span>Reports include <strong>frequency analysis, trends, and performance metrics</strong></span>
               </li>
-              <li className="flex items-start gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>
+              <li className="flex items-start gap-2">
+                <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
                 <span>Export reports in <strong>PDF, Excel, CSV, or JSON format</strong></span>
               </li>
             </ul>

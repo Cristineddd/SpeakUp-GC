@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Navigate, useNavigate } from '../../compat/router';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
-import AdminDashboard from './AdminDashboard';
+import AdminDashboardRedesign from './AdminDashboardRedesign';
 import DeanCoordinatorDashboard from './DeanCoordinatorDashboard';
 
 /**
@@ -41,5 +41,5 @@ export default function SmartDashboard() {
   }
 
   // Otherwise show full admin dashboard
-  return <AdminDashboard />;
+  return <AdminDashboardRedesign />;
 }

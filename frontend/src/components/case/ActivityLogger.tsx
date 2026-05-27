@@ -92,7 +92,7 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
     return (
       <Button
         onClick={() => setShowForm(true)}
-        className="w-full bg-[#1a7a45] hover:bg-emerald-700"
+        className="w-full bg-[#1D9E75] hover:bg-emerald-700"
       >
         <Plus className="h-4 w-4 mr-2" />
         Log New Activity
@@ -158,7 +158,7 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
             <Button
               type="submit"
               disabled={loading || !description.trim()}
-              className="flex-1 bg-[#1a7a45] hover:bg-emerald-700"
+              className="flex-1 bg-[#1D9E75] hover:bg-emerald-700"
             >
               {loading ? 'Logging...' : 'Log Activity'}
             </Button>

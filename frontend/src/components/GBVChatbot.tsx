@@ -192,8 +192,8 @@ export default function GBVChatbot() {
           style={{ height: "520px" }}>
 
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#0f2d1a] to-[#1e5c38] px-4 py-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 flex-shrink-0 bg-[#1e5c38]">
+          <div className="bg-gradient-to-r from-[#178F65] to-[#1D9E75] px-4 py-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 flex-shrink-0 bg-[#1D9E75]">
               <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
@@ -213,14 +213,14 @@ export default function GBVChatbot() {
             {messages.map((msg, i) => (
               <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                 {msg.role === "assistant" && (
-                  <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-0.5 bg-[#1e5c38] border border-green-200">
+                  <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-0.5 bg-[#1D9E75] border border-green-200">
                     <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
                   </div>
                 )}
                 <div className={cn(
                   "max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   msg.role === "user"
-                    ? "bg-[#16A34A] text-white rounded-tr-sm"
+                    ? "bg-[#1D9E75] text-white rounded-tr-sm"
                     : "bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm"
                 )}>
                   {renderText(msg.text)}
@@ -230,11 +230,11 @@ export default function GBVChatbot() {
 
             {loading && (
               <div className="flex gap-2 justify-start">
-                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-[#1e5c38] border border-green-200">
+                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-[#1D9E75] border border-green-200">
                   <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
                 </div>
                 <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#16A34A]" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#1D9E75]" />
                   <span className="text-xs text-gray-400">Laya is typing…</span>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function GBVChatbot() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-[#16A34A]/40 text-[#15803D] bg-[#F0FDF4] hover:bg-green-100 transition-colors font-medium"
+                  className="text-xs px-3 py-1.5 rounded-full border border-[#1D9E75]/40 text-[#1D9E75] bg-[#F0FAF6] hover:bg-green-100 transition-colors font-medium"
                 >
                   {s}
                 </button>
@@ -266,12 +266,12 @@ export default function GBVChatbot() {
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
               placeholder="Ask about your rights…"
               disabled={loading}
-              className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#16A34A]/30 focus:border-[#16A34A] disabled:opacity-50 placeholder-gray-400"
+              className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75] disabled:opacity-50 placeholder-gray-400"
             />
             <button
               onClick={() => send()}
               disabled={!input.trim() || loading}
-              className="w-10 h-10 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+              className="w-10 h-10 rounded-xl bg-[#1D9E75] hover:bg-[#178F65] text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
             >
               <Send className="h-4 w-4" />
             </button>

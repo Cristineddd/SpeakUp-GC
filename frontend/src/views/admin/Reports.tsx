@@ -47,6 +47,7 @@ import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/
 import { db } from '../../firebase';
 import { AdminReportService } from '../../services/adminReportService';
 import { useToast } from '../../hooks/use-toast';
+import { PDFViewerModal } from '../../components/common/PDFViewerModal';
 
 // Helper function to safely convert various date formats
 const safeToDate = (dateValue: any): Date => {
@@ -1063,54 +1064,13 @@ const Reports = () => {
       </Dialog>
 
       {/* PDF Viewer Modal */}
-      {selectedPdfUrl && (
-        <Dialog open={pdfViewerOpen} onOpenChange={setPdfViewerOpen}>
-          <DialogContent className="max-w-5xl max-h-[95vh] p-0 bg-white" style={{ height: '95vh' }}>
-            <div className="flex flex-col h-full w-full">
-              <div className="flex items-center justify-between p-4 border-b bg-white">
-                <DialogTitle className="text-lg font-semibold">PDF Viewer</DialogTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPdfViewerOpen(false)}
-                  className="h-8 w-8"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex-1 overflow-hidden bg-gray-200 relative">
-                <iframe
-                  src={selectedPdfUrl}
-                  style={{ 
-                    width: '100%', 
-                    height: '100%',
-                    border: 'none'
-                  }}
-                  title="PDF Viewer"
-                />
-              </div>
-              <div className="flex gap-2 p-4 border-t bg-gray-50 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                >
-                  <a href={selectedPdfUrl} target="_blank" rel="noopener noreferrer" download>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </a>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPdfViewerOpen(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {pdfViewerOpen && selectedPdfUrl && (
+        <PDFViewerModal
+          isOpen={pdfViewerOpen}
+          onClose={() => setPdfViewerOpen(false)}
+          pdfUrl={selectedPdfUrl}
+          fileName="Evidence Document"
+        />
       )}
     </div>
   );

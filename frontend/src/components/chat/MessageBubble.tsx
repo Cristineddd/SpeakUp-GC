@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
   Check, 
@@ -5,12 +6,14 @@ import {
   Download,
   FileText,
   Image as ImageIcon,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import type { Message } from '../../types/message';
 import { formatFileSize, getFileIcon } from '../../types/message';
+import { PDFViewerModal } from '../common/PDFViewerModal';
 
 interface MessageBubbleProps {
   message: Message;
@@ -27,6 +30,9 @@ export function MessageBubble({
   isGroupChat = false,
   groupPosition = 'single',
 }: MessageBubbleProps) {
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState('');
+  const [selectedPdfName, setSelectedPdfName] = useState('');
   
   const formatTime = (timestamp: any): string => {
     try {
@@ -145,6 +151,8 @@ export function MessageBubble({
                 }
 
                 // Display non-image files with download button
+                const isPDF = attachment.type === 'application/pdf' || attachment.name.toLowerCase().endsWith('.pdf');
+                
                 return (
                   <div
                     key={attachment.id}
@@ -176,6 +184,26 @@ export function MessageBubble({
                         {formatFileSize(attachment.size)}
                       </p>
                     </div>
+
+                    {/* View button for PDFs */}
+                    {isPDF && (
+                      <button
+                        onClick={() => {
+                          setSelectedPdfUrl(attachment.url);
+                          setSelectedPdfName(attachment.name);
+                          setPdfViewerOpen(true);
+                        }}
+                        className={`
+                          p-2 rounded-lg transition-colors
+                          ${isOwn ? 'hover:bg-emerald-800/50' : 'hover:bg-gray-200'}
+                        `}
+                      >
+                        <Eye className={`
+                          h-4 w-4
+                          ${isOwn ? 'text-white' : 'text-gray-600'}
+                        `} />
+                      </button>
+                    )}
 
                     {/* Download button */}
                     <a
@@ -218,6 +246,16 @@ export function MessageBubble({
           </div>
         )}
       </div>
+
+      {/* PDF Viewer Modal */}
+      {pdfViewerOpen && (
+        <PDFViewerModal
+          isOpen={pdfViewerOpen}
+          onClose={() => setPdfViewerOpen(false)}
+          pdfUrl={selectedPdfUrl}
+          fileName={selectedPdfName}
+        />
+      )}
     </div>
   );
 }

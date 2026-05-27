@@ -29,7 +29,7 @@ import CaseHandlerDashboard from '../../views/dashboard/CaseHandlerDashboard';
 function Spinner() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#16A34A]" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D9E75]" />
     </div>
   );
 }
@@ -82,7 +82,7 @@ export default function DashboardRouter() {
       return;
     }
 
-    if (role === UserRole.CODI || role === 'handler' || role === 'codi') {
+    if (role === UserRole.CODI || role === 'handler' || (role as string) === 'codi') {
       navigate('/admin/reports', { replace: true });
       return;
     }

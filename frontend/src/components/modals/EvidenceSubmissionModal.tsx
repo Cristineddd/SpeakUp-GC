@@ -128,7 +128,7 @@ export const EvidenceSubmissionModal: React.FC<EvidenceSubmissionModalProps> = (
           {/* File Upload Section */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-gray-900">Upload Files (Max {maxFileSize}MB per file)</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#1a7a45] transition-colors">
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#1D9E75] transition-colors">
               <input
                 type="file"
                 multiple
@@ -159,7 +159,7 @@ export const EvidenceSubmissionModal: React.FC<EvidenceSubmissionModalProps> = (
                     className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <File className="w-4 h-4 text-[#1a7a45]" />
+                      <File className="w-4 h-4 text-[#1D9E75]" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{file.name}</p>
                         <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)}MB</p>
@@ -183,7 +183,7 @@ export const EvidenceSubmissionModal: React.FC<EvidenceSubmissionModalProps> = (
               <Label className="text-sm font-semibold text-gray-900">External Links (For large files)</Label>
               <button
                 onClick={addLinkField}
-                className="text-xs font-medium text-[#1a7a45] hover:text-[#155f36] transition-colors"
+                className="text-xs font-medium text-[#1D9E75] hover:text-[#178F65] transition-colors"
               >
                 + Add Link
               </button>
@@ -238,7 +238,7 @@ export const EvidenceSubmissionModal: React.FC<EvidenceSubmissionModalProps> = (
           <div className="text-sm text-gray-600">
             {files.length > 0 && (
               <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#1a7a45]" />
+                <CheckCircle2 className="w-4 h-4 text-[#1D9E75]" />
                 {files.length} file{files.length !== 1 ? 's' : ''} ready
               </span>
             )}
@@ -253,7 +253,7 @@ export const EvidenceSubmissionModal: React.FC<EvidenceSubmissionModalProps> = (
             </Button>
             <Button
               onClick={handleSubmit}
-              className="px-6 bg-[#1a7a45] hover:bg-[#155f36] text-white"
+              className="px-6 bg-[#1D9E75] hover:bg-[#178F65] text-white"
             >
               Submit Evidence
             </Button>

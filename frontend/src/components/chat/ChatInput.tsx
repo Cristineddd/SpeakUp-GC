@@ -319,7 +319,7 @@ export function ChatInput({
                 title="Quick Responses"
                 className="h-10 w-10 hover:bg-green-50 transition-colors flex-shrink-0"
               >
-                <MessageSquare className="h-5 w-5 text-gray-500 hover:text-[#1a7a45]" />
+                <MessageSquare className="h-5 w-5 text-gray-500 hover:text-[#1D9E75]" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-80">
@@ -363,7 +363,7 @@ export function ChatInput({
               title="Attach file"
               className="h-10 w-10 hover:bg-green-50 transition-colors flex-shrink-0"
             >
-              <Paperclip className="h-5 w-5 text-gray-500 hover:text-[#1a7a45]" />
+              <Paperclip className="h-5 w-5 text-gray-500 hover:text-[#1D9E75]" />
             </Button>
           </>
         )}
@@ -380,7 +380,7 @@ export function ChatInput({
             className="
               w-full px-4 py-3 pr-12
               border-2 border-gray-200 rounded-2xl
-              focus:outline-none focus:ring-2 focus:ring-[#1a7a45] focus:border-[#1a7a45]
+              focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-[#1D9E75]
               resize-none
               max-h-28
               disabled:opacity-50 disabled:cursor-not-allowed
@@ -408,7 +408,7 @@ export function ChatInput({
           onClick={handleSend}
           disabled={!canSend || disabled}
           size="icon"
-          className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-[#1a7a45] to-emerald-600 hover:from-emerald-700 hover:to-[#1a7a45] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none rounded-xl"
+          className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-[#1D9E75] to-emerald-600 hover:from-emerald-700 hover:to-[#1D9E75] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none rounded-xl"
         >
           {sending ? (
             <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />

@@ -90,7 +90,7 @@ const toComplaintType = (type: string): ComplaintType => {
 const getStatusConfig = (status: ComplaintStatus) => {
   switch (status) {
     case ComplaintStatus.INVESTIGATING:    return { color: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" };
-    case ComplaintStatus.RESOLVED:         return { color: "bg-green-50 text-green-700 border-green-200", dot: "bg-[#16A34A]" };
+    case ComplaintStatus.RESOLVED:         return { color: "bg-green-50 text-green-700 border-green-200", dot: "bg-[#1D9E75]" };
     case ComplaintStatus.DISMISSED:        return { color: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" };
     case ComplaintStatus.UNDER_REVIEW:     return { color: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" };
     case ComplaintStatus.SUBMITTED:        return { color: "bg-violet-50 text-violet-700 border-violet-200", dot: "bg-violet-500" };
@@ -253,7 +253,7 @@ export default function MyComplaints() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#16A34A] border-t-transparent mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1D9E75] border-t-transparent mx-auto mb-4" />
           <p className="text-gray-500 text-sm">Loading your complaints...</p>
         </div>
       </div>
@@ -267,7 +267,7 @@ export default function MyComplaints() {
           <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-4" />
           <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
           <p className="text-gray-500 text-sm mb-4">Please log in to view your complaints.</p>
-          <Button onClick={() => navigate("/login")} className="bg-[#16A34A] hover:bg-[#15803D] text-white">Go to Login</Button>
+          <Button onClick={() => navigate("/login")} className="bg-[#1D9E75] hover:bg-[#178F65] text-white">Go to Login</Button>
         </div>
       </div>
     );
@@ -285,7 +285,7 @@ export default function MyComplaints() {
           </div>
           <Button
             onClick={() => navigate("/complaints/new")}
-            className="bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm w-full sm:w-auto"
+            className="bg-[#1D9E75] hover:bg-[#178F65] text-white shadow-sm w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             File New Complaint
@@ -293,7 +293,7 @@ export default function MyComplaints() {
         </div>
 
         {/* Stats Row (Minimal Outline Style) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { label: "Total Filed", value: total, icon: FileText },
             { label: "Ongoing Investigation", value: inProgress, icon: Loader },
@@ -306,7 +306,7 @@ export default function MyComplaints() {
                 className="bg-white rounded-xl p-4 flex flex-col items-center text-center"
                 style={{ border: "0.5px solid #e5e7eb" }}
               >
-                <Icon className="h-7 w-7 text-[#16a34a] mb-3" strokeWidth={1.5} />
+                <Icon className="h-7 w-7 text-[#1D9E75] mb-3" strokeWidth={1.5} />
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                 <p className="text-xs text-gray-500 font-medium mt-1">{stat.label}</p>
               </div>
@@ -329,7 +329,7 @@ export default function MyComplaints() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 bg-white h-10"
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20 bg-white h-10"
             >
               <option value="all">All Status</option>
               <option value={ComplaintStatus.SUBMITTED}>Submitted</option>
@@ -359,7 +359,7 @@ export default function MyComplaints() {
               return (
                 <div
                   key={complaint.id}
-                  className="bg-white rounded-xl border border-gray-200 p-5 hover:border-[#16A34A]/30 hover:shadow-md transition-all duration-200"
+                  className="bg-white rounded-xl border border-gray-200 p-5 hover:border-[#1D9E75]/30 hover:shadow-md transition-all duration-200"
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -385,7 +385,7 @@ export default function MyComplaints() {
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div
-                        className="bg-[#16A34A] h-2 rounded-full transition-all duration-500"
+                        className="bg-[#1D9E75] h-2 rounded-full transition-all duration-500"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -437,7 +437,7 @@ export default function MyComplaints() {
                       {complaint.assignedCODI && complaint.assignedCODI.length > 0 ? (
                         <button
                           onClick={() => navigate(`/case-chat/${complaint.id}`)}
-                          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium text-[#16A34A] border border-[#16A34A]/30 rounded-lg hover:bg-green-50 transition-colors"
+                          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 text-sm font-medium text-[#1D9E75] border border-[#1D9E75]/30 rounded-lg hover:bg-green-50 transition-colors"
                         >
                           <MessageSquare className="h-4 w-4" />
                           Message
@@ -481,7 +481,7 @@ export default function MyComplaints() {
               {!searchTerm && statusFilter === "all" && (
                 <Button
                   onClick={() => navigate("/complaints/new")}
-                  className="bg-[#16A34A] hover:bg-[#15803D] text-white"
+                  className="bg-[#1D9E75] hover:bg-[#178F65] text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   File a Complaint

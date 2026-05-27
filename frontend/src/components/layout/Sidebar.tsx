@@ -46,6 +46,7 @@ export default function Sidebar() {
   const unreadCasesCount = useUnreadCasesCount();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [alias, setAlias] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Load collapsed state from localStorage
@@ -72,6 +73,7 @@ export default function Sidebar() {
         if (userDoc.exists()) {
           const role = userDoc.data()?.role || 'complainant';
           setUserRole(role);
+          setAlias(userDoc.data()?.alias || null);
         } else {
           setUserRole('complainant');
         }
@@ -177,53 +179,67 @@ export default function Sidebar() {
     {/* ── Desktop sidebar ── */}
     <aside className="hidden lg:flex lg:flex-shrink-0">
       <div className={cn(
-        "flex flex-col border-r border-gray-200 bg-white transition-all duration-300",
-        isCollapsed ? "w-20" : "w-68"
-      )}>
+        "flex flex-col border-r border-green-200 transition-all duration-300",
+        isCollapsed ? "w-20" : "w-60"
+      )}
+      style={{ backgroundColor: isCollapsed ? '#F0FAF6' : '#E8F5EE' }}>
         {/* Logo & Collapse Button */}
-        <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
-                <img 
-                  src={gcLogo} 
-                  alt="Gordon College" 
-                  className="w-full h-full object-contain"
-                />
+        <div className="flex items-center justify-between px-4 py-5 border-b border-green-200">
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                  <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
+                </div>
+                <h1 className="text-lg font-bold text-gray-900 leading-tight whitespace-nowrap">SpeakUp GC</h1>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-base font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
-                <p className="text-xs text-gray-500 leading-tight mt-0.5">Gordon College DEIU</p>
-              </div>
-            </div>
-          )}
-          {isCollapsed && (
-            <div className="w-full flex justify-center">
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded-lg transition-colors"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <div className="w-full flex flex-col items-center gap-2">
               <div className="w-9 h-9 flex items-center justify-center">
-                <img 
-                  src={gcLogo} 
-                  alt="Gordon College" 
-                  className="w-full h-full object-contain"
-                />
+                <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
               </div>
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded-lg transition-colors"
+                title="Expand sidebar"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           )}
         </div>
 
-        {/* Collapse Toggle Button */}
-        <div className="px-4 py-2 border-b border-gray-100">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="w-full flex items-center justify-center px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        </div>
+        {/* User Profile */}
+        {!isCollapsed && (
+          <div className="px-5 py-4 mb-1" style={{ borderBottom: '1.5px solid #C8E6D9' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+                {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {userRole === 'complainant' ? 'Complainant' : userRole || 'User'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="px-3 py-3 flex justify-center" style={{ borderBottom: '1.5px solid #C8E6D9' }}>
+            <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm shadow-sm" title={alias || user?.displayName || 'User'}>
+              {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -248,8 +264,8 @@ export default function Sidebar() {
                     "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
                     isCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
                     active
-                      ? "bg-[#16A34A] text-white shadow-md"
-                      : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-[#1D9E75] text-white shadow-md"
+                      : "text-gray-700 hover:bg-green-200/60 hover:text-gray-900"
                   )}
                   title={isCollapsed ? item.name : undefined}
                 >
@@ -272,16 +288,16 @@ export default function Sidebar() {
                 </Link>
                 {/* Sub-navigation for Know Your Rights */}
                 {isKnowYourRights && active && !isCollapsed && (
-                  <div className="mt-1 ml-4 border-l-2 border-[#16A34A]/20 pl-3 space-y-0.5">
+                  <div className="mt-1 ml-4 border-l-2 border-[#1D9E75]/20 pl-3 space-y-0.5">
                     {subNav.map(sub => {
                       const SubIcon = sub.icon;
                       return (
                         <button
                           key={sub.hash}
                           onClick={() => router.push(`/know-your-rights?tab=${sub.hash}`)}
-                          className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-[#16A34A] hover:bg-green-50 rounded-md transition-colors group text-left"
+                          className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium text-gray-500 hover:text-[#1D9E75] hover:bg-green-50 rounded-md transition-colors group text-left"
                         >
-                          <SubIcon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400 group-hover:text-[#16A34A]" />
+                          <SubIcon className="h-3.5 w-3.5 flex-shrink-0 text-gray-400 group-hover:text-[#1D9E75]" />
                           <span>{sub.label}</span>
                         </button>
                       );
@@ -299,16 +315,16 @@ export default function Sidebar() {
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
               <div className="flex items-start gap-3">
                 <div className="rounded-xl p-2 bg-white shadow-sm shrink-0">
-                  <HelpCircle className="h-4 w-4 text-[#16A34A]" />
+                  <HelpCircle className="h-4 w-4 text-[#1D9E75]" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#15803D] mb-1">Need Help?</p>
+                  <p className="text-xs font-bold text-[#178F65] mb-1">Need Help?</p>
                   <p className="text-xs text-gray-600 leading-relaxed mb-2">
                     Contact DEIU for support and guidance.
                   </p>
                   <Link
                     to="/know-your-rights?tab=faq"
-                    className="text-xs font-semibold text-[#16A34A] hover:text-[#15803D] flex items-center gap-1"
+                    className="text-xs font-semibold text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1"
                   >
                     View FAQs →
                   </Link>
@@ -354,7 +370,7 @@ export default function Sidebar() {
             to={item.href}
             className={cn(
               "flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-lg transition-colors relative",
-              active ? "text-[#16A34A]" : "text-gray-400 hover:text-gray-700"
+              active ? "text-[#1D9E75]" : "text-gray-400 hover:text-gray-700"
             )}
           >
             <Icon className="h-5 w-5 flex-shrink-0" />

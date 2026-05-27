@@ -84,28 +84,19 @@ const dashCardClass =
   'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend, onClick }) => {
-  const getCardGradient = (title: string) => {
-    if (title.includes('Users')) return 'from-emerald-500 to-teal-500';
-    if (title.includes('Reports') || title.includes('Total Reports')) return 'from-green-500 to-emerald-600';
-    if (title.includes('Active')) return 'from-lime-500 to-green-500';
-    if (title.includes('Resolved')) return 'from-green-600 to-emerald-700';
-    if (title.includes('Resolution')) return 'from-teal-500 to-emerald-600';
-    return 'from-green-500 to-green-600';
-  };
-
   const isActiveCasesZero = title.includes('Active') && value === 0;
 
   return (
     <Card 
-      className={`border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group ${
-        onClick ? 'cursor-pointer' : ''
+      className={`border-0 bg-white shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group ${
+        onClick ? 'cursor-pointer hover:border-gray-200' : ''
       }`}
       onClick={onClick}
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
-          <div className={`p-4 rounded-2xl bg-gradient-to-br ${getCardGradient(title)} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className="h-8 w-8 text-white" aria-hidden />
+          <div className="p-3 rounded-xl bg-gray-100 group-hover:bg-gray-200 transition-colors duration-200">
+            <Icon className="h-7 w-7 text-gray-600" aria-hidden />
           </div>
           {isActiveCasesZero ? (
             <div className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700">
@@ -397,7 +388,7 @@ const AdminDashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24">
         <div
-          className="h-12 w-12 animate-spin rounded-full border-[3px] border-[#1a7a45]/20 border-t-[#1a7a45]"
+          className="h-12 w-12 animate-spin rounded-full border-[3px] border-[#1D9E75]/20 border-t-[#1D9E75]"
           aria-hidden
         />
         <p className="text-sm font-medium text-emerald-900/60">Loading dashboard…</p>
@@ -407,17 +398,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="w-full space-y-8 pb-10">
-      <div className="relative rounded-xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-6 py-6 shadow-lg overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-        <div className="relative flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-              <BarChart3 className="h-4 w-4 text-white" />
-              <p className="text-xs font-bold uppercase tracking-wider text-white">Admin Overview</p>
-            </div>
-            <h1 className="text-3xl font-bold text-white drop-shadow-lg">Dashboard</h1>
-          </div>
-          <p className="text-sm text-white/90 font-medium">
+      <div className="mb-6">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Admin Overview</p>
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-xs text-gray-400">
             Last updated: {new Date().toLocaleTimeString()}
           </p>
         </div>
@@ -486,11 +471,11 @@ const AdminDashboard = () => {
 
       {/* Recent Complaints & System Alerts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="border-0 bg-white shadow-lg">
-          <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50 pb-6 pt-6">
+        <Card className="border-0 bg-white shadow-sm">
+          <CardHeader className="border-b bg-gray-50 pb-6 pt-6">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 shadow-lg">
-                <FileText className="h-6 w-6 text-white" aria-hidden />
+              <div className="p-3 rounded-xl bg-gray-100">
+                <FileText className="h-6 w-6 text-gray-600" aria-hidden />
               </div>
               📋 Recent Complaints
             </CardTitle>
@@ -501,9 +486,9 @@ const AdminDashboard = () => {
                 {recentComplaints.map((complaint, index) => (
                   <div
                     key={complaint.id}
-                    className="group relative rounded-2xl border-2 border-gray-100 bg-gradient-to-r from-white to-gray-50 p-5 transition-all hover:border-green-200 hover:shadow-lg"
+                    className="group relative rounded-xl border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-sm"
                   >
-                    <div className="absolute -left-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-green-600 to-emerald-600 text-sm font-bold text-white shadow-lg">
+                    <div className="absolute -left-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-600 text-sm font-bold text-white shadow-sm">
                       {index + 1}
                     </div>
                     <div className="flex items-start justify-between gap-4">
@@ -519,7 +504,7 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                       <Badge className={`shrink-0 px-4 py-2 text-sm font-bold capitalize shadow-sm ${statusBadgeClass(complaint.status)}`}>
-                        {complaint.status.replace(/([A-Z])/g, ' $1').trim()}
+                        {complaint.status.toLowerCase() === 'resolved' ? 'Decision Already Made' : complaint.status.replace(/([A-Z])/g, ' $1').trim()}
                       </Badge>
                     </div>
                   </div>
@@ -534,11 +519,11 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-white shadow-lg">
-          <CardHeader className="border-b bg-gradient-to-r from-lime-50 to-green-50 pb-6 pt-6">
+        <Card className="border-0 bg-white shadow-sm">
+          <CardHeader className="border-b bg-gray-50 pb-6 pt-6">
             <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-lime-600 to-green-600 shadow-lg">
-                <AlertCircle className="h-6 w-6 text-white" aria-hidden />
+              <div className="p-3 rounded-xl bg-gray-100">
+                <AlertCircle className="h-6 w-6 text-gray-600" aria-hidden />
               </div>
               🔔 System Alerts
             </CardTitle>
@@ -583,11 +568,11 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card className="border-0 bg-white shadow-lg">
-        <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50 pb-6 pt-6">
+      <Card className="border-0 bg-white shadow-sm">
+        <CardHeader className="border-b bg-gray-50 pb-6 pt-6">
           <CardTitle className="flex items-center gap-3 text-xl font-bold text-gray-900">
-            <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-600 shadow-lg">
-              <Settings className="h-6 w-6 text-white" />
+            <div className="p-3 rounded-xl bg-gray-100">
+              <Settings className="h-6 w-6 text-gray-600" />
             </div>
             ⚡ Quick Actions
           </CardTitle>
@@ -596,28 +581,28 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <button 
               onClick={() => navigate('/admin/users')}
-              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-6 transition-all hover:border-emerald-300 hover:shadow-xl hover:scale-105"
+              className="group flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-md"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-110 transition-transform">
-                <UserPlus className="h-8 w-8 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                <UserPlus className="h-8 w-8 text-gray-600" />
               </div>
               <span className="text-lg font-bold text-gray-900">Manage Users</span>
             </button>
             <button 
               onClick={() => navigate('/admin/reports')}
-              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-lime-50 p-6 transition-all hover:border-green-300 hover:shadow-xl hover:scale-105"
+              className="group flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-md"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-lime-500 shadow-lg group-hover:scale-110 transition-transform">
-                <BarChart3 className="h-8 w-8 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                <BarChart3 className="h-8 w-8 text-gray-600" />
               </div>
               <span className="text-lg font-bold text-gray-900">View Reports</span>
             </button>
             <button 
               onClick={() => navigate('/admin/settings')}
-              className="group flex flex-col items-center gap-4 rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-cyan-50 p-6 transition-all hover:border-teal-300 hover:shadow-xl hover:scale-105"
+              className="group flex flex-col items-center gap-4 rounded-xl border border-gray-200 bg-white p-6 transition-all hover:border-gray-300 hover:shadow-md"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 shadow-lg group-hover:scale-110 transition-transform">
-                <Settings className="h-8 w-8 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors">
+                <Settings className="h-8 w-8 text-gray-600" />
               </div>
               <span className="text-lg font-bold text-gray-900">System Settings</span>
             </button>

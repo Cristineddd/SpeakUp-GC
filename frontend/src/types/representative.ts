@@ -156,7 +156,7 @@ export interface UpdateRepresentativeData {
 // Role display names
 export const ROLE_LABELS: Record<RepresentativeRole, string> = {
   admin: 'Administrator',
-  handler: 'Case Handler'
+  handler: 'CODI'
 };
 
 // Role colors for badges

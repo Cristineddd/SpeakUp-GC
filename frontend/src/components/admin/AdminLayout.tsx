@@ -12,7 +12,8 @@ import {
   FileCheck,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Archive
 } from 'lucide-react';
 const gcLogo = '/LOGO.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -128,6 +129,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       description: undefined
     },
     { 
+      label: 'Closed Cases', 
+      icon: Archive, 
+      href: '/admin/closed-cases',
+      description: 'View archived and resolved cases'
+    },
+    { 
       label: 'Compliance Reports', 
       icon: FileCheck, 
       href: '/admin/compliance-reports',
@@ -176,8 +183,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h1 className="text-base font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
-                      <p className="text-xs text-gray-500 leading-tight mt-0.5">Gordon College DEIU</p>
+                      <h1 className="text-xl font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
                     </div>
                   </div>
                 )}
@@ -221,7 +227,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                         "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
                         sidebarCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
                         active
-                          ? "bg-[#16A34A] text-white shadow-md"
+                          ? "bg-[#1D9E75] text-white shadow-md"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       )}
                       title={sidebarCollapsed ? item.label : undefined}
@@ -285,7 +291,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <div className="h-8 w-px bg-gray-200" />
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center">
                       <User className="h-4 w-4 text-white" />
                     </div>
                     <div className="hidden md:block">

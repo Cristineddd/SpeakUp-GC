@@ -9,8 +9,12 @@ import { AlertCircle, Bell, Shield } from 'lucide-react';
 
 const Settings = () => {
   return (
-    <div className="space-y-6 p-6">
-      <h2 className="text-lg sm:text-2xl md:text-3xl font-bold tracking-tight">Admin Settings</h2>
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Configuration</p>
+        <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+        <p className="text-sm text-gray-500 mt-1">Configure system preferences and security</p>
+      </div>
 
       {/* Notification Settings */}
       <Card>

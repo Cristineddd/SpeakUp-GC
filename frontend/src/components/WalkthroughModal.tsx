@@ -199,8 +199,8 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   // Color tokens (light green theme matching Landing page)
   const colors = {
     // Primary green
-    primary: "#1a7a45",
-    primaryHover: "#155f36",
+    primary: "#1D9E75",
+    primaryHover: "#178F65",
     primaryLight: "rgba(26, 122, 69, 0.08)",
     primaryBorder: "rgba(26, 122, 69, 0.2)",
     // Text
@@ -212,7 +212,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     modalBg: "#ffffff",
     inputBg: "#f5f9f7",
     inputBorder: "#d4e4db",
-    inputFocus: "#1a7a45",
+    inputFocus: "#1D9E75",
     cardBg: "#f0f7f3",
     cardBorder: "#d4e4db",
     divider: "#e2ece7",

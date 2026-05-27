@@ -783,7 +783,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#16A34A] border-t-transparent mx-auto mb-3" />
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1D9E75] border-t-transparent mx-auto mb-3" />
           <p className="text-sm text-gray-500">Loading case details...</p>
         </div>
       </div>
@@ -853,7 +853,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Shield className="h-5 w-5 text-[#16A34A]" />
+              <Shield className="h-5 w-5 text-[#1D9E75]" />
             </div>
             <div>
               <p className="text-xs font-medium text-gray-500 mb-0.5">Case ID</p>
@@ -884,16 +884,16 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 <React.Fragment key={stage.key}>
                   <div className="flex flex-col items-center">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                      done ? 'bg-[#16A34A] border-[#16A34A] text-white' :
-                      active ? 'bg-white border-[#16A34A] text-[#16A34A]' :
+                      done ? 'bg-[#1D9E75] border-[#1D9E75] text-white' :
+                      active ? 'bg-white border-[#1D9E75] text-[#1D9E75]' :
                       'bg-white border-gray-300 text-gray-400'
                     }`}>
                       {done ? <CheckCircle className="h-3 w-3" /> : <span className="text-[9px]">{idx + 1}</span>}
                     </div>
-                    <span className={`text-[9px] mt-1 font-medium hidden sm:block ${active ? 'text-[#16A34A]' : done ? 'text-gray-600' : 'text-gray-400'}`}>{stage.label}</span>
+                    <span className={`text-[9px] mt-1 font-medium hidden sm:block ${active ? 'text-[#1D9E75]' : done ? 'text-gray-600' : 'text-gray-400'}`}>{stage.label}</span>
                   </div>
                   {idx < stageSteps.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-1 ${idx < currentStageIdx || complaint.status === ComplaintStatus.RESOLVED ? 'bg-[#16A34A]' : 'bg-gray-200'}`} />
+                    <div className={`flex-1 h-0.5 mx-1 ${idx < currentStageIdx || complaint.status === ComplaintStatus.RESOLVED ? 'bg-[#1D9E75]' : 'bg-gray-200'}`} />
                   )}
                 </React.Fragment>
               );
@@ -905,7 +905,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           </div>
           <div className="w-full bg-white/60 rounded-full h-2 mt-1 border border-gray-200">
             <div
-              className={`h-2 rounded-full transition-all duration-700 ${complaint.status === ComplaintStatus.DISMISSED ? 'bg-red-400' : 'bg-[#16A34A]'}`}
+              className={`h-2 rounded-full transition-all duration-700 ${complaint.status === ComplaintStatus.DISMISSED ? 'bg-red-400' : 'bg-[#1D9E75]'}`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -913,7 +913,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
         {/* Legal notice */}
         <div className="mt-3 flex items-start gap-2 p-2.5 bg-white/70 border border-white rounded-xl text-xs text-gray-600">
-          <Shield className="h-3.5 w-3.5 text-[#16A34A] flex-shrink-0 mt-0.5" />
+          <Shield className="h-3.5 w-3.5 text-[#1D9E75] flex-shrink-0 mt-0.5" />
           <span>This complaint is filed under the <strong>Safe Spaces Act (RA 11313)</strong> and/or the <strong>Anti-Sexual Harassment Act (RA 7877)</strong>. Anti-retaliation protections apply to all parties.</span>
         </div>
       </div>
@@ -937,7 +937,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               <select
                 value={timelineSortOrder}
                 onChange={(e) => setTimelineSortOrder(e.target.value as 'latest' | 'oldest')}
-                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/20"
               >
                 <option value="latest">Latest First</option>
                 <option value="oldest">Oldest First</option>
@@ -953,7 +953,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                       <div className="absolute left-[18px] top-9 w-0.5 bottom-0 bg-gray-100" />
                     )}
                     <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm border-2 z-10 ${
-                      event.isProjected ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-[#16A34A] border-[#16A34A] text-white'
+                      event.isProjected ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-[#1D9E75] border-[#1D9E75] text-white'
                     }`}>
                       <Icon className="h-4 w-4" />
                     </div>
@@ -1006,7 +1006,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   return (
                     <div key={activity.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
                       <div className="flex-shrink-0 mt-0.5">
-                        <div className="w-2 h-2 rounded-full bg-[#16A34A] mt-1.5" />
+                        <div className="w-2 h-2 rounded-full bg-[#1D9E75] mt-1.5" />
                       </div>
                       <div className="flex-grow min-w-0">
                         <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
@@ -1017,8 +1017,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                         </div>
                         <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
                         {activity.findings && (
-                          <div className="mt-2 bg-[#16A34A]/5 border-l-4 border-[#16A34A] rounded-r-lg p-3">
-                            <p className="text-xs font-semibold text-[#15803D] mb-0.5">Key Findings:</p>
+                          <div className="mt-2 bg-[#1D9E75]/5 border-l-4 border-[#1D9E75] rounded-r-lg p-3">
+                            <p className="text-xs font-semibold text-[#178F65] mb-0.5">Key Findings:</p>
                             <p className="text-xs text-gray-700">{activity.findings}</p>
                           </div>
                         )}
@@ -1066,7 +1066,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           {/* Incident Details */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-[#16A34A]" />
+              <Calendar className="h-4 w-4 text-[#1D9E75]" />
               Incident Details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1106,7 +1106,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           {/* Description */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-[#16A34A]" />
+              <FileText className="h-4 w-4 text-[#1D9E75]" />
               Complaint Description
             </h3>
             {complaint.description && (
@@ -1126,7 +1126,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           {/* Respondent */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User className="h-4 w-4 text-[#16A34A]" />
+              <User className="h-4 w-4 text-[#1D9E75]" />
               Respondent Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1147,7 +1147,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           {/* Personnel & Confidentiality */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Shield className="h-4 w-4 text-[#16A34A]" />
+              <Shield className="h-4 w-4 text-[#1D9E75]" />
               Assigned Personnel
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1172,7 +1172,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           {(complaint.responseDeadline || complaint.investigationStartDeadline || complaint.investigationEndDeadline || complaint.reportSubmissionDeadline) && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-[#16A34A]" />
+                <Clock className="h-4 w-4 text-[#1D9E75]" />
                 Key Dates & Deadlines
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

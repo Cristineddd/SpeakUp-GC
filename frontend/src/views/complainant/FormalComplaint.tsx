@@ -574,6 +574,7 @@ const FormalComplaint = () => {
 
     const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
     const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/mpeg', 'video/quicktime'];
+    const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
     const validFiles: File[] = [];
@@ -583,9 +584,10 @@ const FormalComplaint = () => {
       // Check file type
       const isImage = allowedImageTypes.includes(file.type);
       const isVideo = allowedVideoTypes.includes(file.type);
+      const isDocument = allowedDocTypes.includes(file.type);
 
-      if (!isImage && !isVideo) {
-        invalidFiles.push(`${file.name} (only images and videos allowed)`);
+      if (!isImage && !isVideo && !isDocument) {
+        invalidFiles.push(`${file.name} (only images, videos, and documents allowed)`);
         return;
       }
 
@@ -838,6 +840,7 @@ const FormalComplaint = () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    formData.append('type', 'upload'); // Force public upload type
     
     try {
       console.log(`📤 Uploading ${file.name} to Cloudinary...`);
@@ -1239,7 +1242,7 @@ const FormalComplaint = () => {
                 onChange={(e) => handleInputChange("complainantName", e.target.value)}
                 placeholder="Enter your full legal name"
                 disabled={isAnonymous}
-                className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" : 
                   hasFieldError('complainantName') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
@@ -1264,7 +1267,7 @@ const FormalComplaint = () => {
                 onChange={(e) => handleInputChange("complainantAddress", e.target.value)}
                 placeholder="Street, barangay, city"
                 disabled={isAnonymous}
-                className={`w-full text-sm px-3 py-2 border rounded-lg resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                className={`w-full text-sm px-3 py-2 border rounded-lg resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
                   hasFieldError('complainantAddress') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
@@ -1286,16 +1289,16 @@ const FormalComplaint = () => {
                   disabled={isAnonymous}
                   maxLength={11}
                   inputMode="numeric"
-                  className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                  className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent transition-colors ${
                     isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
                     hasFieldError('complainantContact') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
-                    formData.complainantContact && formData.complainantContact.length === 11 ? "border-green-300 bg-green-50/30" :
+                    formData.complainantContact && formData.complainantContact.length === 11 ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" :
                     "bg-white text-gray-900 border-gray-300"
                   }`}
                 />
                 {formData.complainantContact && formData.complainantContact.length === 11 && !isAnonymous && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
@@ -1308,7 +1311,7 @@ const FormalComplaint = () => {
                 </p>
               )}
               {!isAnonymous && formData.complainantContact && formData.complainantContact.length === 11 && (
-                <p className="text-xs text-green-600 mt-1.5">
+                <p className="text-xs text-[#1D9E75] mt-1.5">
                   ✓ Valid 11-digit phone number
                 </p>
               )}
@@ -1363,7 +1366,7 @@ const FormalComplaint = () => {
                     value={formData.respondentName}
                     onChange={(e) => handleInputChange("respondentName", e.target.value)}
                     placeholder="Enter respondent's full name"
-                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
                   />
                 </div>
 
@@ -1416,7 +1419,7 @@ const FormalComplaint = () => {
                   <span className={`text-xs font-medium ${
                     formData.respondentAddress.trim().length === 0 ? "text-gray-400" :
                     formData.respondentAddress.trim().length < 20 ? "text-red-500" :
-                    "text-green-600"
+                    "text-[#1D9E75]"
                   }`}>
                     {formData.respondentAddress.trim().length >= 20 
                       ? `${formData.respondentAddress.trim().length} chars ✓` 
@@ -1433,7 +1436,7 @@ const FormalComplaint = () => {
                 rows={3}
                 value={formData.respondentAddress}
                 onChange={(e) => handleInputChange("respondentAddress", e.target.value)}
-                className={`w-full text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                className={`w-full text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   unknownRespondent && formData.respondentAddress.trim().length > 0 && formData.respondentAddress.trim().length < 20
                     ? "border-red-400"
                     : "border-gray-300"
@@ -1470,11 +1473,11 @@ const FormalComplaint = () => {
                 }}
                 placeholder="Describe what happened..."
                 rows={5}
-                className={`w-full text-sm px-3 py-2.5 border rounded-lg bg-white text-gray-900 resize-y min-h-[120px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                className={`w-full text-sm px-3 py-2.5 border rounded-lg bg-white text-gray-900 resize-y min-h-[120px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   formData.description.trim().length > 0 && formData.description.trim().length < 20
                     ? "border-red-400"
                     : formData.description.trim().length >= 20
-                    ? "border-green-500"
+                    ? "border-[#1D9E75]"
                     : "border-gray-300"
                 }`}
               />
@@ -1490,7 +1493,7 @@ const FormalComplaint = () => {
                 <span className={`text-xs font-medium ${
                   formData.description.trim().length === 0 ? "text-gray-400" :
                   formData.description.trim().length < 20 ? "text-red-500" :
-                  "text-green-600"
+                  "text-[#1D9E75]"
                 }`}>
                   {formData.description.trim().length >= 20 
                     ? `${formData.description.trim().length} chars ✓` 
@@ -1511,13 +1514,13 @@ const FormalComplaint = () => {
                   value={formData.title}
                   onChange={(e) => { handleInputChange("title", e.target.value); setTitleGenerated(false); }}
                   placeholder="Write or auto-generate a title based on complaint type"
-                  className={`flex-1 text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent ${titleGenerated ? "border-green-500 bg-green-50" : "border-gray-300"}`}
+                  className={`flex-1 text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${titleGenerated ? "border-[#1D9E75] bg-green-50" : "border-gray-300"}`}
                 />
                 <button
                   type="button"
                   onClick={generateTitle}
                   disabled={!formData.type || isGeneratingTitle}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors duration-150 flex-shrink-0"
+                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-[#1D9E75] hover:bg-[#178F65] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors duration-150 flex-shrink-0"
                 >
                   {isGeneratingTitle ? (
                     <>
@@ -1533,7 +1536,7 @@ const FormalComplaint = () => {
                 </button>
               </div>
               {titleGenerated && (
-                <p className="text-xs text-green-600 mt-1">✓ Title generated — you may edit it freely.</p>
+                <p className="text-xs text-[#1D9E75] mt-1">✓ Title generated — you may edit it freely.</p>
               )}
             </div>
 
@@ -1546,7 +1549,7 @@ const FormalComplaint = () => {
                   handleInputChange("type", e.target.value);
                   if (e.target.value !== "other") setOtherTypeDetail("");
                 }}
-                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               >
                 {FORMAL_COMPLAINT_CATEGORIES.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -1558,7 +1561,7 @@ const FormalComplaint = () => {
                   value={otherTypeDetail}
                   onChange={e => setOtherTypeDetail(e.target.value)}
                   placeholder="Please specify the type of complaint"
-                  className="mt-2 w-full text-sm px-3 py-2 border border-green-400 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="mt-2 w-full text-sm px-3 py-2 border border-[#1D9E75]/60 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
                 />
               )}
               <div className="text-xs text-blue-700 mt-1 bg-blue-50 border border-blue-100 rounded px-2 py-1.5 flex items-start gap-1.5">
@@ -1583,17 +1586,17 @@ const FormalComplaint = () => {
                     value={formData.incidentDate}
                     onChange={(e) => handleInputChange("incidentDate", e.target.value)}
                     max={getTodayString()}
-                    className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent transition-colors ${
                       dateError ? "border-red-400 focus:ring-red-500" : 
                       hasFieldError('incidentDate') ? "border-red-300" :
-                      formData.incidentDate ? "border-green-300 bg-green-50/30" :
+                      formData.incidentDate ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" :
                       "border-gray-300"
                     }`}
                     placeholder="Select date"
                   />
                   {formData.incidentDate && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-4 w-4 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -1620,32 +1623,23 @@ const FormalComplaint = () => {
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Time of incident <span className="font-normal text-gray-400">(optional)</span>
                 </label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  <Input
-                    type="time"
-                    value={formData.incidentTime || ""}
-                    onChange={(e) => handleInputChange("incidentTime", e.target.value)}
-                    className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                      formData.incidentTime ? "border-green-300 bg-green-50/30" : "border-gray-300"
-                    }`}
-                    placeholder="Select time"
-                  />
-                  {formData.incidentTime && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="h-4 w-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
+                <Select value={formData.incidentTime || ""} onValueChange={(value) => handleInputChange("incidentTime", value)}>
+                  <SelectTrigger className={`w-full text-sm ${
+                    formData.incidentTime ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" : "border-gray-300"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <SelectValue placeholder="Select time period" />
                     </div>
-                  )}
-                </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AM">Morning (AM)</SelectItem>
+                    <SelectItem value="PM">Afternoon/Evening (PM)</SelectItem>
+                  </SelectContent>
+                </Select>
                 {formData.incidentTime && (
                   <p className="text-xs text-gray-500 mt-1.5">
-                    {new Date(`2000-01-01T${formData.incidentTime}`).toLocaleTimeString('en-US', { 
-                      hour: 'numeric', 
-                      minute: '2-digit',
-                      hour12: true 
-                    })}
+                    {formData.incidentTime === 'AM' ? 'Morning (12:00 AM - 11:59 AM)' : 'Afternoon/Evening (12:00 PM - 11:59 PM)'}
                   </p>
                 )}
               </div>
@@ -1700,14 +1694,14 @@ const FormalComplaint = () => {
                     value={formData.incidentLocation || ""}
                     onChange={(e) => handleInputChange("incidentLocation", e.target.value)}
                     placeholder={locationVicinity === "outside" ? "Barangay, city, or street" : "Building, room, department"}
-                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
                   />
                 )}
               </div>
             </div>
 
-            {/* Map - Collapsed by default */}
-            {locationVicinity !== "online" && (
+            {/* Map - Only show for outside college vicinity */}
+            {locationVicinity === "outside" && (
               <div className="border border-gray-200 rounded-lg p-4">
                 <button
                   type="button"
@@ -1721,7 +1715,7 @@ const FormalComplaint = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {mapCoordinates && (
-                      <span className="text-xs text-green-600 font-medium">✓ Location pinned</span>
+                      <span className="text-xs text-[#1D9E75] font-medium">✓ Location pinned</span>
                     )}
                     <svg
                       className={`h-5 w-5 text-gray-400 transition-transform ${
@@ -1750,6 +1744,15 @@ const FormalComplaint = () => {
                 )}
               </div>
             )}
+            
+            {/* Info message for inside college vicinity */}
+            {locationVicinity === 'inside' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-xs text-blue-700">
+                  <strong>Inside college vicinity:</strong> No need to pin exact location since the incident occurred within the campus.
+                </p>
+              </div>
+            )}
 
             {/* Witnesses + Additional info */}
             <div>
@@ -1761,7 +1764,7 @@ const FormalComplaint = () => {
                 onChange={(e) => handleInputChange("witnesses", e.target.value)}
                 placeholder="List any witnesses with their contact information, if available."
                 rows={2}
-                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               />
             </div>
 
@@ -1774,7 +1777,7 @@ const FormalComplaint = () => {
                 onChange={(e) => handleInputChange("additionalInfo", e.target.value)}
                 placeholder="Any other relevant context or background."
                 rows={2}
-                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               />
             </div>
           </div>
@@ -1784,14 +1787,14 @@ const FormalComplaint = () => {
         return (
           <div className="space-y-4">
             {/* Written Sworn Statement */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-2 mb-2">
-                <FileText className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <FileText className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800">Written Sworn Statement Required</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    You must submit a written sworn statement (sinumpaang salaysay) as a supporting document. 
-                    This is required for the formal processing of your complaint. Upload a photo or scanned copy.
+                  <p className="text-sm font-medium text-blue-800">Written Sworn Statement <span className="font-normal text-blue-600">(Optional)</span></p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    You may submit a written sworn statement (sinumpaang salaysay) as supporting evidence if available. 
+                    This can strengthen your complaint but is not required to proceed.
                   </p>
                 </div>
               </div>
@@ -1816,7 +1819,7 @@ const FormalComplaint = () => {
                 <button
                   type="button"
                   onClick={() => setShowEvidenceModal(true)}
-                  className="bg-[#1a7a45] hover:bg-[#155f36] text-white text-sm px-4 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2 justify-center"
+                  className="bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm px-4 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2 justify-center"
                 >
                   <Cloud className="h-4 w-4" />
                   Add Files or Links
@@ -1826,7 +1829,7 @@ const FormalComplaint = () => {
                 ref={evidenceRef}
                 type="file"
                 multiple
-                accept="image/*,video/mp4,video/webm,video/mpeg"
+                accept="image/*,video/mp4,video/webm,video/mpeg,.pdf,.doc,.docx"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -1900,8 +1903,9 @@ const FormalComplaint = () => {
               <p className="text-xs font-medium text-gray-600">Accepted file types:</p>
               <p className="text-xs text-gray-500">• Images: JPG, PNG, GIF, WEBP, BMP</p>
               <p className="text-xs text-gray-500">• Videos: MP4, WEBM, MPEG</p>
+              <p className="text-xs text-gray-500">• Documents: PDF, DOC, DOCX</p>
               <p className="text-xs text-gray-500">• Maximum 50 MB per file</p>
-              <p className="text-xs text-gray-500 mt-1">Include your <strong>written sworn statement</strong> as one of the files.</p>
+              <p className="text-xs text-blue-600 mt-1">You may include a <strong>written sworn statement</strong> if available.</p>
             </div>
           </div>
         );
@@ -2047,10 +2051,10 @@ const FormalComplaint = () => {
             style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
           >
             <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-              <Shield className="h-4 w-4 text-[#16A34A]" />
+              <Shield className="h-4 w-4 text-[#1D9E75]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#15803D]">Your privacy is protected</p>
+              <p className="text-sm font-semibold text-[#178F65]">Your privacy is protected</p>
               <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
                 All submitted information is handled with strict confidentiality. Your identity will not be disclosed to the respondent without your consent.
               </p>
@@ -2068,8 +2072,8 @@ const FormalComplaint = () => {
                 <React.Fragment key={step}>
                   <div className="flex flex-col items-center min-w-0">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors duration-150 flex-shrink-0 ${
-                      isDone ? "bg-green-600 text-white" :
-                      isActive ? "bg-green-700 text-white ring-2 ring-green-300" :
+                      isDone ? "bg-[#1D9E75] text-white" :
+                      isActive ? "bg-green-700 text-white ring-2 ring-[#1D9E75]/40" :
                       "bg-gray-100 text-gray-400 border border-gray-200"
                     }`}>
                       {isDone ? (
@@ -2089,7 +2093,7 @@ const FormalComplaint = () => {
                     )}
                   </div>
                   {index < STEP_LABELS.length - 1 && (
-                    <div className={`flex-1 h-px mx-1 sm:mx-2 mb-4 sm:mb-5 ${isDone ? "bg-green-500" : "bg-gray-200"}`} />
+                    <div className={`flex-1 h-px mx-1 sm:mx-2 mb-4 sm:mb-5 ${isDone ? "bg-[#1D9E75]" : "bg-gray-200"}`} />
                   )}
                 </React.Fragment>
               );
@@ -2097,7 +2101,7 @@ const FormalComplaint = () => {
           </div>
           <div className="mt-3 bg-gray-100 rounded-full h-1">
             <div
-              className="bg-green-500 h-1 rounded-full transition-all duration-300"
+              className="bg-[#1D9E75] h-1 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep - 1) / (STEP_LABELS.length - 1)) * 100}%` }}
             />
           </div>
@@ -2107,11 +2111,11 @@ const FormalComplaint = () => {
         {isSubmitting && (
           <div className="mb-4 p-4 bg-white border border-gray-200 rounded-xl">
             <div className="flex items-center gap-3 mb-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-600 border-t-transparent" />
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#1D9E75] border-t-transparent" />
               <span className="text-sm text-gray-700">{currentUploadStage}</span>
             </div>
             <div className="bg-gray-100 rounded-full h-1">
-              <div className="bg-green-500 h-1 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              <div className="bg-[#1D9E75] h-1 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
             </div>
             <p className="text-xs text-gray-400 mt-1 text-right">{uploadProgress}%</p>
           </div>
@@ -2128,7 +2132,7 @@ const FormalComplaint = () => {
                 "Your personal details as the complainant.",
                 "Details about the person you are reporting.",
                 "What happened, when, and where.",
-                "Attach your written sworn statement and other supporting files.",
+                "Attach supporting evidence and files (sworn statement optional).",
                 "Confirm all details are accurate before submitting."
               ][currentStep - 1]}
             </p>
@@ -2168,7 +2172,7 @@ const FormalComplaint = () => {
                     }
                   }}
                   disabled={!validateStep(currentStep)}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
+                  className="bg-[#1D9E75] hover:bg-[#178F65] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
                 >
                   Continue
                 </button>
@@ -2184,7 +2188,7 @@ const FormalComplaint = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2"
+                className="bg-[#1D9E75] hover:bg-[#178F65] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -2218,8 +2222,8 @@ const FormalComplaint = () => {
                 {/* Full Name */}
                 <div className="flex items-start gap-2">
                   {formData.complainantName || isAnonymous ? (
-                    <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -2231,7 +2235,7 @@ const FormalComplaint = () => {
                     {isAnonymous ? (
                       <p className="text-xs text-gray-500 italic">Anonymous</p>
                     ) : formData.complainantName ? (
-                      <p className="text-xs text-green-600 truncate">{formData.complainantName}</p>
+                      <p className="text-xs text-[#1D9E75] truncate">{formData.complainantName}</p>
                     ) : (
                       <p className="text-xs text-gray-400">Not filled</p>
                     )}
@@ -2241,8 +2245,8 @@ const FormalComplaint = () => {
                 {/* Complete Address */}
                 <div className="flex items-start gap-2">
                   {formData.complainantAddress ? (
-                    <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -2252,7 +2256,7 @@ const FormalComplaint = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-700">Complete Address</p>
                     {formData.complainantAddress ? (
-                      <p className="text-xs text-green-600 line-clamp-2">{formData.complainantAddress}</p>
+                      <p className="text-xs text-[#1D9E75] line-clamp-2">{formData.complainantAddress}</p>
                     ) : (
                       <p className="text-xs text-gray-400">Not filled</p>
                     )}
@@ -2262,8 +2266,8 @@ const FormalComplaint = () => {
                 {/* Contact Number */}
                 <div className="flex items-start gap-2">
                   {formData.complainantContact ? (
-                    <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -2273,7 +2277,7 @@ const FormalComplaint = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-700">Contact Number</p>
                     {formData.complainantContact ? (
-                      <p className="text-xs text-green-600">{formData.complainantContact}</p>
+                      <p className="text-xs text-[#1D9E75]">{formData.complainantContact}</p>
                     ) : (
                       <p className="text-xs text-gray-400">Not filled</p>
                     )}
@@ -2284,8 +2288,8 @@ const FormalComplaint = () => {
                 {currentStep >= 2 && (
                   <div className="flex items-start gap-2">
                     {formData.respondentName ? (
-                      <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -2295,7 +2299,7 @@ const FormalComplaint = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-700">Respondent Info</p>
                       {formData.respondentName ? (
-                        <p className="text-xs text-green-600 truncate">{formData.respondentName}</p>
+                        <p className="text-xs text-[#1D9E75] truncate">{formData.respondentName}</p>
                       ) : (
                         <p className="text-xs text-gray-400">Not filled</p>
                       )}
@@ -2307,8 +2311,8 @@ const FormalComplaint = () => {
                 {currentStep >= 3 && (
                   <div className="flex items-start gap-2">
                     {formData.description && formData.incidentDate ? (
-                      <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -2319,12 +2323,12 @@ const FormalComplaint = () => {
                       <p className="text-xs font-medium text-gray-700">Incident Details</p>
                       {formData.description && formData.incidentDate ? (
                         <div>
-                          <p className="text-xs text-green-600 font-medium">
+                          <p className="text-xs text-[#1D9E75] font-medium">
                             {FORMAL_COMPLAINT_CATEGORIES.find(c => c.value === formData.type)?.label || "Incident"}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             {new Date(formData.incidentDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            {formData.incidentTime && ` • ${new Date(`2000-01-01T${formData.incidentTime}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`}
+                            {formData.incidentTime && ` • ${formData.incidentTime === 'AM' ? 'Morning' : 'Afternoon/Evening'}`}
                           </p>
                         </div>
                       ) : (
@@ -2338,8 +2342,8 @@ const FormalComplaint = () => {
                 {currentStep >= 4 && (
                   <div className="flex items-start gap-2">
                     {(formData.evidence.length > 0 || evidenceLinks.length > 0) ? (
-                      <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-4 h-4 rounded-full bg-[#1D9E75]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -2349,7 +2353,7 @@ const FormalComplaint = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-700">Supporting Files</p>
                       {(formData.evidence.length > 0 || evidenceLinks.length > 0) ? (
-                        <p className="text-xs text-green-600">
+                        <p className="text-xs text-[#1D9E75]">
                           {formData.evidence.length} file(s){evidenceLinks.length > 0 && `, ${evidenceLinks.length} link(s)`}
                         </p>
                       ) : (
@@ -2362,22 +2366,22 @@ const FormalComplaint = () => {
             </div>
 
             {/* Privacy Reassurance Box */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="bg-green-50 border border-[#1D9E75]/25 rounded-xl p-4">
               <div className="flex items-start gap-2 mb-2">
-                <Shield className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                <h4 className="text-xs font-bold text-green-900">Your information is safe</h4>
+                <Shield className="h-4 w-4 text-[#1D9E75] flex-shrink-0 mt-0.5" />
+                <h4 className="text-xs font-bold text-[#0D5F47]">Your information is safe</h4>
               </div>
-              <ul className="space-y-1.5 text-xs text-green-700">
+              <ul className="space-y-1.5 text-xs text-[#178F65]">
                 <li className="flex items-start gap-1.5">
-                  <span className="text-green-600 mt-0.5">•</span>
+                  <span className="text-[#1D9E75] mt-0.5">•</span>
                   <span>All submitted data is encrypted</span>
                 </li>
                 <li className="flex items-start gap-1.5">
-                  <span className="text-green-600 mt-0.5">•</span>
+                  <span className="text-[#1D9E75] mt-0.5">•</span>
                   <span>Your identity will not be disclosed to the respondent without your consent</span>
                 </li>
                 <li className="flex items-start gap-1.5">
-                  <span className="text-green-600 mt-0.5">•</span>
+                  <span className="text-[#1D9E75] mt-0.5">•</span>
                   <span>Reference your case by Case ID only if you choose to be anonymous</span>
                 </li>
               </ul>

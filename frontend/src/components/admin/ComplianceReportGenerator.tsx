@@ -562,8 +562,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center shadow-sm">
-                <FileText className="h-6 w-6 text-green-600" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E1F5EE' }}>
+                <FileText className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
               <div>
                 <CardTitle className="text-xl">Generate Compliance Report</CardTitle>
@@ -572,10 +572,10 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                 </CardDescription>
               </div>
             </div>
-            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              <Shield className="h-3 w-3 mr-1" />
-              GDPR Compliant
-            </Badge>
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Shield className="h-3.5 w-3.5" style={{ color: '#1D9E75' }} />
+              <span className="font-medium">GDPR Compliant</span>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -598,7 +598,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                 </div>
                 <SelectItem value="monthly_summary">
                   <div className="flex items-start gap-3 py-1">
-                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <FileText className="h-4 w-4 mt-0.5 text-gray-500" />
                     <div>
                       <div className="font-medium">{REPORT_TYPE_LABELS.monthly_summary}</div>
                       <div className="text-xs text-gray-500 mt-0.5">Comprehensive monthly overview</div>
@@ -607,7 +607,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                 </SelectItem>
                 <SelectItem value="quarterly_summary">
                   <div className="flex items-start gap-3 py-1">
-                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <FileText className="h-4 w-4 mt-0.5 text-gray-500" />
                     <div>
                       <div className="font-medium">{REPORT_TYPE_LABELS.quarterly_summary}</div>
                       <div className="text-xs text-gray-500 mt-0.5">90-day performance trends</div>
@@ -616,7 +616,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                 </SelectItem>
                 <SelectItem value="annual_summary">
                   <div className="flex items-start gap-3 py-1">
-                    <FileText className="h-4 w-4 mt-0.5 text-green-600" />
+                    <FileText className="h-4 w-4 mt-0.5 text-gray-500" />
                     <div>
                       <div className="font-medium">{REPORT_TYPE_LABELS.annual_summary}</div>
                       <div className="text-xs text-gray-500 mt-0.5">Year-over-year comparisons</div>
@@ -684,8 +684,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
 
           {/* Report Type Info */}
           {['monthly_summary', 'quarterly_summary', 'annual_summary'].includes(reportType) ? (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="text-sm text-green-800">
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="text-sm text-gray-700">
                 <strong>ℹ️ Complete Report:</strong> This report includes all available analyses (Frequency, Trends, Resolution Metrics, and Staff Performance).
               </div>
             </div>
@@ -744,9 +744,9 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           )}
 
           {/* Privacy Settings */}
-          <div className="space-y-4 p-5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
-            <div className="flex items-center gap-2 text-sm font-semibold text-green-900">
-              <Shield className="h-4 w-4 text-green-600" />
+          <div className="space-y-4 p-5 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Shield className="h-4 w-4" style={{ color: '#1D9E75' }} />
               Privacy & Compliance Settings
             </div>
 
@@ -794,7 +794,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           <Button
             onClick={handleGenerateReport}
             disabled={generating}
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full text-white"
+            style={{ backgroundColor: '#1D9E75' }}
             size="lg"
           >
             {generating ? (
@@ -820,7 +821,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
               <div>
                 <CardTitle className="flex items-center gap-2">
                   Report Generated Successfully
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                     {REPORT_TYPE_LABELS[generatedReport.reportType]}
                   </Badge>
                 </CardTitle>
@@ -846,7 +847,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                   <div className="space-y-4 mt-4">
                     {/* Export All - Primary Option */}
                     <Button 
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      className="w-full text-white"
+                      style={{ backgroundColor: '#1D9E75' }}
                       onClick={() => handleExportAll()}
                       disabled={!generatedReport}
                     >
@@ -909,42 +911,42 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           <CardContent>
             {/* Summary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-5 bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl">
-                <div className="text-3xl font-bold text-green-900">
+              <div className="p-5 bg-white border border-gray-200 rounded-xl">
+                <div className="text-3xl font-bold text-gray-900">
                   {generatedReport.summary.totalIncidents}
                 </div>
-                <div className="text-sm text-green-600 font-medium mt-1">Total Incidents</div>
+                <div className="text-sm text-gray-500 font-medium mt-1">Total Incidents</div>
               </div>
-              <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl">
-                <div className="text-3xl font-bold text-emerald-900">
+              <div className="p-5 bg-white border border-gray-200 rounded-xl">
+                <div className="text-3xl font-bold text-gray-900">
                   {generatedReport.summary.resolvedIncidents}
                 </div>
-                <div className="text-sm text-emerald-600 font-medium mt-1">Resolved</div>
+                <div className="text-sm text-gray-500 font-medium mt-1">Resolved</div>
               </div>
-              <div className="p-5 bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl">
-                <div className="text-3xl font-bold text-amber-900">
+              <div className="p-5 bg-white border border-gray-200 rounded-xl">
+                <div className="text-3xl font-bold text-gray-900">
                   {generatedReport.summary.inProgressIncidents}
                 </div>
                 <div className="text-sm text-amber-600 font-medium mt-1">In Progress</div>
               </div>
-              <div className="p-5 bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200 rounded-xl">
-                <div className="text-3xl font-bold text-teal-900">
+              <div className="p-5 bg-white border border-gray-200 rounded-xl">
+                <div className="text-3xl font-bold text-gray-900">
                   {generatedReport.summary.resolutionRate.toFixed(1)}%
                 </div>
-                <div className="text-sm text-teal-600 font-medium mt-1">Resolution Rate</div>
+                <div className="text-sm text-gray-500 font-medium mt-1">Resolution Rate</div>
               </div>
             </div>
 
             {/* Compliance Badges */}
             <div className="flex flex-wrap gap-2 mt-4">
               {generatedReport.dataPrivacyCompliant && (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                   <Shield className="h-3 w-3 mr-1" />
                   Privacy Compliant
                 </Badge>
               )}
               {generatedReport.anonymized && (
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
                   Data Anonymized
                 </Badge>
               )}

@@ -215,7 +215,7 @@ export default function CaseHandlerDashboard() {
             <Button
               size="sm"
               onClick={() => navigate("/admin/reports")}
-              className="bg-[#16A34A] hover:bg-[#15803D] text-white flex items-center gap-2"
+              className="bg-[#1D9E75] hover:bg-[#178F65] text-white flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
               All Reports
@@ -275,14 +275,14 @@ export default function CaseHandlerDashboard() {
                   placeholder="Search cases…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16A34A]/40 bg-white"
+                  className="pl-9 pr-4 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/40 bg-white"
                 />
               </div>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16A34A]" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9E75]" />
               </div>
             ) : filtered.length === 0 ? (
               <Card className="bg-white">
@@ -322,7 +322,7 @@ export default function CaseHandlerDashboard() {
                       </Button>
                       <Button
                         size="sm"
-                        className="text-xs bg-[#16A34A] hover:bg-[#15803D] text-white"
+                        className="text-xs bg-[#1D9E75] hover:bg-[#178F65] text-white"
                         onClick={() => navigate(`/case-chat/${c.id}`)}
                       >
                         <MessageSquare className="w-3.5 h-3.5 mr-1" />
@@ -353,7 +353,7 @@ export default function CaseHandlerDashboard() {
                   <Bell className="w-4 h-4" />
                   Notifications
                   {unreadCount > 0 && (
-                    <Badge className="bg-[#16A34A] text-white text-xs ml-auto">
+                    <Badge className="bg-[#1D9E75] text-white text-xs ml-auto">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </Badge>
                   )}

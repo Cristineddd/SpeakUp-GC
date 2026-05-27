@@ -296,8 +296,8 @@ export default function Dashboard() {
   const todaysTip = dailyTips[getDayOfYear() % dailyTips.length];
 
   return (
-    // ─── Page background: light green-tinted (applied at layout level) ───
-    <div className="min-h-full">
+    // ─── Page background: light green tint (matches sidebar active color) ───
+    <div className="min-h-full" style={{ backgroundColor: '#F0FAF6' }}>
       <ProfileSetupModal
         isOpen={showProfileSetup}
         onComplete={(completedAlias?: string) => {
@@ -312,13 +312,13 @@ export default function Dashboard() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, <span className="text-[#16A34A]">{userName}</span>
+              Welcome back, <span className="text-[#1D9E75]">{userName}</span>
             </h1>
             <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
           </div>
           <button
             onClick={() => navigate("/notifications")}
-            className="relative p-2.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+            className="relative p-2.5 hover:bg-green-50 rounded-lg transition-colors flex-shrink-0"
             aria-label="Notifications"
           >
             <Bell className="h-5 w-5 text-gray-700" />
@@ -335,10 +335,10 @@ export default function Dashboard() {
             style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
           >
             <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-              <Lock className="h-4 w-4 text-[#16A34A]" />
+              <Lock className="h-4 w-4 text-[#1D9E75]" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-[#15803D]">Your privacy is protected</p>
+              <p className="text-sm font-semibold text-[#178F65]">Your privacy is protected</p>
               <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
                 All complaints are handled with strict confidentiality by the DEIU office.
                 Your identity is <strong>never disclosed</strong> to respondents without your consent.
@@ -350,7 +350,7 @@ export default function Dashboard() {
               className="shrink-0 p-1 hover:bg-green-200/50 rounded-lg transition-colors"
               aria-label="Dismiss"
             >
-              <X className="h-4 w-4 text-[#15803D]" />
+              <X className="h-4 w-4 text-[#178F65]" />
             </button>
           </div>
         )}
@@ -367,9 +367,9 @@ export default function Dashboard() {
               <div
                 key={stat.label}
                 className="bg-white rounded-xl p-3 sm:p-4 flex flex-col items-center text-center"
-                style={{ border: "0.5px solid #e5e7eb" }}
+                style={{ border: "1px solid #B8E6D5" }}
               >
-                <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-[#16a34a] mb-2 sm:mb-3" strokeWidth={1.5} />
+                <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-[#1D9E75] mb-2 sm:mb-3" strokeWidth={1.5} />
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
               </div>
@@ -398,7 +398,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate("/complaints")}
-                    className="text-xs text-[#16A34A] hover:text-[#15803D] font-medium flex items-center gap-1"
+                    className="text-xs text-[#1D9E75] hover:text-[#178F65] font-medium flex items-center gap-1"
                   >
                     View all ({total}) <ArrowRight className="h-3 w-3" />
                   </button>
@@ -408,7 +408,7 @@ export default function Dashboard() {
               <div className="p-4 min-h-[240px]">
                 {loading ? (
                   <div className="flex items-center justify-center h-full py-16">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#16A34A]" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9E75]" />
                   </div>
                 ) : recentComplaints.length > 0 ? (
                   <div className="space-y-2">
@@ -424,7 +424,7 @@ export default function Dashboard() {
                       >
                         <div className="flex items-start gap-3">
                           <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-                            <FileText className="h-4 w-4 text-[#16A34A]" />
+                            <FileText className="h-4 w-4 text-[#1D9E75]" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -469,7 +469,7 @@ export default function Dashboard() {
                       className="rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
                       style={{ background: "#DCFCE7" }}
                     >
-                      <Shield className="h-8 w-8 text-[#16A34A]" />
+                      <Shield className="h-8 w-8 text-[#1D9E75]" />
                     </div>
                     <p className="text-gray-800 font-semibold text-sm">You're all set — we're here when you need us</p>
                     <p className="text-xs text-gray-400 mt-2 max-w-xs leading-relaxed">
@@ -479,7 +479,7 @@ export default function Dashboard() {
                     <Button
                       size="sm"
                       onClick={() => navigate("/complaints/new")}
-                      className="mt-5 bg-[#16A34A] hover:bg-[#15803D] text-white px-5"
+                      className="mt-5 bg-[#1D9E75] hover:bg-[#178F65] text-white px-5"
                     >
                       <Plus className="h-4 w-4 mr-1.5" /> File a Complaint
                     </Button>
@@ -508,7 +508,7 @@ export default function Dashboard() {
                   </div>
                   <button
                     onClick={() => navigate("/know-your-rights")}
-                    className="w-full mt-3 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="w-full mt-3 py-2.5 rounded-lg border border-green-200 text-sm font-medium text-gray-700 hover:bg-green-50 transition-colors"
                   >
                     Learn More About Your Rights
                   </button>
@@ -544,7 +544,7 @@ export default function Dashboard() {
                     >
                       <div
                         className="rounded-full w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold"
-                        style={{ background: "#DCFCE7", color: "#16A34A" }}
+                        style={{ background: "#DCFCE7", color: "#1D9E75" }}
                       >
                         {item.step}
                       </div>
@@ -571,7 +571,7 @@ export default function Dashboard() {
                     <Bell className="h-4 w-4 text-gray-400" />
                     Notifications
                     {unreadCount > 0 && (
-                      <span className="bg-[#16A34A] text-white text-xs rounded-full px-2 py-0.5 font-medium">
+                      <span className="bg-[#1D9E75] text-white text-xs rounded-full px-2 py-0.5 font-medium">
                         {unreadCount > 9 ? "9+" : unreadCount}
                       </span>
                     )}
@@ -579,7 +579,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => navigate("/notifications")}
-                    className="text-xs text-[#16A34A] hover:text-[#15803D] font-medium"
+                    className="text-xs text-[#1D9E75] hover:text-[#178F65] font-medium"
                   >
                     See all
                   </button>
@@ -609,7 +609,7 @@ export default function Dashboard() {
                             <div className="flex items-start gap-2">
                               <div
                                 className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                                style={{ background: isUnread ? "#16A34A" : "#D1D5DB" }}
+                                style={{ background: isUnread ? "#1D9E75" : "#D1D5DB" }}
                               />
                               <div className="min-w-0">
                                 <p className="text-xs font-medium text-gray-800 leading-snug">{n.message || n.title}</p>
@@ -641,7 +641,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => navigate("/chat")}
-                  className="text-xs text-[#16A34A] hover:text-[#15803D] font-medium"
+                  className="text-xs text-[#1D9E75] hover:text-[#178F65] font-medium"
                 >
                   See all
                 </button>
@@ -670,7 +670,7 @@ export default function Dashboard() {
                             <p className="text-xs text-gray-400 mt-0.5 truncate">{preview}</p>
                           </div>
                           {unread > 0 && (
-                            <span className="bg-[#16A34A] text-white text-xs rounded-full px-1.5 py-0.5 font-medium shrink-0">
+                            <span className="bg-[#1D9E75] text-white text-xs rounded-full px-1.5 py-0.5 font-medium shrink-0">
                               {unread > 9 ? "9+" : unread}
                             </span>
                           )}

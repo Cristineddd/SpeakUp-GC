@@ -83,7 +83,7 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
           </Button>
           <Button
             onClick={onExtend}
-            className="flex-1 bg-[#1a7a45] hover:bg-[#155f36] text-white font-semibold"
+            className="flex-1 bg-[#1D9E75] hover:bg-[#178F65] text-white font-semibold"
           >
             Stay Logged In
           </Button>

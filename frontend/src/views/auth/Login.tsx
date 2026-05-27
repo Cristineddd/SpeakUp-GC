@@ -163,17 +163,17 @@ const Login = () => {
 
   if (isLoading && !isEmailLoading && !isGoogleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a7a45]">
+      <div className="min-h-screen flex items-center justify-center bg-[#1D9E75]">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#1a7a45] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#1D9E75] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#155f36] opacity-60 blur-3xl" />
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#178F65] opacity-60 blur-3xl" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#22a05a] opacity-40 blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[#176840] opacity-30 blur-3xl" />
         <div className="absolute top-[10%] right-[15%] w-16 h-16 rounded-xl bg-white/5 rotate-12 animate-pulse" />
@@ -219,7 +219,7 @@ const Login = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full h-11 px-3 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1a7a45] transition-all"
+                className="w-full h-11 px-3 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1D9E75] transition-all"
                 placeholder="you@email.com"
                 required
                 disabled={isEmailLoading || isGoogleLoading}
@@ -236,7 +236,7 @@ const Login = () => {
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => handleChange("password", e.target.value)}
-                  className="w-full h-11 px-3 pr-10 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1a7a45] transition-all"
+                  className="w-full h-11 px-3 pr-10 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1D9E75] transition-all"
                   placeholder="Enter your password"
                   required
                   disabled={isEmailLoading || isGoogleLoading}
@@ -252,7 +252,7 @@ const Login = () => {
               </div>
               <Link
                 to="/forgot-password"
-                className="text-xs text-[#1a7a45] hover:underline"
+                className="text-xs text-[#1D9E75] hover:underline"
               >
                 Forgot your password?
               </Link>
@@ -262,7 +262,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isEmailLoading || isGoogleLoading}
-              className="w-full h-11 bg-[#1a7a45] hover:bg-[#155f36] text-white font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full h-11 bg-[#1D9E75] hover:bg-[#178F65] text-white font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {isEmailLoading ? (
                 <>

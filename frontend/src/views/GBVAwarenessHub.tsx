@@ -95,7 +95,7 @@ const POLICY_ITEMS = [
 // ─── Color maps ──────────────────────────────────────────────────────────────
 
 const WELL_COLORS: Record<string, { bg:string; border:string; icon:string }> = {
-  green:   { bg:"bg-green-50",   border:"border-green-200",   icon:"text-[#16A34A]"   },
+  green:   { bg:"bg-green-50",   border:"border-green-200",   icon:"text-[#1D9E75]"   },
   rose:    { bg:"bg-rose-50",    border:"border-rose-200",    icon:"text-rose-600"    },
   blue:    { bg:"bg-blue-50",    border:"border-blue-200",    icon:"text-blue-600"    },
   amber:   { bg:"bg-amber-50",   border:"border-amber-200",   icon:"text-amber-600"   },
@@ -105,7 +105,7 @@ const WELL_COLORS: Record<string, { bg:string; border:string; icon:string }> = {
 };
 
 const ACT_COLORS: Record<string, { card:string; badge:string; icon:string; toggle:string }> = {
-  green:   { card:"bg-green-50 border-green-200",     badge:"bg-[#16A34A] text-white",   icon:"bg-green-100 text-[#16A34A]",     toggle:"text-[#16A34A] bg-green-100 hover:bg-green-200"      },
+  green:   { card:"bg-green-50 border-green-200",     badge:"bg-[#1D9E75] text-white",   icon:"bg-green-100 text-[#1D9E75]",     toggle:"text-[#1D9E75] bg-green-100 hover:bg-green-200"      },
   emerald: { card:"bg-emerald-50 border-emerald-200", badge:"bg-emerald-600 text-white", icon:"bg-emerald-100 text-emerald-700", toggle:"text-emerald-700 bg-emerald-100 hover:bg-emerald-200" },
   blue:    { card:"bg-blue-50 border-blue-200",       badge:"bg-blue-600 text-white",    icon:"bg-blue-100 text-blue-700",       toggle:"text-blue-700 bg-blue-100 hover:bg-blue-200"         },
   rose:    { card:"bg-rose-50 border-rose-200",       badge:"bg-rose-600 text-white",    icon:"bg-rose-100 text-rose-700",       toggle:"text-rose-700 bg-rose-100 hover:bg-rose-200"         },
@@ -116,7 +116,7 @@ const HOTLINE_CONFIG = {
   emergency: { label:"Emergency", bg:"bg-red-600",    light:"bg-red-50 border-red-200",       text:"text-red-900",    sub:"text-red-600"     },
   support:   { label:"Support",   bg:"bg-orange-500", light:"bg-orange-50 border-orange-200", text:"text-orange-900", sub:"text-orange-600"  },
   legal:     { label:"Legal Aid", bg:"bg-blue-600",   light:"bg-blue-50 border-blue-200",     text:"text-blue-900",   sub:"text-blue-600"    },
-  school:    { label:"GC Office", bg:"bg-[#16A34A]",  light:"bg-emerald-50 border-emerald-200", text:"text-emerald-900", sub:"text-emerald-700" },
+  school:    { label:"GC Office", bg:"bg-[#1D9E75]",  light:"bg-emerald-50 border-emerald-200", text:"text-emerald-900", sub:"text-emerald-700" },
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ function LegalActCard({ act, expanded, onToggle }: { act: LegalAct; expanded: bo
             <div className="space-y-2">
               {act.keyProvisions.map((p, i) => (
                 <div key={i} className="flex items-start gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100 shadow-sm">
-                  <CheckCircle2 className="h-4 w-4 text-[#16A34A] mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-[#1D9E75] mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-gray-700 leading-relaxed">{p}</p>
                 </div>
               ))}
@@ -234,18 +234,18 @@ function FAQAccordion({ items }: { items: FAQItem[] }) {
   return (
     <div className="space-y-3">
       {items.map((item, i) => (
-        <div key={i} className={cn("bg-white border-2 rounded-2xl overflow-hidden transition-all", openIndex === i ? "border-[#16A34A]/40 shadow-sm" : "border-gray-100 hover:border-gray-200")}>
+        <div key={i} className={cn("bg-white border-2 rounded-2xl overflow-hidden transition-all", openIndex === i ? "border-[#1D9E75]/40 shadow-sm" : "border-gray-100 hover:border-gray-200")}>
           <button
             onClick={() => setOpenIndex(openIndex === i ? null : i)}
             className="w-full flex items-start justify-between gap-4 px-5 py-4 text-left"
           >
             <div className="flex items-start gap-3 flex-1">
-              <span className={cn("flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 transition-colors", openIndex === i ? "bg-[#16A34A] text-white" : "bg-gray-100 text-gray-500")}>
+              <span className={cn("flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 transition-colors", openIndex === i ? "bg-[#1D9E75] text-white" : "bg-gray-100 text-gray-500")}>
                 {i + 1}
               </span>
               <span className="text-sm font-semibold text-gray-800 leading-snug">{item.question}</span>
             </div>
-            <ChevronDown className={cn("h-5 w-5 flex-shrink-0 mt-0.5 transition-transform", openIndex === i ? "text-[#16A34A] rotate-180" : "text-gray-400")} />
+            <ChevronDown className={cn("h-5 w-5 flex-shrink-0 mt-0.5 transition-transform", openIndex === i ? "text-[#1D9E75] rotate-180" : "text-gray-400")} />
           </button>
           {openIndex === i && (
             <div className="px-5 pb-5">
@@ -298,21 +298,21 @@ function PolicyCard({ item }: { item: typeof POLICY_ITEMS[0] }) {
   const [expanded, setExpanded] = useState(false);
   const Icon = item.icon;
   return (
-    <div className={cn("bg-white border-2 rounded-2xl overflow-hidden transition-all", expanded ? "border-[#16A34A]/40 shadow-sm" : "border-gray-100")}>
+    <div className={cn("bg-white border-2 rounded-2xl overflow-hidden transition-all", expanded ? "border-[#1D9E75]/40 shadow-sm" : "border-gray-100")}>
       <div className="p-5">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#F0FDF4] border border-[#16A34A]/20 flex items-center justify-center flex-shrink-0">
-            <Icon className="h-6 w-6 text-[#16A34A]" />
+          <div className="w-12 h-12 rounded-2xl bg-[#F0FDF4] border border-[#1D9E75]/20 flex items-center justify-center flex-shrink-0">
+            <Icon className="h-6 w-6 text-[#1D9E75]" />
           </div>
           <div className="flex-1">
-            <p className="text-xs font-bold text-[#16A34A] uppercase tracking-wide mb-0.5">{item.subtitle}</p>
+            <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-wide mb-0.5">{item.subtitle}</p>
             <h3 className="text-base font-bold text-gray-900 mb-2">{item.title}</h3>
             <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
           </div>
         </div>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-[#16A34A] bg-[#F0FDF4] hover:bg-green-100 transition-colors px-4 py-2.5 rounded-xl w-full"
+          className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-[#1D9E75] bg-[#F0FDF4] hover:bg-green-100 transition-colors px-4 py-2.5 rounded-xl w-full"
         >
           <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} />
           {expanded ? "Show less" : "View details"}
@@ -322,7 +322,7 @@ function PolicyCard({ item }: { item: typeof POLICY_ITEMS[0] }) {
         <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 space-y-2">
           {item.details.map((d, i) => (
             <div key={i} className="flex items-start gap-3 bg-white rounded-xl px-4 py-3 border border-gray-100">
-              <CheckCircle2 className="h-4 w-4 text-[#16A34A] mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-[#1D9E75] mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-700 leading-relaxed">{d}</p>
             </div>
           ))}
@@ -386,7 +386,7 @@ export default function GBVAwarenessHub() {
             <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
               <button
                 onClick={() => navigate("/complaints/new")}
-                className="flex items-center gap-2 bg-white text-[#15803D] text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-green-50 transition-colors shadow-sm whitespace-nowrap"
+                className="flex items-center gap-2 bg-white text-[#178F65] text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-green-50 transition-colors shadow-sm whitespace-nowrap"
               >
                 <FileText className="h-4 w-4" />File a Complaint
               </button>
@@ -410,7 +410,7 @@ export default function GBVAwarenessHub() {
                   className={cn(
                     "flex items-center gap-2 px-4 py-3.5 text-sm font-semibold transition-all whitespace-nowrap border-b-2 flex-shrink-0",
                     active
-                      ? "border-[#16A34A] text-[#16A34A]"
+                      ? "border-[#1D9E75] text-[#1D9E75]"
                       : "border-transparent text-gray-400 hover:text-gray-700 hover:bg-gray-50"
                   )}
                 >
@@ -431,7 +431,7 @@ export default function GBVAwarenessHub() {
           <div className="space-y-6">
             <div className="flex items-start gap-4 bg-green-50 border-2 border-green-200 rounded-2xl p-5">
               <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Info className="h-5 w-5 text-[#16A34A]" />
+                <Info className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div>
                 <p className="text-base font-bold text-green-900 mb-1">Understanding Your Legal Protections</p>
@@ -448,29 +448,29 @@ export default function GBVAwarenessHub() {
         {/* HOW TO REPORT */}
         {activeTab === "reporting" && (
           <div className="space-y-6">
-            <div className="bg-[#F0FDF4] border-2 border-[#16A34A]/25 rounded-2xl p-5">
-              <p className="text-base font-bold text-[#15803D] mb-2">Step-by-Step Reporting Guide</p>
+            <div className="bg-[#F0FDF4] border-2 border-[#1D9E75]/25 rounded-2xl p-5">
+              <p className="text-base font-bold text-[#178F65] mb-2">Step-by-Step Reporting Guide</p>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Reporting can feel overwhelming. This guide walks you through each stage so you know what to expect. You are supported at every step.
               </p>
             </div>
             <div className="relative">
               {/* Vertical connector */}
-              <div className="absolute left-[23px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-[#16A34A] to-[#16A34A]/10 pointer-events-none" />
+              <div className="absolute left-[23px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-[#1D9E75] to-[#1D9E75]/10 pointer-events-none" />
               <div className="space-y-4">
                 {REPORTING_STEPS.map(s => (
                   <div key={s.step} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#16A34A] text-white flex items-center justify-center flex-shrink-0 font-extrabold text-base shadow-md ring-4 ring-white z-10">
+                    <div className="w-12 h-12 rounded-full bg-[#1D9E75] text-white flex items-center justify-center flex-shrink-0 font-extrabold text-base shadow-md ring-4 ring-white z-10">
                       {s.step}
                     </div>
-                    <div className="flex-1 bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-[#16A34A]/20 transition-colors mb-1">
+                    <div className="flex-1 bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-[#1D9E75]/20 transition-colors mb-1">
                       <h3 className="text-base font-bold text-gray-900 mb-2">{s.title}</h3>
                       <p className="text-sm text-gray-600 leading-relaxed mb-4">{s.description}</p>
                       <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">What to do</p>
                         {s.tips.map((tip, i) => (
                           <div key={i} className="flex items-start gap-3">
-                            <CheckCircle2 className="h-4 w-4 text-[#16A34A] mt-0.5 flex-shrink-0" />
+                            <CheckCircle2 className="h-4 w-4 text-[#1D9E75] mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-gray-700 leading-relaxed">{tip}</p>
                           </div>
                         ))}
@@ -482,7 +482,7 @@ export default function GBVAwarenessHub() {
             </div>
             <button
               onClick={() => navigate("/complaints/new")}
-              className="w-full flex items-center justify-center gap-3 bg-[#16A34A] hover:bg-[#15803D] text-white text-base font-bold py-4 rounded-2xl transition-colors shadow-md"
+              className="w-full flex items-center justify-center gap-3 bg-[#1D9E75] hover:bg-[#178F65] text-white text-base font-bold py-4 rounded-2xl transition-colors shadow-md"
             >
               <FileText className="h-5 w-5" />File a Formal Complaint Now<ArrowRight className="h-5 w-5" />
             </button>
@@ -492,8 +492,8 @@ export default function GBVAwarenessHub() {
         {/* FAQs */}
         {activeTab === "faq" && (
           <div className="space-y-6">
-            <div className="bg-[#F0FDF4] border-2 border-[#16A34A]/25 rounded-2xl p-5">
-              <p className="text-base font-bold text-[#15803D] mb-2">Frequently Asked Questions</p>
+            <div className="bg-[#F0FDF4] border-2 border-[#1D9E75]/25 rounded-2xl p-5">
+              <p className="text-base font-bold text-[#178F65] mb-2">Frequently Asked Questions</p>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Common questions about GBV, harassment, the complaint process, and your rights under Philippine law and Gordon College policy.
               </p>
@@ -501,7 +501,7 @@ export default function GBVAwarenessHub() {
             <FAQAccordion items={FAQ_ITEMS} />
             <div className="bg-white border-2 border-gray-100 rounded-2xl p-5 flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#F0FDF4] flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="h-5 w-5 text-[#16A34A]" />
+                <MessageCircle className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div>
                 <p className="text-base font-bold text-gray-800 mb-1">Still have questions?</p>
@@ -544,18 +544,18 @@ export default function GBVAwarenessHub() {
                 );
               })}
             </div>
-            <div className="bg-[#F0FDF4] border-2 border-[#16A34A]/30 rounded-2xl p-6 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#16A34A]/10 flex items-center justify-center mx-auto">
-                <ShieldCheck className="h-7 w-7 text-[#16A34A]" />
+            <div className="bg-[#F0FDF4] border-2 border-[#1D9E75]/30 rounded-2xl p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#1D9E75]/10 flex items-center justify-center mx-auto">
+                <ShieldCheck className="h-7 w-7 text-[#1D9E75]" />
               </div>
-              <p className="text-base font-extrabold text-[#15803D]">Anti-Retaliation Guarantee</p>
+              <p className="text-base font-extrabold text-[#178F65]">Anti-Retaliation Guarantee</p>
               <p className="text-sm text-gray-600 leading-relaxed">
                 Under <strong>RA 11313</strong> and Gordon College policy, any form of retaliation against you
                 for reporting, assisting in a complaint, or accessing support is strictly prohibited and independently actionable.
               </p>
               <button
                 onClick={() => navigate("/complaints/new")}
-                className="inline-flex items-center gap-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm"
               >
                 Report Retaliation <ArrowRight className="h-4 w-4" />
               </button>
@@ -566,8 +566,8 @@ export default function GBVAwarenessHub() {
         {/* GC POLICIES */}
         {activeTab === "policy" && (
           <div className="space-y-6">
-            <div className="bg-[#F0FDF4] border-2 border-[#16A34A]/25 rounded-2xl p-5">
-              <p className="text-base font-bold text-[#15803D] mb-2">Gordon College Institutional Policies</p>
+            <div className="bg-[#F0FDF4] border-2 border-[#1D9E75]/25 rounded-2xl p-5">
+              <p className="text-base font-bold text-[#178F65] mb-2">Gordon College Institutional Policies</p>
               <p className="text-sm text-gray-600 leading-relaxed">
                 These policies govern how Gordon College handles GBV and harassment cases, protects complainants,
                 and ensures due process for all parties — aligned with applicable Philippine laws.
@@ -594,8 +594,8 @@ export default function GBVAwarenessHub() {
       {/* Footer CTA */}
       <div className="px-5 py-10 mt-8">
         <div className="max-w-5xl mx-auto text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-white/90 border-2 border-[#16A34A]/30 flex items-center justify-center mx-auto shadow-sm">
-            <ShieldCheck className="h-8 w-8 text-[#16A34A]" />
+          <div className="w-16 h-16 rounded-2xl bg-white/90 border-2 border-[#1D9E75]/30 flex items-center justify-center mx-auto shadow-sm">
+            <ShieldCheck className="h-8 w-8 text-[#1D9E75]" />
           </div>
           <h2 className="text-xl font-extrabold text-gray-900">Ready to Speak Up?</h2>
           <p className="text-sm text-gray-600 max-w-sm mx-auto leading-relaxed">
@@ -603,7 +603,7 @@ export default function GBVAwarenessHub() {
             with full confidentiality and care.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <button onClick={() => navigate("/complaints/new")} className="flex items-center justify-center gap-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-bold px-7 py-3.5 rounded-xl transition-colors shadow-md">
+            <button onClick={() => navigate("/complaints/new")} className="flex items-center justify-center gap-2 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-bold px-7 py-3.5 rounded-xl transition-colors shadow-md">
               <FileText className="h-4 w-4" />File a Complaint
             </button>
             <button onClick={() => navigate("/complaints")} className="flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-7 py-3.5 rounded-xl border-2 border-gray-200 transition-colors shadow-sm">

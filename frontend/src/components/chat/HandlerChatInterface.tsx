@@ -650,7 +650,7 @@ export function HandlerChatInterface({
                   }
                   setIsUserScrolling(false);
                 }}
-                className="absolute bottom-[5.75rem] left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#1a7a45] text-white shadow-lg hover:bg-emerald-700 sm:bottom-24"
+                className="absolute bottom-[5.75rem] left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#1D9E75] text-white shadow-lg hover:bg-emerald-700 sm:bottom-24"
                 size="sm"
               >
                 <ChevronDown className="h-4 w-4 mr-1" />

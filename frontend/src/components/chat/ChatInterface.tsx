@@ -323,7 +323,7 @@ export function ChatInterface({
         <CardHeader className="border-b px-3 py-2.5 flex-shrink-0 bg-white/90 backdrop-blur-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#1a7a45] to-emerald-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#1D9E75] to-emerald-600 rounded-lg flex items-center justify-center">
                 <MessageCircle className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -386,7 +386,7 @@ export function ChatInterface({
         {messageGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-6">
             <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-emerald-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-              <MessageCircle className="h-7 w-7 text-[#1a7a45]" />
+              <MessageCircle className="h-7 w-7 text-[#1D9E75]" />
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-2">
               No Messages Yet
@@ -466,7 +466,7 @@ export function ChatInterface({
               }
               setIsUserScrolling(false);
             }}
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-[#1a7a45] hover:bg-emerald-700 text-white"
+            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-[#1D9E75] hover:bg-emerald-700 text-white"
             size="sm"
           >
             <ChevronDown className="h-4 w-4 mr-1" />

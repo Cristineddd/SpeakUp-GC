@@ -153,7 +153,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
       <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden">
 
         {/* Header */}
-        <div className="shrink-0 bg-gradient-to-r from-[#16A34A] to-[#15803D] px-6 pt-6 pb-8">
+        <div className="shrink-0 bg-gradient-to-r from-[#1D9E75] to-[#178F65] px-6 pt-6 pb-8">
           <p className="text-white/80 text-xs font-medium uppercase tracking-widest mb-1">SpeakUp GC</p>
           <h2 className="text-white text-xl font-bold">Profile Setup</h2>
           <p className="text-white/70 text-xs mt-0.5">Quick one-time setup to protect your identity</p>
@@ -168,7 +168,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                 <React.Fragment key={s.label}>
                   <div className={cn(
                     "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all",
-                    isActive ? "bg-white text-[#16A34A]" :
+                    isActive ? "bg-white text-[#1D9E75]" :
                     isDone   ? "bg-white/30 text-white" :
                                "bg-white/10 text-white/40"
                   )}>
@@ -189,14 +189,14 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {/* AI Bubble */}
           <div className="px-6 -mt-4 pt-1 pb-2">
             <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex gap-3">
-            <div className="shrink-0 w-8 h-8 rounded-xl bg-[#E8F5EE] border border-[#16A34A]/20 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-[#16A34A]" />
+            <div className="shrink-0 w-8 h-8 rounded-xl bg-[#E8F5EE] border border-[#1D9E75]/20 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-[#1D9E75]" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-[#16A34A] mb-1">Laya · SpeakUp GC Guide</p>
+              <p className="text-xs font-semibold text-[#1D9E75] mb-1">Laya · SpeakUp GC Guide</p>
               <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-[min(28vh,180px)] overflow-y-auto pr-1">
                 {displayedText}
-                {typing && <span className="inline-block w-1 h-3.5 bg-[#16A34A] ml-0.5 animate-pulse rounded-sm" />}
+                {typing && <span className="inline-block w-1 h-3.5 bg-[#1D9E75] ml-0.5 animate-pulse rounded-sm" />}
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                 maxLength={30}
                 className={cn(
                   "w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors",
-                  "focus:ring-2 focus:ring-[#16A34A]/30 focus:border-[#16A34A]",
+                  "focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75]",
                   aliasError ? "border-red-400" : "border-gray-200"
                 )}
               />
@@ -234,8 +234,8 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {/* ── TERMS & CONDITIONS ── */}
           {step === "terms" && (
             <div className="space-y-3">
-              <div className="bg-[#F0FDF4] border border-[#16A34A]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
-                <p className="font-semibold text-[#15803D] text-sm">Terms & Conditions — SpeakUp GC</p>
+              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
+                <p className="font-semibold text-[#178F65] text-sm">Terms & Conditions — SpeakUp GC</p>
                 
                 <p className="font-semibold text-gray-700 mt-3">1. Acceptable Use</p>
                 <p>
@@ -268,7 +268,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                   type="checkbox"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#16A34A] shrink-0"
+                  className="mt-0.5 h-4 w-4 accent-[#1D9E75] shrink-0"
                 />
                 <span className="text-sm text-gray-700 group-hover:text-gray-900 leading-snug">
                   I have read and agree to the Terms & Conditions.
@@ -280,8 +280,8 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {/* ── PRIVACY POLICY ── */}
           {step === "privacy" && (
             <div className="space-y-3">
-              <div className="bg-[#F0FDF4] border border-[#16A34A]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
-                <p className="font-semibold text-[#15803D] text-sm">Privacy Policy — SpeakUp GC</p>
+              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
+                <p className="font-semibold text-[#178F65] text-sm">Privacy Policy — SpeakUp GC</p>
                 
                 <p className="font-semibold text-gray-700 mt-3">Data Collection & Use</p>
                 <p>
@@ -309,7 +309,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
                   type="checkbox"
                   checked={privacyAccepted}
                   onChange={(e) => setPrivacyAccepted(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 accent-[#16A34A] shrink-0"
+                  className="mt-0.5 h-4 w-4 accent-[#1D9E75] shrink-0"
                 />
                 <span className="text-sm text-gray-700 group-hover:text-gray-900 leading-snug">
                   I have read and understood the Privacy Policy. I consent to my information being stored and processed by the DEIU in accordance with RA 10173.
@@ -322,8 +322,8 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {step === "done" && (
             <div className="text-center space-y-4 py-2">
               <div className="flex justify-center">
-                <div className="bg-[#F0FDF4] rounded-full p-4 border-4 border-[#16A34A]/20">
-                  <CheckCircle2 className="h-10 w-10 text-[#16A34A]" />
+                <div className="bg-[#F0FDF4] rounded-full p-4 border-4 border-[#1D9E75]/20">
+                  <CheckCircle2 className="h-10 w-10 text-[#1D9E75]" />
                 </div>
               </div>
               <div>
@@ -347,7 +347,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {step === "alias" && (
             <Button
               onClick={handleAliasNext}
-              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
+              className="w-full bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl"
             >
               Next <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
@@ -356,7 +356,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
             <Button
               onClick={handleTermsNext}
               disabled={!termsAccepted}
-              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl disabled:opacity-50"
+              className="w-full bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl disabled:opacity-50"
             >
               Next <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
@@ -365,7 +365,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
             <Button
               onClick={handlePrivacyNext}
               disabled={!privacyAccepted || saving}
-              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl disabled:opacity-50"
+              className="w-full bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl disabled:opacity-50"
             >
               {saving ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>
@@ -377,7 +377,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {step === "done" && (
             <Button
               onClick={() => onComplete(alias.trim())}
-              className="w-full bg-[#16A34A] hover:bg-[#15803D] text-white rounded-xl"
+              className="w-full bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl"
             >
               Go to My Dashboard <ArrowRight className="h-4 w-4 ml-1" />
             </Button>

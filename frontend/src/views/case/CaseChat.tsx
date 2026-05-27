@@ -232,13 +232,13 @@ export default function CaseChat() {
       <div
         className="absolute inset-0 opacity-30 animate-pulse pointer-events-none"
         style={{ 
-          backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+          backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
           backgroundSize: "32px 32px",
           animationDuration: "4s"
         }}
       />
       {/* Green glow effects */}
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1a7a45]/8 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
+      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1D9E75]/8 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
       <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/6 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
       {/* Case chat header — top-aligned so icon/title/meta read as one block (avoids “floating” icon vs two lines) */}
       <div className="relative z-50 flex-shrink-0 border-b border-gray-200/70 bg-white/95 backdrop-blur-md shadow-sm">
@@ -254,7 +254,7 @@ export default function CaseChat() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div
-              className="mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1a7a45] to-emerald-600 shadow-sm ring-1 ring-black/5"
+              className="mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D9E75] to-emerald-600 shadow-sm ring-1 ring-black/5"
               aria-hidden
             >
               <MessageCircle className="h-4 w-4 text-white" />

@@ -98,14 +98,14 @@ const ForgotPassword = () => {
 
   if (emailSent) {
     return (
-      <div className="min-h-screen bg-[#1a7a45] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-[#1D9E75] flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#155f36] opacity-60 blur-3xl" />
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#178F65] opacity-60 blur-3xl" />
           <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#22a05a] opacity-40 blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-[440px] bg-[#1a1a2e] rounded-2xl shadow-2xl p-8 text-center">
-          <div className="mx-auto h-16 w-16 bg-[#1a7a45]/30 rounded-full flex items-center justify-center mb-5">
+          <div className="mx-auto h-16 w-16 bg-[#1D9E75]/30 rounded-full flex items-center justify-center mb-5">
             <CheckCircle className="h-8 w-8 text-[#6ee7a0]" />
           </div>
           
@@ -144,7 +144,7 @@ const ForgotPassword = () => {
             </button>
             <Link
               to="/login"
-              className="flex items-center justify-center gap-2 w-full h-10 bg-[#1a7a45] hover:bg-[#155f36] text-white text-sm font-medium rounded-[4px] transition-colors"
+              className="flex items-center justify-center gap-2 w-full h-10 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-medium rounded-[4px] transition-colors"
             >
               <ArrowLeft size={14} />
               Back to Login
@@ -156,9 +156,9 @@ const ForgotPassword = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a7a45] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#1D9E75] flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#155f36] opacity-60 blur-3xl" />
+        <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-[#178F65] opacity-60 blur-3xl" />
         <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#22a05a] opacity-40 blur-3xl" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-[#176840] opacity-30 blur-3xl" />
       </div>
@@ -173,7 +173,7 @@ const ForgotPassword = () => {
 
       <div className="relative z-10 w-full max-w-[440px] bg-[#1a1a2e] rounded-2xl shadow-2xl overflow-hidden">
         <div className="px-8 pt-8 pb-2 text-center">
-          <div className="mx-auto h-14 w-14 bg-[#1a7a45]/20 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto h-14 w-14 bg-[#1D9E75]/20 rounded-full flex items-center justify-center mb-4">
             <Shield className="h-7 w-7 text-[#6ee7a0]" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">Reset Your Password</h1>
@@ -191,7 +191,7 @@ const ForgotPassword = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@email.com"
-                className="w-full h-11 px-3 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1a7a45] transition-all"
+                className="w-full h-11 px-3 rounded-[4px] bg-[#1e1f22] border-none text-white text-sm placeholder-[#72767d] focus:outline-none focus:ring-2 focus:ring-[#1D9E75] transition-all"
                 required
               />
             </div>
@@ -199,7 +199,7 @@ const ForgotPassword = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 bg-[#1a7a45] hover:bg-[#155f36] text-white font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-11 bg-[#1D9E75] hover:bg-[#178F65] text-white font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>

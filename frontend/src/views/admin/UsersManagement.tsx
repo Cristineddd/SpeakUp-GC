@@ -546,66 +546,49 @@ const UsersManagement = () => {
   }
 
   return (
-    <div className="w-full space-y-8 pb-10">
-      {/* Header Banner */}
-      <div className="relative rounded-xl border-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 px-6 py-6 shadow-lg overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
-        <div className="relative">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-2">
-            <Users2 className="h-4 w-4 text-white" />
-            <p className="text-xs font-bold uppercase tracking-wider text-white">User Accounts</p>
-          </div>
-          <h1 className="text-3xl font-bold text-white drop-shadow-lg">Users Management</h1>
-          <p className="text-sm text-white/90 font-medium mt-1">
-            Manage user accounts and permissions
-          </p>
-        </div>
+    <div className="w-full space-y-6 pb-10" style={{ backgroundColor: '#FAFAFA' }}>
+      {/* Header */}
+      <div>
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">User Accounts</p>
+        <h1 className="text-xl font-bold text-gray-900">Users Management</h1>
+        <p className="text-sm text-gray-500 mt-1">Manage user accounts and permissions</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <Users2 className="h-8 w-8 text-white" />
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+                <Users2 className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Total Users</p>
-              <p className="text-5xl font-black text-gray-900">{stats.total}</p>
-              <p className="text-sm text-gray-500 font-medium">All registered users</p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-xs text-gray-500 mt-1">Total Users</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <UserCheck className="h-8 w-8 text-white" />
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+                <UserCheck className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">Active Today</p>
-              <p className="text-5xl font-black text-gray-900">{stats.activeToday}</p>
-              <p className="text-sm text-gray-500 font-medium">Active users with reports</p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.activeToday}</p>
+            <p className="text-xs text-gray-500 mt-1">Active Today</p>
           </CardContent>
         </Card>
 
-        <Card className="border-0 bg-gradient-to-br from-white to-gray-50 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-lime-500 to-green-500 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <UserPlus className="h-8 w-8 text-white" />
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+                <UserPlus className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">New This Month</p>
-              <p className="text-5xl font-black text-gray-900">{stats.newThisMonth}</p>
-              <p className="text-sm text-gray-500 font-medium">Recently registered</p>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{stats.newThisMonth}</p>
+            <p className="text-xs text-gray-500 mt-1">New This Month</p>
           </CardContent>
         </Card>
       </div>
@@ -634,17 +617,24 @@ const UsersManagement = () => {
       </div>
 
       {/* Results Count with Refresh */}
-      <div className="flex items-center gap-3 text-sm text-gray-500">
-        <span>
-          Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span> of <span className="font-semibold text-gray-900">{users.length}</span> users
-        </span>
-        <button
-          onClick={() => fetchUsers()}
-          className="p-1 hover:bg-gray-100 rounded transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="h-4 w-4 text-gray-600" />
-        </button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 text-sm text-gray-500">
+          <span>
+            Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span> of <span className="font-semibold text-gray-900">{users.length}</span> users
+          </span>
+          {filteredUsers.length < users.length && (
+            <span className="text-xs text-amber-600 font-medium">
+              ({users.length - filteredUsers.length} filtered out)
+            </span>
+          )}
+          <button
+            onClick={() => fetchUsers()}
+            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="h-4 w-4 text-gray-600" />
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -676,11 +666,17 @@ const UsersManagement = () => {
               <TableRow key={user.uid}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 text-xs font-semibold">
                       {(user.alias || user.displayName || user.email).charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">{user.alias || user.displayName || 'N/A'}</div>
+                      <div className="font-medium text-gray-900">
+                        {user.alias === 'N/A' || !user.alias ? (
+                          <span className="text-gray-400 italic">Anonymous User</span>
+                        ) : (
+                          user.alias || user.displayName || <span className="text-gray-400 italic">Anonymous User</span>
+                        )}
+                      </div>
                       {user.position && (
                         <div className="text-xs text-gray-500">{user.position}</div>
                       )}

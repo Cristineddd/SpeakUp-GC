@@ -91,8 +91,9 @@ const Landing = () => {
                 onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
               >Log in</button>
               <button
-                className="text-sm font-semibold bg-[#1a7a45] hover:bg-[#155f36] text-white rounded-xl px-4 py-2 transition-colors"
+                className="text-sm font-semibold bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl px-4 py-2 transition-colors"
                 onClick={() => { setWalkthroughInitialView(undefined); setShowWalkthrough(true); }}
+                title="Sign up to file a complaint"
               >Get Started</button>
             </div>
             <button className="lg:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -107,7 +108,7 @@ const Landing = () => {
                 <div className="border-t border-gray-100 mt-1 pt-2 flex flex-col gap-2">
                   <button className="w-full py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50"
                     onClick={() => { setIsMenuOpen(false); setWalkthroughInitialView("login"); setShowWalkthrough(true); }}>Log in</button>
-                  <button className="w-full py-2.5 text-sm font-semibold bg-[#1a7a45] text-white rounded-xl hover:bg-[#155f36]"
+                  <button className="w-full py-2.5 text-sm font-semibold bg-[#1D9E75] text-white rounded-xl hover:bg-[#178F65]"
                     onClick={() => { setIsMenuOpen(false); setWalkthroughInitialView(undefined); setShowWalkthrough(true); }}>Get Started</button>
                 </div>
               </nav>
@@ -128,13 +129,13 @@ const Landing = () => {
         <div
           className="absolute inset-0 opacity-40 animate-pulse"
           style={{ 
-            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
             backgroundSize: "32px 32px",
             animationDuration: "4s"
           }}
         />
         {/* Multiple green glows for depth */}
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1a7a45]/10 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
+        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1D9E75]/10 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/8 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
         
         <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -144,14 +145,14 @@ const Landing = () => {
               {/* Headline with staggered animation */}
               <h1 className="text-[clamp(3rem,8vw,5rem)] font-black leading-[0.9] tracking-tight text-gray-900 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <span className="inline-block animate-in fade-in slide-in-from-left-4 duration-700">Speak up.</span><br />
-                <span className="text-[#1a7a45] inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-150">Be heard.</span><br />
+                <span className="text-[#1D9E75] inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-150">Be heard.</span><br />
                 <span className="text-gray-600 inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-300">Be safe.</span>
               </h1>
 
               <p className="text-lg sm:text-xl text-gray-500 leading-relaxed mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
                 A confidential platform for Gordon College students to file complaints, track cases, and communicate directly with DEIU — anonymously if you choose. Protected under Philippine law.
               </p>
-              <a href="#about" className="inline-flex items-center gap-1 text-sm font-medium text-[#1a7a45] hover:text-[#155f36] mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
+              <a href="#about" className="inline-flex items-center gap-1 text-sm font-medium text-[#1D9E75] hover:text-[#178F65] mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
                 Learn more about your rights
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -160,14 +161,14 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-3 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
                 <button
                   onClick={() => setShowWalkthrough(true)}
-                  className="group inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#1a7a45] to-emerald-600 hover:from-[#155f36] hover:to-emerald-700 text-white font-semibold text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
+                  className="group inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white font-semibold text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
                 >
                   Get Started 
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
                 </button>
                 <button
                   onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
-                  className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-green-50 border-2 border-gray-300 hover:border-[#1a7a45] text-gray-700 hover:text-[#1a7a45] font-medium text-base px-8 py-4 rounded-2xl transition-all duration-300"
+                  className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-green-50 border-2 border-gray-300 hover:border-[#1D9E75] text-gray-700 hover:text-[#1D9E75] font-medium text-base px-8 py-4 rounded-2xl transition-all duration-300"
                 >
                   Log In
                 </button>
@@ -181,7 +182,7 @@ const Landing = () => {
                   { icon: <Users className="w-4 h-4" />,        label: "DEIU managed" },
                 ].map((t) => (
                   <span key={t.label} className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                    <span className="text-[#1a7a45]">{t.icon}</span>
+                    <span className="text-[#1D9E75]">{t.icon}</span>
                     {t.label}
                   </span>
                 ))}
@@ -208,11 +209,11 @@ const Landing = () => {
                   <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-wide">Active Case</p>
+                        <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-wide">Active Case</p>
                         <p className="text-2xl font-black text-gray-900 mt-1">CASE-002</p>
                         <p className="text-xs text-gray-500 mt-1">Sexual harassment in classroom</p>
                       </div>
-                      <div className="bg-[#1a7a45] rounded-xl px-4 py-2">
+                      <div className="bg-[#1D9E75] rounded-xl px-4 py-2">
                         <p className="text-xs text-white font-bold">Anonymous Mode</p>
                       </div>
                     </div>
@@ -238,11 +239,11 @@ const Landing = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-[#1a7a45] rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                        <div className="w-6 h-6 bg-[#1D9E75] rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
                           <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-bold text-[#1a7a45]">Investigation Ongoing</p>
+                          <p className="text-sm font-bold text-[#1D9E75]">Investigation Ongoing</p>
                           <p className="text-xs text-green-600 font-medium">In progress</p>
                         </div>
                       </div>
@@ -274,7 +275,7 @@ const Landing = () => {
         <div
           className="absolute inset-0 opacity-40"
           style={{ 
-            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
             backgroundSize: "32px 32px"
           }}
         />
@@ -284,7 +285,7 @@ const Landing = () => {
         >
           {/* Section label */}
           <div className={`mb-16 transition-all duration-700 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-widest mb-3">Features</p>
+            <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-3">Features</p>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight max-w-lg">
               Built for the community.<br />Backed by law &amp; trust.
             </h2>
@@ -293,19 +294,17 @@ const Landing = () => {
           {/* Bento grid — uniform card styling */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Large card with enhanced hover */}
-            <div className={`lg:row-span-2 bg-gradient-to-br from-green-50 to-emerald-50/50 border-2 border-[#1a7a45]/30 hover:border-[#1a7a45] rounded-3xl p-8 flex flex-col justify-between transition-all duration-700 delay-100 hover:shadow-xl hover:scale-[1.02] ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-              <div>
-                <div className="w-12 h-12 bg-gradient-to-br from-[#1a7a45] to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <ClipboardList className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-2xl font-black text-gray-900 mb-3">File a Complaint</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">Submit securely and confidentially under <span className="font-semibold text-gray-700">RA 11313 (Safe Spaces Act)</span> or <span className="font-semibold text-gray-700">RA 7877 (Anti-Sexual Harassment Act)</span>. Stay anonymous or identify yourself — the choice is always yours.</p>
+            {/* File a Complaint card - same size as others */}
+            <div className={`bg-white border-2 border-[#1D9E75]/30 hover:border-[#1D9E75] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 delay-100 hover:shadow-xl hover:scale-[1.02] ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+              <div className="w-12 h-12 bg-green-50 border-2 border-[#1D9E75]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                <ClipboardList className="w-6 h-6 text-[#1D9E75]" />
               </div>
-              <ul className="mt-8 space-y-2.5">
+              <h3 className="text-xl font-black text-gray-900 mb-3">File a Complaint</h3>
+              <p className="text-sm text-gray-600 leading-relaxed mb-4">Submit securely and confidentially under <span className="font-semibold text-gray-700">RA 11313 (Safe Spaces Act)</span> or <span className="font-semibold text-gray-700">RA 7877 (Anti-Sexual Harassment Act)</span>. Stay anonymous or identify yourself — the choice is always yours.</p>
+              <ul className="mt-auto space-y-2.5">
                 {["Anonymous or identified", "Secure document upload", "Evidence attachment"].map((b) => (
                   <li key={b} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-[#1a7a45] flex-shrink-0" /> {b}
+                    <CheckCircle2 className="w-4 h-4 text-[#1D9E75] flex-shrink-0" /> {b}
                   </li>
                 ))}
               </ul>
@@ -314,25 +313,25 @@ const Landing = () => {
             {/* Standard cards — uniform height and styling */}
             {[
               {
-                icon: <Activity className="w-6 h-6 text-[#1a7a45]" />,
+                icon: <Activity className="w-6 h-6 text-[#1D9E75]" />,
                 title: "Real-Time Tracker",
                 desc: "Monitor your case status live. Get notified at every milestone.",
                 delay: "delay-150",
               },
               {
-                icon: <MessageCircle className="w-6 h-6 text-[#1a7a45]" />,
+                icon: <MessageCircle className="w-6 h-6 text-[#1D9E75]" />,
                 title: "Direct Messaging",
                 desc: "Communicate securely with DEIU administrators — encrypted and private.",
                 delay: "delay-200",
               },
               {
-                icon: <Lock className="w-6 h-6 text-[#1a7a45]" />,
+                icon: <Lock className="w-6 h-6 text-[#1D9E75]" />,
                 title: "Privacy First",
                 desc: "End-to-end encryption. Your data is yours alone.",
                 delay: "delay-250",
               },
               {
-                icon: <BookOpen className="w-6 h-6 text-[#1a7a45]" />,
+                icon: <BookOpen className="w-6 h-6 text-[#1D9E75]" />,
                 title: "Resources Hub",
                 desc: "Policy guides on RA 11313 and RA 7877, FAQs, and support articles to help you navigate your rights and the complaint process.",
                 delay: "delay-300",
@@ -340,9 +339,9 @@ const Landing = () => {
             ].map((card, i) => (
               <div
                 key={i}
-                className={`bg-white border-2 border-[#1a7a45]/30 hover:border-[#1a7a45] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 hover:shadow-xl hover:scale-[1.02] ${card.delay} ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                className={`bg-white border-2 border-[#1D9E75]/30 hover:border-[#1D9E75] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 hover:shadow-xl hover:scale-[1.02] ${card.delay} ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
               >
-                <div className="w-12 h-12 bg-green-50 border-2 border-[#1a7a45]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                <div className="w-12 h-12 bg-green-50 border-2 border-[#1D9E75]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
                   {card.icon}
                 </div>
                 <h3 className="text-xl font-black text-gray-900 mb-3">{card.title}</h3>
@@ -355,11 +354,11 @@ const Landing = () => {
 
       {/* ── How It Works ─────────────────────────────────────────────── */}
       <section className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
-        {/* Dot grid background */}
+        {/* Dot grid background - reduced opacity for mobile */}
         <div
-          className="absolute inset-0 opacity-40"
+          className="absolute inset-0 opacity-20 md:opacity-30"
           style={{ 
-            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
             backgroundSize: "32px 32px"
           }}
         />
@@ -368,7 +367,7 @@ const Landing = () => {
           className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
         >
           <div className={`mb-20 transition-all duration-700 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-widest mb-3">Process</p>
+            <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-3">Process</p>
             <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight">
               Three steps<br />to resolution.
             </h2>
@@ -382,17 +381,17 @@ const Landing = () => {
             ].map((s, i) => (
               <div
                 key={i}
-                className={`group relative bg-gradient-to-br from-white via-green-50/30 to-white border-2 border-[#1a7a45]/20 hover:border-[#1a7a45]/50 rounded-3xl px-8 py-10 overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#1a7a45]/10 hover:-translate-y-2 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                className={`group relative bg-gradient-to-br from-white via-green-50/30 to-white border-2 border-[#1D9E75]/20 hover:border-[#1D9E75]/50 rounded-3xl px-8 py-10 overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#1D9E75]/10 hover:-translate-y-2 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
                 style={{ transitionDelay: `${i * 120}ms` }}
               >
-                <p className="relative text-7xl font-black text-[#1a7a45] mb-6 leading-none select-none group-hover:scale-110 transition-transform duration-500">
+                <p className="relative text-7xl font-black text-[#1D9E75] mb-6 leading-none select-none group-hover:scale-110 transition-transform duration-500">
                   {s.n}
                 </p>
-                <h3 className="relative text-xl font-black text-gray-900 mb-3 group-hover:text-[#1a7a45] transition-colors duration-300">{s.title}</h3>
+                <h3 className="relative text-xl font-black text-gray-900 mb-3 group-hover:text-[#1D9E75] transition-colors duration-300">{s.title}</h3>
                 <p className="relative text-sm text-gray-500 leading-relaxed">{s.desc}</p>
                 
                 {/* Bottom accent line */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#1a7a45]/30 to-transparent group-hover:via-[#1a7a45]/60 transition-all duration-500" />
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#1D9E75]/30 to-transparent group-hover:via-[#1D9E75]/60 transition-all duration-500" />
               </div>
             ))}
           </div>
@@ -405,7 +404,7 @@ const Landing = () => {
         <div
           className="absolute inset-0 opacity-40"
           style={{ 
-            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
             backgroundSize: "32px 32px"
           }}
         />
@@ -415,9 +414,9 @@ const Landing = () => {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
             <div className={`transition-all duration-700 ${missionRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-              <p className="text-xs font-bold text-[#1a7a45] uppercase tracking-widest mb-4">About & Mission</p>
+              <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-4">About & Mission</p>
               <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight mb-8">
-                Every student<br />deserves to be<br /><span className="text-[#1a7a45]">heard.</span>
+                Every student<br />deserves to be<br /><span className="text-[#1D9E75]">heard.</span>
               </h2>
               <p className="text-gray-500 text-base leading-relaxed mb-5">
                 SpeakUp GC empowers Gordon College students with a safe, confidential channel to raise concerns under the <span className="font-semibold text-gray-700">Safe Spaces Act (RA 11313)</span> and the <span className="font-semibold text-gray-700">Anti-Sexual Harassment Act (RA 7877)</span>. We bridge the gap between students and DEIU — ensuring every complaint is heard, tracked, and resolved with care.
@@ -429,9 +428,9 @@ const Landing = () => {
 
             <div className={`grid grid-cols-1 gap-3 transition-all duration-700 delay-200 ${missionRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
               {[
-                { icon: <Lock className="w-5 h-5 text-[#1a7a45]" />, title: "Secure & Private", desc: "End-to-end encryption with anonymous filing options. Your identity is always protected." },
-                { icon: <HeadphonesIcon className="w-5 h-5 text-[#1a7a45]" />, title: "DEIU-Backed Support", desc: "Direct access to trained DEIU administrators who guide you through every step." },
-                { icon: <GraduationCap className="w-5 h-5 text-[#1a7a45]" />, title: "Know Your Rights", desc: "Educational resources on RA 11313 and RA 7877, policies, and guides to help you understand the complaint process and your legal protections." },
+                { icon: <Lock className="w-5 h-5 text-[#1D9E75]" />, title: "Secure & Private", desc: "End-to-end encryption with anonymous filing options. Your identity is always protected." },
+                { icon: <HeadphonesIcon className="w-5 h-5 text-[#1D9E75]" />, title: "DEIU-Backed Support", desc: "Direct access to trained DEIU administrators who guide you through every step." },
+                { icon: <GraduationCap className="w-5 h-5 text-[#1D9E75]" />, title: "Know Your Rights", desc: "Educational resources on RA 11313 and RA 7877, policies, and guides to help you understand the complaint process and your legal protections." },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4 bg-gray-50 border border-gray-200 rounded-2xl p-6">
                   <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">{item.icon}</div>
@@ -452,7 +451,7 @@ const Landing = () => {
         <div
           className="absolute inset-0 opacity-40"
           style={{ 
-            backgroundImage: "radial-gradient(circle, #1a7a45 1px, transparent 1px)", 
+            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
             backgroundSize: "32px 32px"
           }}
         />
@@ -487,11 +486,136 @@ const Landing = () => {
             <div className="flex justify-center">
               <button
                 onClick={() => setShowWalkthrough(true)}
-                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#1a7a45] to-emerald-600 hover:from-[#155f36] hover:to-emerald-700 text-white font-bold text-lg px-10 py-5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-[#1a7a45]/30 hover:scale-105 active:scale-95"
+                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white font-bold text-lg px-10 py-5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-[#1D9E75]/30 hover:scale-105 active:scale-95"
               >
                 Get Started
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Did You Know Section ─────────────────────────────────────── */}
+      <section className="py-24 bg-gradient-to-b from-white via-green-50/30 to-white">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Did You Know?
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Important facts about your rights and protections under Philippine law
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Safe Spaces Act */}
+            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-green-200">
+              <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center mb-4">
+                <ShieldCheck className="h-7 w-7 text-green-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">
+                Safe Spaces Act (RA 11313)
+              </h3>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span>Protects you from gender-based sexual harassment in streets, public spaces, online, and workplaces</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span>Covers catcalling, wolf-whistling, unwanted sexual remarks, and cyber harassment</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span>Educational institutions must establish mechanisms to address complaints</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <span>Penalties include fines and imprisonment for violators</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Gender-Based Violence */}
+            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-purple-200">
+              <div className="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
+                <Users className="h-7 w-7 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">
+                Gender-Based Violence
+              </h3>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span>Includes physical, sexual, psychological, and economic abuse based on gender</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span>Affects people of all genders, but disproportionately impacts women and LGBTQ+ individuals</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span>You have the right to report and seek protection without fear of retaliation</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                  <span>Support services include counseling, legal aid, and safe spaces</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Bawal Bastos */}
+            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-red-200">
+              <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                <X className="h-7 w-7 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">
+                Bawal Bastos!
+              </h3>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <span><strong>Unwanted touching</strong> or physical contact is harassment</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <span><strong>Sexual jokes, comments, or gestures</strong> create a hostile environment</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <span><strong>Sharing intimate images</strong> without consent is a crime</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <span><strong>No means no</strong> — consent must be clear, voluntary, and ongoing</span>
+                </li>
+              </ul>
+              <div className="mt-4 p-3 bg-red-50/50 rounded-lg border border-red-100">
+                <p className="text-xs font-medium text-red-700 text-center">
+                  Remember: Respect is not optional. Bastos behavior has consequences.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="mt-16 text-center">
+            <div className="max-w-2xl mx-auto">
+              <p className="text-xl font-bold text-gray-900 mb-2">
+                Know your rights. Speak up.
+              </p>
+              <p className="text-gray-600 mb-6">
+                You are not alone.
+              </p>
+              <Link
+                to="/awareness"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                <BookOpen className="h-5 w-5" />
+                Learn More About Your Rights
+                <ArrowRight className="h-5 w-5" />
+              </Link>
             </div>
           </div>
         </div>
@@ -506,9 +630,9 @@ const Landing = () => {
           </div>
           <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex flex-wrap items-center gap-6">
-              <Link to="/privacy" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Privacy Policy</Link>
-              <Link to="/terms" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Terms & Conditions</Link>
-              <Link to="/mission" className="text-sm text-gray-600 hover:text-[#1a7a45] transition-colors">Mission</Link>
+              <Link to="/privacy" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Privacy Policy</Link>
+              <Link to="/terms" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Terms & Conditions</Link>
+              <Link to="/mission" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Mission</Link>
             </div>
             <p className="text-xs text-gray-500">© {new Date().getFullYear()} SpeakUp GC · Complaints handled under RA 11313 (Safe Spaces Act) &amp; RA 7877 (Anti-Sexual Harassment Act)</p>
           </div>
