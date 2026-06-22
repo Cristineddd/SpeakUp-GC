@@ -176,7 +176,7 @@ export default function Dashboard() {
     } catch (e) { console.error(e); }
 
     return () => { reportsUnsub?.(); complaintsUnsub?.(); };
-  }, [user]);
+  }, [user?.uid]);
 
   // ─── Notifications ───
   useEffect(() => {

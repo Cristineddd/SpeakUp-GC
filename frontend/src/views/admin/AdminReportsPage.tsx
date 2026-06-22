@@ -67,7 +67,7 @@ import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRepresentativeRole } from "../../hooks/useRepresentativeRole";
 import { AdminReportService, AdminReport, ReportStats } from "../../services/adminReportService";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { useNavigate, useLocation } from "../../compat/router";
 import { HandlerTimeline } from "../../components/admin/HandlerTimeline";
 import { ReportStatusManager } from "../../components/case/ReportStatusManager";
@@ -223,6 +223,36 @@ const getFileType = (url: string): string => {
   }
 };
 
+// Helper functions for operational metrics
+const getDaysOpen = (report: AdminReport): number => {
+  const createdAt = safeToDate(report.createdAt);
+  if (!createdAt) return 0;
+  return differenceInDays(new Date(), createdAt);
+};
+
+const getLastUpdated = (report: AdminReport): string => {
+  const lastUpdated = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt);
+  if (!lastUpdated) return 'N/A';
+  return formatDistanceToNow(lastUpdated, { addSuffix: true });
+};
+
+const getActivityCount = (report: AdminReport): number => {
+  // Count internal notes as activity
+  return safeGet(report, 'internalNotes', []).length;
+};
+
+const needsAttention = (report: AdminReport): boolean => {
+  const updatedAt = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt);
+  if (!updatedAt) return false;
+
+  const daysSinceUpdate = differenceInDays(new Date(), updatedAt);
+  const isStale = daysSinceUpdate >= 3;
+  const isEscalated = (report.escalationLevel || 0) > 0;
+  const hasFollowUp = safeGet(report, 'followUpRequested', false);
+
+  return isStale || isEscalated || hasFollowUp;
+};
+
 // FIXED: URL validation to prevent 401 errors from invalid URLs
 const isValidCloudinaryUrl = (url: string): boolean => {
   if (!url) return false;
@@ -279,7 +309,9 @@ const AdminReportsPage = () => {
   const [selectedVideoUrl, setSelectedVideoUrl] = useState<string | null>(null);
   const [videoViewerOpen, setVideoViewerOpen] = useState(false);
   const [highlightNoteId, setHighlightNoteId] = useState<string | null>(null);
-  
+  const [quickSummaryReport, setQuickSummaryReport] = useState<AdminReport | null>(null);
+  const [quickSummaryOpen, setQuickSummaryOpen] = useState(false);
+
   // FIXED: Evidence caching to prevent repetitive processing
   const [evidenceCache] = useState(new Map<string, string[]>());
   
@@ -507,6 +539,9 @@ const AdminReportsPage = () => {
       filtered = filtered.filter(report => safeGet(report, 'status') === 'inProgress');
     } else if (activeTab === 'resolved') {
       filtered = filtered.filter(report => safeGet(report, 'status') === 'resolved');
+    } else if (activeTab === 'needs-attention') {
+      // Needs Attention: stale (3+ days), escalated, or follow-up requested
+      filtered = filtered.filter(report => needsAttention(report));
     } else if (activeTab === 'all') {
       // "All" tab excludes closed cases - closed cases only appear in Case Archive page
       filtered = filtered.filter(report => safeGet(report, 'status') !== 'closed');
@@ -943,7 +978,27 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
   // Helper function to determine which action buttons to show
   const getActionButtons = (report: AdminReport): JSX.Element[] => {
     const baseButtons: JSX.Element[] = [];
-    
+
+    // QUICK SUMMARY BUTTON - Visible to all
+    baseButtons.push(
+      <div key="quick-summary" className="relative group">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setQuickSummaryReport(report);
+            setQuickSummaryOpen(true);
+          }}
+          className="text-gray-600 hover:bg-gray-50"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+          Quick Summary
+        </span>
+      </div>
+    );
+
     // ESCALATION BUTTON - Visible to Admin only
     if (isAdmin) {
       baseButtons.push(
@@ -1621,6 +1676,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
     active: reports.filter(r => r.status === 'pending' || (r.status as string) === 'submitted').length,
     investigating: reports.filter(r => r.status === 'inProgress').length,
     resolved: reports.filter(r => r.status === 'resolved').length,
+    needsAttention: reports.filter(r => needsAttention(r)).length,
   };
 
   // Handle tab change
@@ -1912,11 +1968,30 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           >
             Decision Made
             <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
-              activeTab === 'resolved' 
-                ? 'bg-[#1D9E75]/10 text-[#1D9E75]' 
+              activeTab === 'resolved'
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]'
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.resolved}
+            </span>
+          </button>
+          <button
+            onClick={() => handleTabChange('needs-attention')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'needs-attention'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            Needs Attention
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'needs-attention'
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.needsAttention || 0}
             </span>
           </button>
         </nav>
@@ -2100,8 +2175,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                     </button>
                   </TableHead>
                   <TableHead className="text-emerald-950/75">
-                    <button 
-                      onClick={() => handleSort('date')} 
+                    <button
+                      onClick={() => handleSort('date')}
                       className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
                     >
                       Date
@@ -2112,6 +2187,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       )}
                     </button>
                   </TableHead>
+                  <TableHead className="text-emerald-950/75">Last Updated</TableHead>
+                  <TableHead className="text-emerald-950/75">Days Open</TableHead>
+                  <TableHead className="text-emerald-950/75">Activity</TableHead>
                   <TableHead className="text-emerald-950/75">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -2134,12 +2212,19 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
                             {/* Inline escalation badge - only show when escalated */}
                             {(report.escalationLevel || 0) > 0 && (
                               <Badge className="bg-red-100 text-red-700 border border-red-300 text-xs font-semibold px-2">
                                 {report.hoursUnprocessed || 0}h
+                              </Badge>
+                            )}
+                            {/* Follow-Up Request badge */}
+                            {safeGet(report, 'followUpRequested', false) && (
+                              <Badge className="bg-amber-100 text-amber-700 border border-amber-300 text-xs font-semibold px-2 flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3" />
+                                Follow-Up
                               </Badge>
                             )}
                           </div>
@@ -2199,6 +2284,21 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         <div className="text-sm">
                           <div>{safeFormat(safeGet(report, 'reportedAt'), 'MMM dd, yyyy')}</div>
                           <div className="text-gray-500">{safeFormat(safeGet(report, 'reportedAt'), 'HH:mm')}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className={`text-sm ${differenceInDays(new Date(), safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt) || new Date()) >= 3 ? 'text-amber-600 font-medium' : ''}`}>
+                          {getLastUpdated(report)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className={`text-sm font-medium ${getDaysOpen(report) >= 10 ? 'text-red-600' : getDaysOpen(report) >= 5 ? 'text-amber-600' : ''}`}>
+                          {getDaysOpen(report)}d
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm font-medium text-gray-700">
+                          {getActivityCount(report)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -2299,6 +2399,79 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           fileName="Evidence Document"
         />
       )}
+
+      {/* Quick Summary Dialog */}
+      <Dialog open={quickSummaryOpen} onOpenChange={setQuickSummaryOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Case Summary</DialogTitle>
+            <DialogDescription>
+              Quick overview of {quickSummaryReport?.title || 'this case'}
+            </DialogDescription>
+          </DialogHeader>
+          {quickSummaryReport && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <p className="text-xs text-gray-600 mb-1">Status</p>
+                  <Badge className={`${getStatusColor(safeGet(quickSummaryReport, 'status', 'pending'))} text-sm font-medium`}>
+                    {getStatusLabel(safeGet(quickSummaryReport, 'status', 'pending'))}
+                  </Badge>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <p className="text-xs text-gray-600 mb-1">Days Open</p>
+                  <p className="text-lg font-bold">{getDaysOpen(quickSummaryReport)}d</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-lg border">
+                <p className="text-xs text-gray-600 mb-1">Submitted</p>
+                <p className="text-sm font-semibold">{safeFormat(safeGet(quickSummaryReport, 'reportedAt'), 'MMM dd, yyyy')}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-lg border">
+                <p className="text-xs text-gray-600 mb-1">Last Updated</p>
+                <p className="text-sm font-semibold">{getLastUpdated(quickSummaryReport)}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <p className="text-xs text-gray-600 mb-1">Updates</p>
+                  <p className="text-lg font-bold">{getActivityCount(quickSummaryReport)}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border">
+                  <p className="text-xs text-gray-600 mb-1">Follow-Ups</p>
+                  <p className="text-lg font-bold">{safeGet(quickSummaryReport, 'followUpRequested', false) ? '1' : '0'}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-lg border">
+                <p className="text-xs text-gray-600 mb-1">Escalated</p>
+                <p className="text-sm font-semibold">
+                  {(quickSummaryReport.escalationLevel || 0) > 0 ? (
+                    <span className="text-red-600">Yes ({ESCALATION_LABELS[quickSummaryReport.escalationLevel as EscalationLevel] || 'Level ' + quickSummaryReport.escalationLevel})</span>
+                  ) : (
+                    <span className="text-gray-600">No</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setQuickSummaryOpen(false);
+                setSelectedReport(quickSummaryReport);
+                setModalOpen(true);
+                setModalTab('details');
+              }}
+              className="bg-[#1D9E75] hover:bg-[#178F65]"
+            >
+              View Full Details
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Video Viewer Modal */}
       {selectedVideoUrl && (

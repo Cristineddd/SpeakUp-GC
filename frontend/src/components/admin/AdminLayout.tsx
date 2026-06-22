@@ -165,30 +165,36 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarCollapsed ? "w-20" : "w-64"
           )}>
             <div className="flex flex-col h-full">
-              {/* Logo */}
-              <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
-                {!sidebarCollapsed && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
-                      <img
-                        src={gcLogo}
-                        alt="SpeakUp GC Logo"
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          console.error('Failed to load logo:', e);
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
+              {/* Logo & Collapse Button */}
+              <div className="px-6 py-6 border-b border-gray-200">
+                {!sidebarCollapsed ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
+                        <img
+                          src={gcLogo}
+                          alt="SpeakUp GC Logo"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            console.error('Failed to load logo:', e);
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDA3YWI3IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJyczgtNCA4LTEwVjVsLTgtMy02IDJoMDFWMTJjMCA2LTggMTAtOCAxMHoiPjwvcGF0aD48L3N2Zz4=';
+                          }}
+                        />
+                      </div>
                       <h1 className="text-xl font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
                     </div>
+                    <button
+                      onClick={() => setSidebarCollapsed(true)}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Collapse sidebar"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
                   </div>
-                )}
-                {sidebarCollapsed && (
-                  <div className="w-full flex justify-center">
+                ) : (
+                  <div className="w-full flex flex-col items-center gap-2">
                     <div className="w-9 h-9 flex items-center justify-center">
                       <img
                         src={gcLogo}
@@ -196,23 +202,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                         className="w-full h-full object-contain"
                       />
                     </div>
+                    <button
+                      onClick={() => setSidebarCollapsed(false)}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Expand sidebar"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
                 )}
-              </div>
-
-              {/* Collapse Toggle Button */}
-              <div className="px-4 py-2 border-b border-gray-100">
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="w-full flex items-center justify-center px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                >
-                  {sidebarCollapsed ? (
-                    <ChevronRight className="h-4 w-4" />
-                  ) : (
-                    <ChevronLeft className="h-4 w-4" />
-                  )}
-                </button>
               </div>
 
               {/* Navigation */}
@@ -261,7 +259,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 })}
               </nav>
 
-              {/* User Section */}
+              {/* User Profile */}
+              {!sidebarCollapsed && (
+                <div className="px-5 py-4 border-t border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{user?.displayName || 'Admin'}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        {isAdmin ? 'Administrator' : role === 'handler' ? 'Case Handler' : 'Staff'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {sidebarCollapsed && (
+                <div className="px-3 py-3 flex justify-center border-t border-gray-200">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center" title={user?.displayName || 'Admin'}>
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Sign Out */}
               <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
                 <button
                   onClick={() => setShowLogoutDialog(true)}

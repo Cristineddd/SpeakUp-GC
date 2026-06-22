@@ -730,7 +730,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
   const getStatusConfig = (status: ComplaintStatus) => {
     switch (status) {
-      case ComplaintStatus.SUBMITTED: return { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200", dot: "bg-violet-500", label: "Submitted" };
+      case ComplaintStatus.SUBMITTED: return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", dot: "bg-[#1D9E75]", label: "Submitted" };
       case ComplaintStatus.VALIDATED: return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500", label: "Validated" };
       case ComplaintStatus.INVESTIGATING: return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500", label: "Investigating" };
       case ComplaintStatus.UNDER_REVIEW: return { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200", dot: "bg-sky-500", label: "Under Review" };
@@ -742,7 +742,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
   const getStatusColor = (status: ComplaintStatus): string => {
     switch (status) {
-      case ComplaintStatus.SUBMITTED: return "bg-violet-100 text-violet-800";
+      case ComplaintStatus.SUBMITTED: return "bg-green-100 text-green-800";
       case ComplaintStatus.VALIDATED: return "bg-blue-100 text-blue-800";
       case ComplaintStatus.INVESTIGATING: return "bg-amber-100 text-amber-800";
       case ComplaintStatus.RESOLVED: return "bg-green-100 text-green-800";

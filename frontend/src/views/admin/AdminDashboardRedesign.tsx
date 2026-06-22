@@ -20,7 +20,7 @@ import {
 import { collection, query, onSnapshot, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from '../../compat/router';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, formatDistanceToNow } from 'date-fns';
 
 // Green theme colors
 const COLORS = {
@@ -73,39 +73,141 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon: Icon, trend
 const AdminDashboardRedesign = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalUsers: 0,
     totalReports: 0,
-    activeCases: 0,
-    casesWithDecision: 0,
+    pendingCases: 0,
+    underInvestigation: 0,
+    decisionMade: 0,
   });
   const [activeCases, setActiveCases] = useState<any[]>([]);
+  const [needsAttention, setNeedsAttention] = useState<any[]>([]);
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [keyMetrics, setKeyMetrics] = useState({
+    resolutionRate: 0,
+    avgResolutionTime: 0,
+    overdueCases: 0,
+    followUpRequests: 0,
+  });
+  const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
+  const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch users count
-    const usersQuery = query(collection(db, 'users'));
-    const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
-      setStats(prev => ({ ...prev, totalUsers: snapshot.size }));
-    });
-
     // Fetch reports
     const reportsQuery = query(collection(db, 'complaints'));
     const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
       const reports = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      setStats(prev => ({
-        ...prev,
+
+      setStats({
         totalReports: reports.length,
-        activeCases: reports.filter((r: any) => r.status === 'pending' || r.status === 'inProgress').length,
-        casesWithDecision: reports.filter((r: any) => r.status === 'resolved').length,
-      }));
+        pendingCases: reports.filter((r: any) => r.status === 'pending' || r.status === 'submitted').length,
+        underInvestigation: reports.filter((r: any) => r.status === 'inProgress' || r.status === 'investigating').length,
+        decisionMade: reports.filter((r: any) => r.status === 'resolved' || r.status === 'dismissed').length,
+      });
 
       // Get active cases for table
       const active = reports
         .filter((r: any) => r.status === 'pending' || r.status === 'inProgress')
         .slice(0, 5);
       setActiveCases(active);
+
+      // Calculate cases needing attention (no update for 3+ days)
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const attention = reports
+        .filter((r: any) => {
+          const lastUpdate = r.updatedAt?.toDate() || r.createdAt?.toDate();
+          return (
+            (r.status === 'pending' || r.status === 'inProgress' || r.status === 'submitted') &&
+            lastUpdate &&
+            lastUpdate < threeDaysAgo
+          );
+        })
+        .slice(0, 5);
+      setNeedsAttention(attention);
+
+      // Calculate upcoming deadlines
+      const now = new Date();
+      const deadlines = reports
+        .filter((r: any) => r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress')
+        .map((r: any) => {
+          const createdAt = r.createdAt?.toDate() || new Date();
+          const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+          const deadlineDays = 7; // 7-day response deadline
+          const daysUntilDeadline = deadlineDays - daysSinceCreation;
+
+          return {
+            ...r,
+            daysUntilDeadline,
+            isOverdue: daysUntilDeadline < 0,
+            isUrgent: daysUntilDeadline <= 2 && daysUntilDeadline >= 0,
+          };
+        })
+        .filter((r: any) => r.daysUntilDeadline <= 3)
+        .sort((a: any, b: any) => a.daysUntilDeadline - b.daysUntilDeadline)
+        .slice(0, 5);
+      setUpcomingDeadlines(deadlines);
+
+      // Calculate key metrics
+      const resolvedCases = reports.filter((r: any) => r.status === 'resolved' || r.status === 'dismissed');
+      const totalClosed = resolvedCases.length;
+      const totalCases = reports.length;
+      const resolutionRate = totalCases > 0 ? Math.round((totalClosed / totalCases) * 100) : 0;
+
+      // Calculate average resolution time (in days)
+      let totalResolutionTime = 0;
+      resolvedCases.forEach((r: any) => {
+        const createdAt = r.createdAt?.toDate();
+        const updatedAt = r.updatedAt?.toDate();
+        if (createdAt && updatedAt) {
+          totalResolutionTime += (updatedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        }
+      });
+      const avgResolutionTime = totalClosed > 0 ? (totalResolutionTime / totalClosed).toFixed(1) : 0;
+
+      // Calculate overdue cases (cases past 7-day deadline)
+      const overdueCases = reports.filter((r: any) => {
+        const createdAt = r.createdAt?.toDate();
+        if (!createdAt) return false;
+        const daysSinceCreation = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && daysSinceCreation > 7;
+      }).length;
+
+      // Follow-up requests (simulated - in real system, this would be a separate field)
+      const followUpRequests = needsAttention.length;
+
+      setKeyMetrics({
+        resolutionRate,
+        avgResolutionTime: Number(avgResolutionTime),
+        overdueCases,
+        followUpRequests,
+      });
+
+      // Calculate category distribution
+      const categories: Record<string, number> = {};
+      reports.forEach((r: any) => {
+        const type = r.type || 'Others';
+        categories[type] = (categories[type] || 0) + 1;
+      });
+      const categoryData = Object.entries(categories).map(([name, value]) => ({
+        name,
+        value,
+        percentage: Math.round((value / reports.length) * 100),
+      })).sort((a, b) => b.value - a.value);
+      setCategoryDistribution(categoryData);
+
+      // Calculate status distribution
+      const statuses: Record<string, number> = {};
+      reports.forEach((r: any) => {
+        const status = r.status || 'Unknown';
+        statuses[status] = (statuses[status] || 0) + 1;
+      });
+      const statusData = Object.entries(statuses).map(([name, value]) => ({
+        name,
+        value,
+        percentage: Math.round((value / reports.length) * 100),
+      })).sort((a, b) => b.value - a.value);
+      setStatusDistribution(statusData);
 
       // Calculate monthly data
       const last6Months = Array.from({ length: 6 }, (_, i) => {
@@ -134,7 +236,6 @@ const AdminDashboardRedesign = () => {
     });
 
     return () => {
-      unsubUsers();
       unsubReports();
     };
   }, []);
@@ -185,13 +286,6 @@ const AdminDashboardRedesign = () => {
       {/* Top Metrics - 4 cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Total Users"
-          value={stats.totalUsers}
-          icon={Users}
-          trend="+11%"
-          onClick={() => navigate('/admin/users')}
-        />
-        <MetricCard
           title="Total Reports"
           value={stats.totalReports}
           icon={FileText}
@@ -199,25 +293,122 @@ const AdminDashboardRedesign = () => {
           onClick={() => navigate('/admin/reports')}
         />
         <MetricCard
-          title="Active Cases"
-          value={stats.activeCases}
-          icon={ShieldAlert}
+          title="Pending Cases"
+          value={stats.pendingCases}
+          icon={Clock}
           trend="0%"
+          onClick={() => navigate('/admin/reports?status=pending')}
         />
         <MetricCard
-          title="Cases with Decision"
-          value={stats.casesWithDecision}
+          title="Under Investigation"
+          value={stats.underInvestigation}
+          icon={ShieldAlert}
+          trend="0%"
+          onClick={() => navigate('/admin/reports?status=inProgress')}
+        />
+        <MetricCard
+          title="Decision Made"
+          value={stats.decisionMade}
           icon={CheckCircle}
           trend="0%"
           onClick={() => navigate('/admin/closed-cases')}
         />
       </div>
 
+      {/* Needs Attention Widget */}
+      {needsAttention.length > 0 && (
+        <Card className="bg-red-50 border-red-200 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-100">
+                  <ShieldAlert className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-red-900">Reports Needing Follow-Up</p>
+                  <p className="text-xs text-red-700">{needsAttention.length} cases with no update for 3+ days</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => navigate('/admin/reports')}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                View All
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Key Metrics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.primaryLight }}>
+                <CheckCircle className="h-5 w-5" style={{ color: COLORS.primary }} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Case Resolution Rate</p>
+                <p className="text-2xl font-bold text-gray-900">{keyMetrics.resolutionRate}%</p>
+                <p className="text-xs text-gray-500 mt-0.5">Resolved / Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.primaryLight }}>
+                <Clock className="h-5 w-5" style={{ color: COLORS.primary }} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Avg Resolution Time</p>
+                <p className="text-2xl font-bold text-gray-900">{keyMetrics.avgResolutionTime}d</p>
+                <p className="text-xs text-gray-500 mt-0.5">Days to resolve</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-red-100">
+                <ShieldAlert className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Overdue Cases</p>
+                <p className="text-2xl font-bold text-gray-900">{keyMetrics.overdueCases}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Past 7-day deadline</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <FileText className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Follow-Up Requests</p>
+                <p className="text-2xl font-bold text-gray-900">{keyMetrics.followUpRequests}</p>
+                <p className="text-xs text-gray-500 mt-0.5">Needing attention</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Middle Section - 3 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Recent Complaints + Monthly Reports */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Recent Complaints - Moved here */}
+          {/* Recent Complaints - Mini-table format */}
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-semibold">Recent Complaints</CardTitle>
@@ -230,30 +421,30 @@ const AdminDashboardRedesign = () => {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3">
-                    {activeCases.map((case_: any) => (
-                      <div
-                        key={case_.id}
-                        className="p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer"
-                        onClick={() => navigate(`/admin/reports?reportId=${case_.id}`)}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate mb-1">
-                              {case_.title || case_.description?.substring(0, 50) || 'Untitled'}
-                            </p>
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
-                              <span>{case_.type || 'General'}</span>
-                              <span>•</span>
-                              <span>{case_.isAnonymous ? 'Anonymous' : case_.complainantName}</span>
-                              <span>•</span>
-                              <span>{case_.createdAt?.toDate ? format(case_.createdAt.toDate(), 'MMM dd') : 'N/A'}</span>
+                  <div className="space-y-2">
+                    {activeCases.map((case_: any) => {
+                      const createdAt = case_.createdAt?.toDate();
+                      const timeAgo = createdAt ? formatDistanceToNow(createdAt, { addSuffix: true }) : 'N/A';
+                      return (
+                        <div
+                          key={case_.id}
+                          className="p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all cursor-pointer"
+                          onClick={() => navigate(`/admin/reports?reportId=${case_.id}`)}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate mb-1">
+                                {case_.title || case_.description?.substring(0, 40) || 'Untitled'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {case_.type || 'General'} • {timeAgo}
+                              </p>
                             </div>
+                            {getStatusBadge(case_.status)}
                           </div>
-                          {getStatusBadge(case_.status)}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <button
                     onClick={() => navigate('/admin/reports')}
@@ -465,50 +656,153 @@ const AdminDashboardRedesign = () => {
           </Card>
         </div>
 
-        {/* Right Column - Calendar + Hearings */}
+        {/* Right Column - Upcoming Deadlines */}
         <div className="lg:col-span-3 space-y-6">
-          {/* Mini Calendar */}
+          {/* Upcoming Deadlines */}
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-base font-semibold">
-                {format(currentMonth, 'MMMM yyyy')}
-              </CardTitle>
+              <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
+              <p className="text-xs text-gray-500 mt-1">Cases requiring immediate attention</p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                  <div key={i} className="text-center text-xs font-medium text-gray-500 py-1">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                  <div key={`empty-${i}`} />
-                ))}
-                {daysInMonth.map((day, i) => {
-                  const isToday = isSameDay(day, new Date());
-                  return (
+              {upcomingDeadlines.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">No urgent deadlines</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingDeadlines.map((deadline: any) => (
                     <div
-                      key={i}
-                      className={`
-                        text-center text-sm py-2 rounded-lg cursor-pointer transition-colors
-                        ${isToday 
-                          ? 'font-bold text-white' 
-                          : 'text-gray-700 hover:bg-gray-100'
-                        }
-                      `}
-                      style={isToday ? { backgroundColor: COLORS.primary } : {}}
+                      key={deadline.id}
+                      className="p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all"
+                      style={{
+                        borderColor: deadline.isOverdue ? '#FECACA' : deadline.isUrgent ? '#FDE68A' : '#E5E7EB',
+                        backgroundColor: deadline.isOverdue ? '#FEF2F2' : deadline.isUrgent ? '#FFFBEB' : 'white',
+                      }}
+                      onClick={() => navigate(`/admin/reports?reportId=${deadline.id}`)}
                     >
-                      {format(day, 'd')}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 truncate mb-1">
+                            Report #{deadline.id.slice(-3)}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {deadline.title || deadline.description?.substring(0, 30) || 'Untitled'}
+                          </p>
+                        </div>
+                        <Badge
+                          className={`text-[10px] font-medium border-0 ${
+                            deadline.isOverdue
+                              ? 'bg-red-500 text-white'
+                              : deadline.isUrgent
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-green-500 text-white'
+                          }`}
+                        >
+                          {deadline.isOverdue
+                            ? `Overdue by ${Math.abs(deadline.daysUntilDeadline)}d`
+                            : deadline.daysUntilDeadline === 0
+                            ? 'Due Today'
+                            : deadline.daysUntilDeadline === 1
+                            ? 'Due Tomorrow'
+                            : `${deadline.daysUntilDeadline} days`}
+                        </Badge>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
         </div>
+      </div>
+
+      {/* Visual Analytics - Pie Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Reports by Category */}
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-semibold">Reports by Category</CardTitle>
+            <p className="text-xs text-gray-500 mt-1">Distribution of complaint types</p>
+          </CardHeader>
+          <CardContent>
+            {categoryDistribution.length === 0 ? (
+              <div className="text-center py-8">
+                <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">No data yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {categoryDistribution.map((cat, index) => {
+                  const colors = ['#1D9E75', '#10B981', '#34D399', '#6EE7B7', '#A7F3D0'];
+                  const color = colors[index % colors.length];
+                  return (
+                    <div key={cat.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-700">{cat.name}</span>
+                        <span className="text-xs text-gray-500">{cat.percentage}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${cat.percentage}%`, backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Reports by Status */}
+        <Card className="bg-white border-0 shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base font-semibold">Reports by Status</CardTitle>
+            <p className="text-xs text-gray-500 mt-1">Current case status distribution</p>
+          </CardHeader>
+          <CardContent>
+            {statusDistribution.length === 0 ? (
+              <div className="text-center py-8">
+                <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500">No data yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {statusDistribution.map((stat, index) => {
+                  const statusColors: Record<string, string> = {
+                    pending: '#F59E0B',
+                    submitted: '#F59E0B',
+                    inProgress: '#3B82F6',
+                    investigating: '#3B82F6',
+                    resolved: '#10B981',
+                    dismissed: '#EF4444',
+                  };
+                  const color = statusColors[stat.name.toLowerCase()] || '#6B7280';
+                  return (
+                    <div key={stat.name}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium text-gray-700 capitalize">
+                          {stat.name.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs text-gray-500">{stat.percentage}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${stat.percentage}%`, backgroundColor: color }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
@@ -519,7 +813,7 @@ const AdminDashboardRedesign = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <button
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate('/admin/reports')}
               className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
             >
               <div 
@@ -528,31 +822,7 @@ const AdminDashboardRedesign = () => {
               >
                 <UserPlus className="h-5 w-5" style={{ color: COLORS.primary }} />
               </div>
-              <p className="text-sm font-semibold text-gray-900">Manage Users</p>
-            </button>
-            <button
-              onClick={() => navigate('/admin/reports')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
-            >
-              <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
-              >
-                <BarChart3 className="h-5 w-5" style={{ color: COLORS.primary }} />
-              </div>
-              <p className="text-sm font-semibold text-gray-900">View Reports</p>
-            </button>
-            <button
-              onClick={() => navigate('/admin/closed-cases')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
-            >
-              <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
-              >
-                <Archive className="h-5 w-5" style={{ color: COLORS.primary }} />
-              </div>
-              <p className="text-sm font-semibold text-gray-900">Archive Cases</p>
+              <p className="text-sm font-semibold text-gray-900">Assign Case</p>
             </button>
             <button
               onClick={() => navigate('/admin/compliance-reports')}
@@ -564,7 +834,31 @@ const AdminDashboardRedesign = () => {
               >
                 <FileCheck className="h-5 w-5" style={{ color: COLORS.primary }} />
               </div>
-              <p className="text-sm font-semibold text-gray-900">Generate Compliance Report</p>
+              <p className="text-sm font-semibold text-gray-900">Generate Report</p>
+            </button>
+            <button
+              onClick={() => navigate('/admin/reports')}
+              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+            >
+              <div 
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
+                style={{ backgroundColor: COLORS.primaryLight }}
+              >
+                <ShieldAlert className="h-5 w-5" style={{ color: COLORS.primary }} />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">View Escalations</p>
+            </button>
+            <button
+              onClick={() => navigate('/admin/analytics')}
+              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+            >
+              <div 
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
+                style={{ backgroundColor: COLORS.primaryLight }}
+              >
+                <BarChart3 className="h-5 w-5" style={{ color: COLORS.primary }} />
+              </div>
+              <p className="text-sm font-semibold text-gray-900">Export Analytics</p>
             </button>
           </div>
         </CardContent>

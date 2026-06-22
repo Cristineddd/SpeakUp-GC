@@ -470,11 +470,6 @@ const RepresentativesManagement = () => {
                             </div>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-4 text-xs text-gray-600 ml-[52px]">
-                          <span><strong className="text-gray-900">Active Cases:</strong> {rep.activeCases || 0}</span>
-                          <span><strong className="text-gray-900">Resolved:</strong> {rep.resolvedCases || 0}</span>
-                        </div>
                       </div>
 
                       <div className="flex items-center">

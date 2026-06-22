@@ -184,9 +184,9 @@ export default function Sidebar() {
       )}
       style={{ backgroundColor: isCollapsed ? '#F0FAF6' : '#E8F5EE' }}>
         {/* Logo & Collapse Button */}
-        <div className="flex items-center justify-between px-4 py-5 border-b border-green-200">
+        <div className="px-4 py-5 border-b border-green-200">
           {!isCollapsed ? (
-            <>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
@@ -200,7 +200,7 @@ export default function Sidebar() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-            </>
+            </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-2">
               <div className="w-9 h-9 flex items-center justify-center">
@@ -216,30 +216,6 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-
-        {/* User Profile */}
-        {!isCollapsed && (
-          <div className="px-5 py-4 mb-1" style={{ borderBottom: '1.5px solid #C8E6D9' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
-                {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  {userRole === 'complainant' ? 'Complainant' : userRole || 'User'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        {isCollapsed && (
-          <div className="px-3 py-3 flex justify-center" style={{ borderBottom: '1.5px solid #C8E6D9' }}>
-            <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm shadow-sm" title={alias || user?.displayName || 'User'}>
-              {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
-            </div>
-          </div>
-        )}
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -330,6 +306,30 @@ export default function Sidebar() {
                   </Link>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Profile */}
+        {!isCollapsed && (
+          <div className="px-5 py-4 border-t border-green-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+                {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  {userRole === 'complainant' ? 'Complainant' : userRole || 'User'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        {isCollapsed && (
+          <div className="px-3 py-3 flex justify-center border-t border-green-200">
+            <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm shadow-sm" title={alias || user?.displayName || 'User'}>
+              {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
             </div>
           </div>
         )}
