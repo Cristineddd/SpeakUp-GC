@@ -225,13 +225,13 @@ const getFileType = (url: string): string => {
 
 // Helper functions for operational metrics
 const getDaysOpen = (report: AdminReport): number => {
-  const createdAt = safeToDate(report.createdAt);
+  const createdAt = safeToDate(report.reportedAt);
   if (!createdAt) return 0;
   return differenceInDays(new Date(), createdAt);
 };
 
 const getLastUpdated = (report: AdminReport): string => {
-  const lastUpdated = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt);
+  const lastUpdated = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt);
   if (!lastUpdated) return 'N/A';
   return formatDistanceToNow(lastUpdated, { addSuffix: true });
 };
@@ -242,7 +242,7 @@ const getActivityCount = (report: AdminReport): number => {
 };
 
 const needsAttention = (report: AdminReport): boolean => {
-  const updatedAt = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt);
+  const updatedAt = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt);
   if (!updatedAt) return false;
 
   const daysSinceUpdate = differenceInDays(new Date(), updatedAt);
@@ -2287,7 +2287,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className={`text-sm ${differenceInDays(new Date(), safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.createdAt) || new Date()) >= 3 ? 'text-amber-600 font-medium' : ''}`}>
+                        <div className={`text-sm ${differenceInDays(new Date(), safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt) || new Date()) >= 3 ? 'text-amber-600 font-medium' : ''}`}>
                           {getLastUpdated(report)}
                         </div>
                       </TableCell>
