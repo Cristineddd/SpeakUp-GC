@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { CaseActivityService } from '../services/caseActivityService';
 
 export type ReportStatus = 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed';
 
@@ -207,6 +208,24 @@ export function useReportStatus(
       console.log('📝 [STATUS UPDATE] Updating report:', { reportId, newStatus, statusUpdate });
       await updateDoc(reportRef, statusUpdate);
       console.log('✅ [STATUS UPDATE] Successfully updated to:', newStatus);
+
+      // Log manual status change with current user as actor
+      try {
+        await CaseActivityService.logStatusChange(
+          reportId,
+          currentStatus,
+          newStatus,
+          notes,
+          currentUser.uid,
+          currentUser.displayName || currentUser.email || 'Unknown User',
+          'admin',
+          false // isSystemAction = false for manual status changes
+        );
+        console.log('✅ Status change logged');
+      } catch (logError) {
+        console.error('⚠️ Failed to log status change:', logError);
+        // Don't fail the status update if logging fails
+      }
 
       // Send notification to complainant about status change
       try {

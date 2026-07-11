@@ -11,15 +11,26 @@ export enum ActivityType {
   OTHER = 'other'
 }
 
+// System actor identifier for automated actions
+export const SYSTEM_ACTOR = {
+  id: 'SYSTEM',
+  name: 'System',
+  role: 'system' as const
+};
+
 export interface CaseActivity {
   id: string;
   complaintId: string;
   activityType: ActivityType;
   description: string;
   findings?: string;
+  // Actor (who performed the action)
   performedBy: string;
   performedByName: string;
-  performedByRole: 'admin' | 'handler';
+  performedByRole: 'admin' | 'handler' | 'system';
+  // Target/assignee (who the action was performed on/for)
+  targetUserId?: string;
+  targetUserName?: string;
   createdAt: Date;
   attachments?: string[];
   metadata?: {

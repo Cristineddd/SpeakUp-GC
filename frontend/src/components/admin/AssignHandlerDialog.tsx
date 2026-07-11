@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge';
 import { useToast } from '../../hooks/use-toast';
 import { RepresentativeService } from '../../services/representativeService';
 import { NotificationService } from '../../services/notificationService';
+import { CaseActivityService } from '../../services/caseActivityService';
 import { doc, updateDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -266,6 +267,22 @@ export function AssignHandlerDialog({
 
       console.log('✅ Case added to representative assignedCases array');
       console.log('✅ Case assigned successfully - CODI member should now see this case');
+
+      // Log manual handler assignment with current user as actor
+      try {
+        await CaseActivityService.logHandlerAssignment(
+          complaint.id,
+          codiMember.displayName,
+          codiMember.userId,
+          currentUser?.uid,
+          currentUser?.displayName || 'Admin',
+          false // isSystemAction = false for manual assignment
+        );
+        console.log('✅ Handler assignment logged');
+      } catch (logError) {
+        console.error('⚠️ Failed to log handler assignment:', logError);
+        // Don't fail assignment if logging fails
+      }
 
       // Send notification to complainant
       try {

@@ -297,7 +297,7 @@ export default function MyComplaints() {
           {[
             { label: "Total Filed", value: total, icon: FileText },
             { label: "Ongoing Investigation", value: inProgress, icon: Loader },
-            { label: "Decision Already Made", value: decided, icon: Gavel },
+            { label: "Resolved", value: decided, icon: Gavel },
           ].map((stat) => {
             const Icon = stat.icon;
             return (

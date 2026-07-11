@@ -32,6 +32,7 @@ import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestor
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
 import { RepresentativeService } from '../../services/representativeService';
+import { CaseActivityService } from '../../services/caseActivityService';
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/FormAssistant";
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
@@ -532,6 +533,22 @@ const FormalComplaint = () => {
       // Limit to 11 digits
       const limitedNumber = numberOnly.slice(0, 11);
       setFormData(prev => ({ ...prev, [field]: limitedNumber }));
+      return;
+    }
+
+    // Validate name fields to only allow letters, spaces, hyphens, apostrophes, and periods
+    if (field === "complainantName" || field === "respondentName") {
+      // Allow letters (including Unicode), spaces, hyphens, apostrophes, and periods
+      const nameOnly = value.replace(/[^a-zA-Z\u00C0-\u00FF\s\-'.]/g, '');
+      setFormData(prev => ({ ...prev, [field]: nameOnly }));
+      return;
+    }
+
+    // Validate description to prevent special characters (allow letters, numbers, basic punctuation)
+    if (field === "description") {
+      // Allow letters, numbers, spaces, and basic punctuation (.,!?;:()-)
+      const cleanDescription = value.replace(/[^a-zA-Z0-9\s.,!?;:()\-\u00C0-\u00FF]/g, '');
+      setFormData(prev => ({ ...prev, [field]: cleanDescription }));
       return;
     }
     
@@ -1148,6 +1165,28 @@ const FormalComplaint = () => {
               assignedByName: 'Auto-Assignment'
             }]
           });
+          
+          // Log automated status change with System as actor
+          await CaseActivityService.logStatusChange(
+            complaintId,
+            'submitted',
+            'inProgress',
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            true // isSystemAction
+          );
+          
+          // Log automated handler assignment with System as actor
+          await CaseActivityService.logHandlerAssignment(
+            complaintId,
+            selectedCODI.displayName,
+            selectedCODI.userId,
+            undefined,
+            undefined,
+            true // isSystemAction
+          );
           
           // Assign case to representative
           await RepresentativeService.assignCase(selectedCODI.id, complaintId);

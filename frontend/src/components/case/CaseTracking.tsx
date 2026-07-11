@@ -677,7 +677,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     const fromLogged: InvestigationActivity[] = realActivities.map((ra) => ({
       id: `case_activity_${ra.id}`,
       complaintId: ra.complaintId,
-      investigatorId: ra.performedByName,
+      investigatorId: ra.performedByName, // This is the actor (who performed the action)
       activityType: mapCaseActivityType(ra.activityType),
       description: ra.description,
       findings: ra.findings,

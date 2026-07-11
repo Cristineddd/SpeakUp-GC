@@ -10,7 +10,7 @@ import {
   Unsubscribe 
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { CaseActivity, CreateCaseActivityInput, ActivityType } from '../types/caseActivity';
+import { CaseActivity, CreateCaseActivityInput, ActivityType, SYSTEM_ACTOR } from '../types/caseActivity';
 
 export class CaseActivityService {
   private static COLLECTION = 'caseActivities';
@@ -22,7 +22,9 @@ export class CaseActivityService {
     input: CreateCaseActivityInput,
     userId: string,
     userName: string,
-    userRole: 'admin' | 'handler'
+    userRole: 'admin' | 'handler' | 'system',
+    targetUserId?: string,
+    targetUserName?: string
   ): Promise<string> {
     try {
       console.log('📝 Creating case activity:', input);
@@ -35,6 +37,8 @@ export class CaseActivityService {
         performedBy: userId,
         performedByName: userName,
         performedByRole: userRole,
+        targetUserId: targetUserId || null,
+        targetUserName: targetUserName || null,
         createdAt: Timestamp.now(),
         attachments: input.attachments || [],
         metadata: input.metadata || {}
@@ -77,6 +81,8 @@ export class CaseActivityService {
           performedBy: data.performedBy,
           performedByName: data.performedByName,
           performedByRole: data.performedByRole,
+          targetUserId: data.targetUserId,
+          targetUserName: data.targetUserName,
           createdAt: data.createdAt?.toDate() || new Date(),
           attachments: data.attachments || [],
           metadata: data.metadata || {}
@@ -120,6 +126,8 @@ export class CaseActivityService {
           performedBy: data.performedBy,
           performedByName: data.performedByName,
           performedByRole: data.performedByRole,
+          targetUserId: data.targetUserId,
+          targetUserName: data.targetUserName,
           createdAt: data.createdAt?.toDate() || new Date(),
           attachments: data.attachments || [],
           metadata: data.metadata || {}
@@ -139,9 +147,10 @@ export class CaseActivityService {
     oldStatus: string,
     newStatus: string,
     notes: string | undefined,
-    userId: string,
-    userName: string,
-    userRole: 'admin' | 'handler'
+    userId?: string,
+    userName?: string,
+    userRole?: 'admin' | 'handler',
+    isSystemAction: boolean = false
   ): Promise<void> {
     try {
       const statusLabels: Record<string, string> = {
@@ -155,21 +164,29 @@ export class CaseActivityService {
         'dismissed': 'Decision Already Made'
       };
 
+      // Use System actor for automated actions
+      const actorId = isSystemAction ? SYSTEM_ACTOR.id : (userId || SYSTEM_ACTOR.id);
+      const actorName = isSystemAction ? SYSTEM_ACTOR.name : (userName || SYSTEM_ACTOR.name);
+      const actorRole = isSystemAction ? SYSTEM_ACTOR.role : (userRole || 'admin');
+
       await this.createActivity(
         {
           complaintId,
           activityType: ActivityType.STATUS_UPDATE,
-          description: `Case status updated from ${statusLabels[oldStatus] || oldStatus} to ${statusLabels[newStatus] || newStatus}`,
+          description: isSystemAction 
+            ? `Complaint status automatically updated to ${statusLabels[newStatus] || newStatus} following submission.`
+            : `Case status updated from ${statusLabels[oldStatus] || oldStatus} to ${statusLabels[newStatus] || newStatus}`,
           findings: notes || `Status changed to ${statusLabels[newStatus] || newStatus}`,
           metadata: {
             statusBefore: oldStatus,
             statusAfter: newStatus,
-            notes
+            notes,
+            isSystemAction
           }
         },
-        userId,
-        userName,
-        userRole
+        actorId,
+        actorName,
+        actorRole
       );
     } catch (error) {
       console.error('❌ Error logging status change:', error);
@@ -182,23 +199,35 @@ export class CaseActivityService {
   static async logHandlerAssignment(
     complaintId: string,
     handlerName: string,
-    userId: string,
-    userName: string
+    handlerId?: string,
+    userId?: string,
+    userName?: string,
+    isSystemAction: boolean = false
   ): Promise<void> {
     try {
+      // Use System actor for automated actions
+      const actorId = isSystemAction ? SYSTEM_ACTOR.id : (userId || SYSTEM_ACTOR.id);
+      const actorName = isSystemAction ? SYSTEM_ACTOR.name : (userName || SYSTEM_ACTOR.name);
+      const actorRole = isSystemAction ? SYSTEM_ACTOR.role : 'admin';
+
       await this.createActivity(
         {
           complaintId,
           activityType: ActivityType.ASSIGNMENT,
-          description: 'CODI member assigned',
+          description: isSystemAction 
+            ? `Case automatically assigned to CODI member ${handlerName} for review.`
+            : 'CODI member assigned',
           findings: `${handlerName} has been assigned to handle this case. The investigation process will begin shortly.`,
           metadata: {
-            assignedHandler: handlerName
+            assignedHandler: handlerName,
+            isSystemAction
           }
         },
-        userId,
-        userName,
-        'admin'
+        actorId,
+        actorName,
+        actorRole,
+        handlerId, // targetUserId
+        handlerName // targetUserName
       );
     } catch (error) {
       console.error('❌ Error logging handler assignment:', error);
