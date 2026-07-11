@@ -406,8 +406,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userData = userDoc.data();
             if (userData?.isAdmin) {
               (user as AuthUser).isAdmin = true;
+              console.log('User is admin');
+            } else {
+              console.log('User is not admin');
             }
           }
+          
+          console.log('User document check completed successfully');
         } catch (dbError) {
           console.error('Error creating/updating user document:', dbError);
           // Re-throw the error to prevent login

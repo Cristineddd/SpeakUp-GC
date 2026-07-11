@@ -707,15 +707,15 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     // Convert status to string for comparison (admin uses different status values)
     const statusStr = (complaint.status as any) as string;
     
-    // Simplified 3-stage progress: Submitted (33%), Ongoing Investigation (66%), Decision Already Made (100%)
+    // Simplified 3-stage progress: Pending (33%), Investigating (66%), Resolved (100%)
     
-    // Stage 3: Decision Already Made (100%)
+    // Stage 3: Resolved (100%)
     if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved' || 
         complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') {
       return 100;
     }
     
-    // Stage 2: Ongoing Investigation (66%)
+    // Stage 2: Investigating (66%)
     if (statusStr === 'inProgress' || 
         complaint.status === ComplaintStatus.VALIDATED || 
         complaint.status === ComplaintStatus.INVESTIGATING || 
@@ -815,9 +815,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
   // Simplified to 3 stages
   const stageSteps = [
-    { key: 'submitted', label: "Submitted" },
-    { key: 'investigating', label: "Ongoing Investigation" },
-    { key: 'decided', label: "Decision Already Made" },
+    { key: 'submitted', label: "Pending" },
+    { key: 'investigating', label: "Investigating" },
+    { key: 'decided', label: "Resolved" },
   ];
 
   // Determine current stage index based on status

@@ -1,6 +1,6 @@
 /**
  * Representatives Management Page
- * Admin page to manage case handlers and administrators
+ * Admin page to manage CODI members and administrators
  */
 
 import { useState, useEffect } from 'react';

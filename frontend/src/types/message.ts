@@ -38,7 +38,7 @@ export interface Message {
   // Sender info
   senderId: string;
   senderName: string;
-  senderRole: 'complainant' | 'handler' | 'admin' | 'system';
+  senderRole: 'complainant' | 'handler' | 'admin' | 'codi' | 'system';
   
   // Message content
   type: MessageType;
@@ -97,7 +97,7 @@ export interface ChatRoom {
   participants: {
     [userId: string]: {
       name: string;
-      role: 'complainant' | 'handler' | 'admin';
+      role: 'complainant' | 'handler' | 'admin' | 'codi';
       joinedAt: string | Timestamp;
       lastSeenAt?: string | Timestamp;
     };

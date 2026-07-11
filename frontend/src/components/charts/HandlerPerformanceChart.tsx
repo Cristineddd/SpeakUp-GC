@@ -1,28 +1,28 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-interface HandlerData {
-  handlerName: string;
+interface CODIMemberData {
+  codiMemberName: string;
   casesResolved: number;
   casesInProgress: number;
   casesAssigned: number;
 }
 
 interface HandlerPerformanceChartProps {
-  data: HandlerData[];
+  data: CODIMemberData[];
 }
 
 export const HandlerPerformanceChart: React.FC<HandlerPerformanceChartProps> = ({ data }) => {
-  // Format data for chart - take top 8 handlers by total cases
+  // Format data for chart - take top 8 CODI members by total cases
   const chartData = data
     .slice(0, 8)
-    .map(handler => ({
-      name: handler.handlerName.length > 15 
-        ? handler.handlerName.substring(0, 12) + '...' 
-        : handler.handlerName,
-      Resolved: handler.casesResolved,
-      'In Progress': handler.casesInProgress,
-      Pending: handler.casesAssigned - handler.casesResolved - handler.casesInProgress,
+    .map(codiMember => ({
+      name: codiMember.codiMemberName.length > 15 
+        ? codiMember.codiMemberName.substring(0, 12) + '...' 
+        : codiMember.codiMemberName,
+      Resolved: codiMember.casesResolved,
+      'In Progress': codiMember.casesInProgress,
+      Pending: codiMember.casesAssigned - codiMember.casesResolved - codiMember.casesInProgress,
     }));
 
   const CustomTooltip = ({ active, payload, label }: any) => {

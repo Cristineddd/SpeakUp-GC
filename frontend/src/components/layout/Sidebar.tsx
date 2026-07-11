@@ -191,7 +191,7 @@ export default function Sidebar() {
                 <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                   <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
                 </div>
-                <h1 className="text-lg font-bold text-gray-900 leading-tight whitespace-nowrap">SpeakUp GC</h1>
+                <h1 className="text-base font-bold text-gray-900 whitespace-nowrap">SpeakUp GC</h1>
               </div>
               <button
                 onClick={() => setIsCollapsed(true)}

@@ -852,7 +852,7 @@ const UsersManagement = () => {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="handler">Case Handler</SelectItem>
+                  <SelectItem value="handler">CODI Member</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
               </Select>

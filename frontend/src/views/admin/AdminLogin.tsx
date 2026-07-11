@@ -43,7 +43,7 @@ export default function AdminLogin() {
         if (isAdmin || role) {
           navigate('/admin');
         } else {
-          setError('Access denied. You must be an administrator or case handler to access this area.');
+          setError('Access denied. You must be an administrator or CODI member to access this area.');
         }
       }
     };
@@ -101,7 +101,7 @@ export default function AdminLogin() {
           </div>
           <h1 className="text-2xl font-bold text-white mb-1">Admin Panel</h1>
           <p className="text-sm text-[#b5bac1]">Sign in to access the admin dashboard</p>
-          <p className="text-[11px] text-[#72767d] mt-1">Admin • Case Handlers</p>
+          <p className="text-[11px] text-[#72767d] mt-1">Admin • CODI Members</p>
         </div>
 
         <div className="px-8 pb-8 pt-4">

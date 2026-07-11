@@ -480,76 +480,158 @@ export function ReportStatusManager({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="font-semibold">
-                {selectedStatus === 'resolved' 
-                  ? 'Resolution Details & Investigation Summary *' 
-                  : selectedStatus === 'inProgress'
-                  ? 'Investigation Notes (Optional)'
-                  : 'Notes (Optional)'}
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder={
-                  selectedStatus === 'resolved'
-                    ? 'Describe the investigation conducted and resolution actions taken...'
-                    : selectedStatus === 'inProgress'
-                    ? 'Describe the investigation steps being taken...'
-                    : 'Add any notes about this status change...'
-                }
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={selectedStatus === 'resolved' ? 5 : 3}
-                className={selectedStatus === 'resolved' && !notes.trim() ? 'border-amber-400' : ''}
-              />
-              {selectedStatus === 'resolved' && (
-                <p className="text-xs text-amber-600 font-medium">
-                  ⚠️ Required: Please provide investigation summary and resolution details for transparency.
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="attachment-full">Attachment (Optional)</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="attachment-full"
-                  type="file"
-                  onChange={handleFileSelect}
-                  disabled={isUpdating}
-                  className="hidden"
-                  accept="image/*,.pdf,.doc,.docx"
-                />
-                <label
-                  htmlFor="attachment-full"
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
-                >
-                  <Upload className="h-4 w-4 text-emerald-700" />
-                  <span className="text-sm text-emerald-700">Choose file</span>
-                </label>
-                {attachmentFile && (
-                  <span className="text-sm text-gray-600 flex-1 truncate">
-                    {attachmentFile.name}
-                  </span>
-                )}
-              </div>
-              
-              {attachmentPreview && (
-                <div className="relative mt-2">
-                  <img 
-                    src={attachmentPreview} 
-                    alt="Preview" 
-                    className="max-h-40 rounded border border-emerald-200"
+            {/* Closure Form for 'closed' status */}
+            {selectedStatus === 'closed' ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="decision-summary" className="font-semibold">
+                    Decision Summary * <span className="text-red-500">(Required)</span>
+                  </Label>
+                  <Textarea
+                    id="decision-summary"
+                    placeholder="Summarize the final decision made on this case..."
+                    value={decisionSummary}
+                    onChange={(e) => setDecisionSummary(e.target.value)}
+                    rows={3}
+                    className={!decisionSummary.trim() ? 'border-red-400' : ''}
                   />
-                  <button
-                    onClick={handleRemoveAttachment}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  {!decisionSummary.trim() && (
+                    <p className="text-xs text-red-600 font-medium">
+                      ⚠️ Required: Please provide a summary of the decision.
+                    </p>
+                  )}
                 </div>
-              )}
-            </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="action-taken" className="font-semibold">
+                    Action Taken * <span className="text-red-500">(Required)</span>
+                  </Label>
+                  <Textarea
+                    id="action-taken"
+                    placeholder="Describe the actions taken as a result of this decision..."
+                    value={actionTaken}
+                    onChange={(e) => setActionTaken(e.target.value)}
+                    rows={3}
+                    className={!actionTaken.trim() ? 'border-red-400' : ''}
+                  />
+                  {!actionTaken.trim() && (
+                    <p className="text-xs text-red-600 font-medium">
+                      ⚠️ Required: Please describe the actions taken.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="final-notes">Final Notes (Optional)</Label>
+                  <Textarea
+                    id="final-notes"
+                    placeholder="Any additional notes about the case closure..."
+                    value={finalNotes}
+                    onChange={(e) => setFinalNotes(e.target.value)}
+                    rows={2}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="closure-document">Closure Document (Optional)</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="closure-document"
+                      type="file"
+                      onChange={(e) => setClosureDocument(e.target.files?.[0] || null)}
+                      disabled={isUpdating}
+                      className="hidden"
+                      accept="image/*,.pdf,.doc,.docx"
+                    />
+                    <label
+                      htmlFor="closure-document"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                    >
+                      <Upload className="h-4 w-4 text-emerald-700" />
+                      <span className="text-sm text-emerald-700">Choose closure document</span>
+                    </label>
+                    {closureDocument && (
+                      <span className="text-sm text-gray-600 flex-1 truncate">
+                        {closureDocument.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="font-semibold">
+                    {selectedStatus === 'resolved' 
+                      ? 'Resolution Details & Investigation Summary *' 
+                      : selectedStatus === 'inProgress'
+                      ? 'Investigation Notes (Optional)'
+                      : 'Notes (Optional)'}
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    placeholder={
+                      selectedStatus === 'resolved'
+                        ? 'Describe the investigation conducted and resolution actions taken...'
+                        : selectedStatus === 'inProgress'
+                        ? 'Describe the investigation steps being taken...'
+                        : 'Add any notes about this status change...'
+                    }
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={selectedStatus === 'resolved' ? 5 : 3}
+                    className={selectedStatus === 'resolved' && !notes.trim() ? 'border-amber-400' : ''}
+                  />
+                  {selectedStatus === 'resolved' && (
+                    <p className="text-xs text-amber-600 font-medium">
+                      ⚠️ Required: Please provide investigation summary and resolution details for transparency.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="attachment-full">Attachment (Optional)</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="attachment-full"
+                      type="file"
+                      onChange={handleFileSelect}
+                      disabled={isUpdating}
+                      className="hidden"
+                      accept="image/*,.pdf,.doc,.docx"
+                    />
+                    <label
+                      htmlFor="attachment-full"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-dashed border-emerald-300 rounded-lg cursor-pointer hover:bg-emerald-100 transition-colors"
+                    >
+                      <Upload className="h-4 w-4 text-emerald-700" />
+                      <span className="text-sm text-emerald-700">Choose file</span>
+                    </label>
+                    {attachmentFile && (
+                      <span className="text-sm text-gray-600 flex-1 truncate">
+                        {attachmentFile.name}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {attachmentPreview && (
+                    <div className="relative mt-2">
+                      <img 
+                        src={attachmentPreview} 
+                        alt="Preview" 
+                        className="max-h-40 rounded border border-emerald-200"
+                      />
+                      <button
+                        onClick={handleRemoveAttachment}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded hover:bg-red-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>

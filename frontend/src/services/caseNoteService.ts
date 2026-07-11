@@ -13,7 +13,10 @@ import {
   orderBy,
   Timestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  updateDoc,
+  increment,
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { CaseNote, CreateCaseNoteData } from '../types/caseNote';
@@ -38,6 +41,22 @@ export class CaseNoteService {
 
       const docRef = await addDoc(collection(db, this.COLLECTION), noteData);
       console.log(`✅ Case note created: ${docRef.id}`);
+
+      // Increment notesCount on the complaint document
+      try {
+        const complaintRef = doc(db, 'complaints', data.caseId);
+        const complaintDoc = await getDoc(complaintRef);
+        
+        if (complaintDoc.exists()) {
+          await updateDoc(complaintRef, {
+            notesCount: increment(1),
+            updatedAt: now
+          });
+          console.log(`✅ Incremented notesCount for complaint ${data.caseId}`);
+        }
+      } catch (updateError) {
+        console.warn('⚠️ Failed to increment notesCount (non-critical):', updateError);
+      }
 
       return docRef.id;
     } catch (error) {

@@ -580,7 +580,12 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
             <CardDescription>Visual comparison of case resolution status by staff member</CardDescription>
           </CardHeader>
           <CardContent>
-            <HandlerPerformanceChart data={analysis.handlers} />
+            <HandlerPerformanceChart data={analysis.handlers.map(h => ({
+              codiMemberName: h.handlerName,
+              casesResolved: h.casesResolved,
+              casesInProgress: h.casesInProgress,
+              casesAssigned: h.casesAssigned
+            }))} />
           </CardContent>
         </Card>
       )}

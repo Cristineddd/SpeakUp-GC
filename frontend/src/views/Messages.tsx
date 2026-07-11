@@ -59,10 +59,10 @@ export default function Messages() {
   const getOtherParticipant = (room: ChatRoom) => {
     if (!currentUser) return { name: 'Unknown', role: 'handler' as const };
     const otherId = room.participantIds.find((id) => id !== currentUser.uid);
-    if (!otherId) return { name: room.handlerName || 'Case Handler', role: 'handler' as const };
+    if (!otherId) return { name: room.handlerName || 'CODI Member', role: 'handler' as const };
     const participant = room.participants[otherId];
     return {
-      name: participant?.name || room.handlerName || 'Case Handler',
+      name: participant?.name || room.handlerName || 'CODI Member',
       role: participant?.role || 'handler',
     };
   };
@@ -71,7 +71,7 @@ export default function Messages() {
     <PageShell>
       <PageHeader
         title="Messages"
-        subtitle="Conversations with your case handlers"
+        subtitle="Conversations with your CODI members"
       />
 
       <div className="max-w-3xl">
@@ -95,7 +95,7 @@ export default function Messages() {
                 <MessageSquare className="h-12 w-12 text-gray-200 mx-auto mb-3" />
                 <h3 className="text-base font-semibold text-gray-800 mb-1">No Messages Yet</h3>
                 <p className="text-sm text-gray-500 max-w-sm mx-auto mb-4">
-                  Once a case handler is assigned to your complaint, your conversation will appear here.
+                  Once a CODI member is assigned to your complaint, your conversation will appear here.
                 </p>
                 <Button
                   variant="outline"
@@ -185,7 +185,7 @@ export default function Messages() {
             <div>
               <p className="text-sm font-semibold text-blue-800">Private & Secure</p>
               <p className="text-xs text-blue-600 mt-0.5">
-                All messages are encrypted and only visible to you and your assigned case handler.
+                All messages are encrypted and only visible to you and your assigned CODI member.
               </p>
             </div>
           </div>

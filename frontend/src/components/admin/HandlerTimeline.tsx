@@ -1,6 +1,6 @@
 /**
  * HandlerTimeline Component
- * Shows the history of handler assignments for a case
+ * Shows the history of CODI member assignments for a case
  */
 
 import { Badge } from '../ui/badge';
@@ -21,7 +21,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
     return (
       <Card className="p-4">
         <p className="text-sm text-muted-foreground text-center">
-          No handler assignments yet
+          No CODI member assignments yet
         </p>
       </Card>
     );
@@ -31,7 +31,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
     <Card className="p-4">
       <h3 className="font-semibold mb-4 flex items-center gap-2">
         <Clock className="h-4 w-4" />
-        Handler Assignment History
+        CODI Member Assignment History
       </h3>
       
       <div className="space-y-4">
@@ -75,7 +75,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
                 relative p-4 rounded-lg border
                 ${isActive ? 'border-primary bg-primary/5' : 'border-border bg-background'}
               `}>
-                {/* Handler Info */}
+                {/* CODI Member Info */}
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className={`
@@ -156,7 +156,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
         <div className="mt-4 pt-4 border-t">
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground">Total Handlers:</p>
+              <p className="text-muted-foreground">Total CODI Members:</p>
               <p className="font-semibold text-lg">{handlerHistory.length}</p>
             </div>
             <div>

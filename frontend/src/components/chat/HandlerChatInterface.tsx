@@ -6,6 +6,7 @@ import { ChatInput } from './ChatInput';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '../../hooks/use-toast';
 import {
   MessageCircle,
@@ -27,9 +28,13 @@ import {
   Shield,
   Tag,
   FileQuestion,
+  Edit2,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { FORMAL_COMPLAINT_CATEGORIES } from '../../constants/formalComplaintCategories';
 
 // Extended interface to include all possible properties
 interface ExtendedAdminReport {
@@ -71,7 +76,7 @@ const getSafeProperty = <T,>(
   return obj?.[primaryKey] || obj?.[fallbackKey] || defaultValue;
 };
 
-export function HandlerChatInterface({
+export function CODIMemberChatInterface({
   complaintId,
   complaint,
   onClose,
@@ -84,6 +89,9 @@ export function HandlerChatInterface({
   const [typingUsers, setTypingUsers] = useState<{ id: string; name: string }[]>([]);
   const [showCaseDetails, setShowCaseDetails] = useState(true);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(complaint.category || '');
+  const [updatingCategory, setUpdatingCategory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const scrollToBottomRef = useRef<() => void>(() => {});
@@ -154,25 +162,25 @@ export function HandlerChatInterface({
           console.log('📋 Found existing chat room:', existingRoom.id);
           room = existingRoom;
           
-          // Ensure handler is added to the chat room
+          // Ensure CODI member is added to the chat room
           if (room.handlerId !== currentUser.uid) {
-            console.log('👤 Adding handler to existing chat room');
+            console.log('👤 Adding CODI member to existing chat room');
             await MessageService.addHandler(
               room.id,
               currentUser.uid,
-              currentUser.displayName || currentUser.email || 'Handler'
+              currentUser.displayName || currentUser.email || 'CODI Member'
             );
           }
         } else {
           console.log('🆕 Creating new chat room');
-          // Create new chat room with handler info
+          // Create new chat room with CODI member info
           room = await MessageService.getOrCreateChatRoom(
             complaintId,
             complaint.title || 'Case Discussion',
             complainantId,
             complainantName,
             currentUser.uid,
-            currentUser.displayName || currentUser.email || 'Handler'
+            currentUser.displayName || currentUser.email || 'CODI Member'
           );
         }
 
@@ -244,7 +252,7 @@ export function HandlerChatInterface({
         MessageService.setTyping(
           chatRoom.id,
           currentUser.uid,
-          currentUser.displayName || currentUser.email || 'Handler',
+          currentUser.displayName || currentUser.email || 'CODI Member',
           false
         ).catch(console.error);
       }
@@ -285,8 +293,8 @@ export function HandlerChatInterface({
         chatRoom.id,
         complaintId,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'Handler',
-        'handler',
+        currentUser.displayName || currentUser.email || 'CODI Member',
+        'codi',
         content,
         attachments
       );
@@ -297,7 +305,7 @@ export function HandlerChatInterface({
       await MessageService.setTyping(
         chatRoom.id,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'Handler',
+        currentUser.displayName || currentUser.email || 'CODI Member',
         false
       );
 
@@ -319,11 +327,45 @@ export function HandlerChatInterface({
       await MessageService.setTyping(
         chatRoom.id,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'Handler',
+        currentUser.displayName || currentUser.email || 'CODI Member',
         isTyping
       );
     } catch (error) {
       console.error('Error updating typing status:', error);
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!selectedCategory || selectedCategory === complaint.category) {
+      setIsEditingCategory(false);
+      return;
+    }
+
+    try {
+      setUpdatingCategory(true);
+      
+      const complaintRef = doc(db, 'complaints', complaintId);
+      await updateDoc(complaintRef, {
+        category: selectedCategory,
+        type: selectedCategory,
+        updatedAt: new Date()
+      });
+
+      toast({
+        title: 'Category Updated',
+        description: 'Complaint category has been reclassified successfully.',
+      });
+
+      setIsEditingCategory(false);
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update category. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setUpdatingCategory(false);
     }
   };
 
@@ -461,8 +503,64 @@ export function HandlerChatInterface({
               <div className="flex items-start gap-2">
                 <Tag className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Category</p>
-                  <p className="text-sm font-medium">{complaint.category || 'Uncategorized'}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-gray-600">Category</p>
+                    {!isEditingCategory && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 hover:bg-gray-100"
+                        onClick={() => {
+                          setIsEditingCategory(true);
+                          setSelectedCategory(complaint.category || '');
+                        }}
+                      >
+                        <Edit2 className="h-3 w-3 text-gray-500" />
+                      </Button>
+                    )}
+                  </div>
+                  {isEditingCategory ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Select
+                        value={selectedCategory}
+                        onValueChange={setSelectedCategory}
+                        disabled={updatingCategory}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FORMAL_COMPLAINT_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        className="h-8 px-2"
+                        onClick={handleUpdateCategory}
+                        disabled={updatingCategory || selectedCategory === complaint.category}
+                      >
+                        {updatingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 px-2"
+                        onClick={() => {
+                          setIsEditingCategory(false);
+                          setSelectedCategory(complaint.category || '');
+                        }}
+                        disabled={updatingCategory}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-medium">{complaint.category || 'Uncategorized'}</p>
+                  )}
                 </div>
               </div>
 
@@ -676,5 +774,5 @@ export function HandlerChatInterface({
   );
 }
 
-export default HandlerChatInterface;
+export default CODIMemberChatInterface;
 

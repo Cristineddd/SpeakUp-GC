@@ -23,6 +23,7 @@ interface InternalNotesSectionProps {
   assignedToId?: string;
   assignedToRole?: 'admin' | 'handler';
   highlightNoteId?: string;
+  onNotePosted?: () => void;
 }
 
 export function InternalNotesSection({
@@ -30,7 +31,8 @@ export function InternalNotesSection({
   caseTitle,
   assignedToId,
   assignedToRole,
-  highlightNoteId
+  highlightNoteId,
+  onNotePosted
 }: InternalNotesSectionProps) {
   const [notes, setNotes] = useState<CaseNote[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -267,6 +269,11 @@ export function InternalNotesSection({
         title: 'Note Posted',
         description: 'Your internal note has been added to the case'
       });
+      
+      // Refresh reports to update notesCount
+      if (onNotePosted) {
+        onNotePosted();
+      }
     } catch (error) {
       console.error('Error posting note:', error);
       toast({

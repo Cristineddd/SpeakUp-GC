@@ -5,7 +5,8 @@
 
 export type RepresentativeRole = 
   | 'admin'        // Full system control
-  | 'handler';     // Case handler: Can be assigned to process complaints
+  | 'handler'      // Case handler: Can be assigned to process complaints
+  | 'codi';        // CODI member: Can be assigned to process complaints
 
 export type RepresentativeStatus = 'online' | 'offline' | 'away';
 
@@ -156,13 +157,15 @@ export interface UpdateRepresentativeData {
 // Role display names
 export const ROLE_LABELS: Record<RepresentativeRole, string> = {
   admin: 'Administrator',
-  handler: 'CODI'
+  handler: 'CODI',
+  codi: 'CODI'
 };
 
 // Role colors for badges
 export const ROLE_COLORS: Record<RepresentativeRole, string> = {
   admin: 'bg-purple-100 text-purple-800',
-  handler: 'bg-orange-100 text-orange-800'
+  handler: 'bg-orange-100 text-orange-800',
+  codi: 'bg-orange-100 text-orange-800'
 };
 
 // Default permissions by role
@@ -179,6 +182,12 @@ export const DEFAULT_PERMISSIONS: Record<RepresentativeRole, RepresentativePermi
     'manage_representatives'
   ],
   handler: [
+    'view_cases',
+    'update_status',
+    'view_evidence',
+    'send_messages'
+  ],
+  codi: [
     'view_cases',
     'update_status',
     'view_evidence',

@@ -190,7 +190,7 @@ export class CaseActivityService {
         {
           complaintId,
           activityType: ActivityType.ASSIGNMENT,
-          description: 'Case handler assigned',
+          description: 'CODI member assigned',
           findings: `${handlerName} has been assigned to handle this case. The investigation process will begin shortly.`,
           metadata: {
             assignedHandler: handlerName

@@ -1,6 +1,6 @@
 /**
  * Representative Service
- * Manages case handlers and administrators
+ * Manages CODI members and administrators
  */
 
 import {

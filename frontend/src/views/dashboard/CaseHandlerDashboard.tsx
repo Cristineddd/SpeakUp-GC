@@ -1,8 +1,8 @@
 /**
- * CaseHandlerDashboard — SpeakUp GC (CODI / Case Investigator View)
+ * CaseHandlerDashboard — SpeakUp GC (CODI Member View)
  *
  * Use-case coverage (per system documentation):
- *   UC-06 Assign Case Handler    — shows cases assigned to this handler
+ *   UC-06 Assign Case to CODI    — shows cases assigned to this CODI member
  *   UC-07 Investigate Case       — links to investigation workspace
  *   UC-08 Update Case Status     — quick status update from the card
  *   UC-09 Generate Case Report   — PDF export via jsPDF (pdfService.ts)
@@ -83,18 +83,18 @@ export default function CaseHandlerDashboard() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [search, setSearch] = useState("");
 
-  const userName = user?.displayName?.split(" ")[0] || "Handler";
+  const userName = user?.displayName?.split(" ")[0] || "CODI Member";
   const unreadCount = notifications.filter((n) => n.status === "unread").length;
 
   // ── Real-time assigned cases ──────────────────────────────────────────────
   useEffect(() => {
     if (!user?.uid) { setLoading(false); return; }
 
-    // Query cases where handlerId = current user
+    // Query cases where assignedTo (CODI member) = current user
     const unsub: Unsubscribe = onSnapshot(
       query(
         collection(db, "complaints"),
-        where("handlerId", "==", user.uid),
+        where("assignedTo", "==", user.uid),
         orderBy("createdAt", "desc")
       ),
       (snap) => {
@@ -197,7 +197,7 @@ export default function CaseHandlerDashboard() {
               <Briefcase className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-900">Case Handler Portal</p>
+              <p className="text-sm font-bold text-gray-900">CODI Member Portal</p>
               <p className="text-xs text-gray-500">SpeakUp GC — Gordon College DEIU</p>
             </div>
           </div>

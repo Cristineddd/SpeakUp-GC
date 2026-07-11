@@ -129,7 +129,7 @@ function statusColor(status: string): [number, number, number] {
  * generateCaseReport
  * Creates a single-case detailed PDF report.
  *
- * Activity flow: Admin / Case Handler → Reports section → select case → download PDF
+ * Activity flow: Admin / CODI Member → Reports section → select case → download PDF
  */
 export function generateCaseReport(data: CaseReportData): void {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -198,7 +198,7 @@ export function generateCaseReport(data: CaseReportData): void {
   }
 
   if (data.assignedHandler) {
-    partiesData.push(["Case Handler", data.assignedHandler, "—", "—"]);
+    partiesData.push(["CODI Member", data.assignedHandler, "—", "—"]);
   }
 
   doc.setTextColor(...DARK);

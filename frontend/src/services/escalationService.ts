@@ -43,7 +43,8 @@ export class EscalationService {
     handlerId: string,
     handlerName: string,
     userId: string,
-    complaintTitle: string // ADDED: Complaint title parameter
+    complaintTitle: string, // ADDED: Complaint title parameter
+    currentUserId?: string // ADDED: Current user ID to skip self-notification
   ): Promise<void> {
     try {
       const complaintRef = doc(db, this.COMPLAINTS_COLLECTION, complaintId);
@@ -70,8 +71,8 @@ export class EscalationService {
         handlerName     // ADDED: Handler name
       );
 
-      // 3. Send notification to handler - NEW!
-      if (complaintData) {
+      // 3. Send notification to handler - skip if self-assignment
+      if (complaintData && currentUserId !== handlerId) {
         await NotificationService.sendHandlerCaseAssignedNotification(
           handlerId,
           complaintId,
@@ -81,6 +82,8 @@ export class EscalationService {
           complaintData.severity || 'Medium'
         );
         console.log(`✅ Notification sent to handler ${handlerName}`);
+      } else if (currentUserId === handlerId) {
+        console.log(`ℹ️ Handler assigning to themselves, skipping notification`);
       }
 
       console.log(`✅ Complaint ${complaintId} assigned to handler ${handlerName} and notifications sent to user ${userId} and handler ${handlerId}`);

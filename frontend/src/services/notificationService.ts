@@ -78,7 +78,7 @@ export class NotificationService {
     return this.createNotification(
       userId,
       'complaint_assigned' as NotificationType,
-      'Case Handler Assigned',
+      'CODI Member Assigned',
       `Your complaint "${complaintTitle}" has been assigned to ${handlerName} for resolution.`,
       {
         priority: 'high',
@@ -230,7 +230,7 @@ export class NotificationService {
   /**
    * Send notification when an internal case note is added
    * 
-   * ⚠️ IMPORTANT: This notification is ONLY for admin and case handler recipients.
+   * ⚠️ IMPORTANT: This notification is ONLY for admin and CODI member recipients.
    * Internal notes are NEVER visible to complainants.
    * The userId parameter MUST be a userId from the representatives collection (admin or handler).
    * Email notifications are suppressed for this type to prevent accidental disclosure.
@@ -250,7 +250,7 @@ export class NotificationService {
     noteByRole: 'admin' | 'handler',
     noteText: string
   ): Promise<string> {
-    const roleLabel = noteByRole === 'admin' ? 'Admin' : 'Case Handler';
+    const roleLabel = noteByRole === 'admin' ? 'Admin' : 'CODI Member';
     return await this.createNotification(
       userId,
       'case_note' as NotificationType,

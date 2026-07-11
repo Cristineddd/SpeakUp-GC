@@ -89,8 +89,6 @@ export default function DashboardRouter() {
 
     if (
       role === UserRole.DISCIPLINING_AUTHORITY ||
-      role === 'dean' ||
-      role === 'coordinator' ||
       role === 'disciplining_authority'
     ) {
       navigate('/admin/dean-coordinator', { replace: true });
@@ -102,7 +100,7 @@ export default function DashboardRouter() {
       return;
     }
 
-    if (repRole === 'admin' || repRole === 'dean' || repRole === 'coordinator') {
+    if (repRole === 'admin') {
       navigate('/admin', { replace: true });
       return;
     }
@@ -120,8 +118,6 @@ export default function DashboardRouter() {
   if (resolvedRole === UserRole.CODI || resolvedRole === 'handler' || resolvedRole === 'codi') return <Spinner />;
   if (
     resolvedRole === UserRole.DISCIPLINING_AUTHORITY ||
-    resolvedRole === 'dean' ||
-    resolvedRole === 'coordinator' ||
     resolvedRole === 'disciplining_authority'
   ) return <Spinner />;
   if (repRole === 'admin') return <Spinner />;

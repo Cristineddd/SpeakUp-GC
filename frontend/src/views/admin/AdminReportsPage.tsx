@@ -236,11 +236,6 @@ const getLastUpdated = (report: AdminReport): string => {
   return formatDistanceToNow(lastUpdated, { addSuffix: true });
 };
 
-const getActivityCount = (report: AdminReport): number => {
-  // Count internal notes as activity
-  return safeGet(report, 'internalNotes', []).length;
-};
-
 const needsAttention = (report: AdminReport): boolean => {
   const updatedAt = safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt);
   if (!updatedAt) return false;
@@ -286,6 +281,7 @@ const AdminReportsPage = () => {
   const [loading, setLoading] = useState(true);
   const [representativeId, setRepresentativeId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [notesCounts, setNotesCounts] = useState<Record<string, number>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [escalationFilter, setEscalationFilter] = useState<string>('all');
@@ -317,8 +313,8 @@ const AdminReportsPage = () => {
   
   const { toast } = useToast();
 
-  // CODI (Committee on Decorum and Investigation) = Case Handler role
-  // They are the same - CODI is the official term for Case Handlers in this system
+  // CODI (Committee on Decorum and Investigation) = CODI Member role
+  // They are the same - CODI is the official term for CODI Members in this system
   // Support both 'codi' and 'handler' role values in Firestore
   const isCODI = (role as string) === 'codi' || role === 'handler';
   const isHandler = isCODI; // Alias for backward compatibility
@@ -464,7 +460,7 @@ const AdminReportsPage = () => {
               window.history.replaceState({}, '', newUrl);
             }, 2000);
           } else {
-            console.error('❌ Report still not found after retry. Refreshing reports...');
+            console.log('Report not found after retry, refreshing reports...');
             fetchReports();
           }
         }, 1500);
@@ -484,6 +480,30 @@ const AdminReportsPage = () => {
         assignedToRole: reports[0].assignedToRole
       });
     }
+  }, [reports]);
+
+  // Fetch notes counts for all reports
+  useEffect(() => {
+    if (reports.length === 0) return;
+
+    const fetchNotesCounts = async () => {
+      try {
+        const { CaseNoteService } = await import('../../services/caseNoteService');
+        const counts: Record<string, number> = {};
+        
+        for (const report of reports) {
+          const notes = await CaseNoteService.getNotesByCaseId(report.id);
+          counts[report.id] = notes.length;
+        }
+        
+        setNotesCounts(counts);
+        console.log('📝 Fetched notes counts for', Object.keys(counts).length, 'reports');
+      } catch (error) {
+        console.error('Error fetching notes counts:', error);
+      }
+    };
+
+    fetchNotesCounts();
   }, [reports]);
 
   const fetchReports = async () => {
@@ -513,6 +533,11 @@ const AdminReportsPage = () => {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
+  };
+
+  const getActivityCount = (report: AdminReport): number => {
+    // Use fetched notes count from state, or fall back to notesCount field
+    return notesCounts[report.id] || safeGet(report, 'notesCount', 0) || 0;
   };
 
   const handleSort = (field: string) => {
@@ -991,7 +1016,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           }}
           className="text-gray-600 hover:bg-gray-50"
         >
-          <Eye className="h-4 w-4" />
+          <FileText className="h-4 w-4" />
         </Button>
         <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
           Quick Summary
@@ -1422,7 +1447,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               {isCODI && selectedReport.assignedTo === representativeId && (selectedReport.status as string) !== 'closed' && (
                 <div className="border-t pt-4">
                   <h4 className="font-medium mb-4 text-gray-900">
-                    Case Handler - Decision & Status Management
+                    CODI Member - Decision & Status Management
                   </h4>
                   <p className="text-xs text-gray-600 mb-3">
                     You are assigned to this case. You can investigate, update status, and close this case.
@@ -1513,13 +1538,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                                     className="h-6 px-1.5 sm:h-7 sm:px-2 opacity-0 group-hover:opacity-100 transition-all shadow-md text-xs"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      const link = document.createElement('a');
-                                      link.href = url;
-                                      link.download = fileName;
-                                      link.click();
+                                      window.open(url, '_blank');
                                     }}
                                   >
-                                    <Download className="h-3 w-3" />
+                                    <Eye className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </div>
@@ -1563,14 +1585,15 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                                       View
                                     </Button>
                                   ) : (
-                                    // Other files: Direct download
+                                    // Other files: Open in new tab for preview
                                     <a
                                       href={url}
-                                      download={fileName}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
                                       className="flex-1 h-7 sm:h-8 text-xs flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
                                     >
-                                      <Download className="h-3 w-3 mr-1" />
-                                      Download
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      View
                                     </a>
                                   )}
                                 </div>
@@ -1638,6 +1661,16 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   assignedToId={selectedReport.assignedTo}
                   assignedToRole={selectedReport.assignedToRole as 'admin' | 'handler'}
                   highlightNoteId={highlightNoteId || undefined}
+                  onNotePosted={() => {
+                    fetchReports();
+                    // Update selectedReport with fresh data
+                    if (selectedReport) {
+                      const freshReport = reports.find(r => r.id === selectedReport.id);
+                      if (freshReport) {
+                        setSelectedReport(freshReport);
+                      }
+                    }
+                  }}
                 />
               </TabsContent>
             </Tabs>
@@ -1699,14 +1732,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               className="bg-white/10 text-white border-white/20 hover:bg-white/20"
               onClick={(e) => {
                 e.stopPropagation();
-                const link = document.createElement('a');
-                link.href = fullscreenImage.url;
-                link.download = `attachment_${fullscreenImage.index + 1}.jpg`;
-                link.click();
+                window.open(fullscreenImage.url, '_blank');
               }}
             >
-              <Download className="h-4 w-4 mr-2" />
-              Download
+              <Eye className="h-4 w-4 mr-2" />
+              Open
             </Button>
             <Button
               variant="outline"
@@ -2145,7 +2175,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       )}
                     </button>
                   </TableHead>
-                  {/* CODI (Case Handler) Column - Only show for admins */}
+                  {/* CODI (CODI Member) Column - Only show for admins */}
                   {!isHandler && (
                     <TableHead className="text-emerald-950/75">
                       <button 
@@ -2247,7 +2277,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                           </div>
                         )}
                       </TableCell>
-                      {/* CODI (Case Handler) Column - Only show for admins */}
+                      {/* CODI (CODI Member) Column - Only show for admins */}
                       {!isHandler && (
                         <TableCell>
                           {report.assignedToName ? (
@@ -2516,9 +2546,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   asChild
                   className="bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg"
                 >
-                  <a href={selectedVideoUrl} target="_blank" rel="noopener noreferrer" download>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
+                  <a href={selectedVideoUrl} target="_blank" rel="noopener noreferrer">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Open
                   </a>
                 </Button>
                 <Button

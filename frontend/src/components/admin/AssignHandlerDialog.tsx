@@ -36,7 +36,7 @@ export function AssignHandlerDialog({
   onAssigned
 }: AssignHandlerDialogProps) {
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
-  const [selectedHandler, setSelectedHandler] = useState<string>('');
+  const [selectedCODI, setSelectedCODI] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [fetchingReps, setFetchingReps] = useState(true);
@@ -56,7 +56,7 @@ export function AssignHandlerDialog({
       console.log('📋 Dialog opened for complaint:', complaint.id);
       setFetchingReps(true);
       
-      // Only fetch handlers and admins (Dean and Coordinator are view-only for analytics)
+      // Only fetch CODI members and admins (Dean and Coordinator are view-only for analytics)
       console.log('📡 Calling RepresentativeService.getAll with isActive: true');
       const reps = await RepresentativeService.getAll({ isActive: true });
       console.log('📊 All representatives fetched:', reps);
@@ -69,28 +69,28 @@ export function AssignHandlerDialog({
       }, {});
       console.log('📊 Representatives by role:', roleBreakdown);
       
-      // Filter only handlers (exclude admin, dean and coordinator)
+      // Filter only CODI members (exclude admin, dean and coordinator)
       // Admins can assign cases but cannot be assigned cases themselves
-      const caseHandlers = reps.filter(rep => 
-        rep.role === 'handler'
+      const codiMembers = reps.filter(rep => 
+        rep.role === 'handler' || rep.role === 'codi'
       );
       
-      console.log('👥 Filtered case handlers:', caseHandlers);
-      console.log('👥 Total case handlers:', caseHandlers.length);
+      console.log('👥 Filtered CODI members:', codiMembers);
+      console.log('👥 Total CODI members:', codiMembers.length);
       
-      if (caseHandlers.length === 0) {
-        console.warn('⚠️ NO CASE HANDLERS FOUND!');
-        console.warn('💡 Tip: Go to Admin > Representatives Management to add handlers');
-        console.warn('💡 Make sure representatives have role "handler"');
+      if (codiMembers.length === 0) {
+        console.warn('⚠️ NO CODI MEMBERS FOUND!');
+        console.warn('💡 Tip: Go to Admin > Representatives Management to add CODI members');
+        console.warn('💡 Make sure representatives have role "handler" or "codi"');
         console.warn('💡 Make sure representatives have isActive: true');
       }
       
-      setRepresentatives(caseHandlers);
+      setRepresentatives(codiMembers);
       
-      // Pre-select current handler if exists
+      // Pre-select current CODI member if exists
       if (complaint.assignedTo) {
-        console.log('✅ Pre-selecting handler:', complaint.assignedTo);
-        setSelectedHandler(complaint.assignedTo);
+        console.log('✅ Pre-selecting CODI member:', complaint.assignedTo);
+        setSelectedCODI(complaint.assignedTo);
       }
       
       console.log('✅ Representatives fetch completed successfully');
@@ -108,10 +108,10 @@ export function AssignHandlerDialog({
   };
 
   const handleAssign = async () => {
-    if (!selectedHandler) {
+    if (!selectedCODI) {
       toast({
-        title: 'No Handler Selected',
-        description: 'Please select a case handler to assign this case',
+        title: 'No CODI Member Selected',
+        description: 'Please select a CODI member to assign this case',
         variant: 'destructive'
       });
       return;
@@ -130,39 +130,39 @@ export function AssignHandlerDialog({
       setLoading(true);
 
       // Get selected representative details
-      const handler = representatives.find(r => r.id === selectedHandler);
-      if (!handler) {
-        throw new Error('Selected handler not found');
+      const codiMember = representatives.find(r => r.id === selectedCODI);
+      if (!codiMember) {
+        throw new Error('Selected CODI member not found');
       }
 
-      // ✅ Validate handler UID exists in database
-      console.log('🔍 Validating handler UID:', handler.id);
-      const handlerRef = doc(db, 'representatives', handler.id);
-      const handlerSnapshot = await getDoc(handlerRef);
+      // ✅ Validate CODI member UID exists in database
+      console.log('🔍 Validating CODI member UID:', codiMember.id);
+      const codiRef = doc(db, 'representatives', codiMember.id);
+      const codiSnapshot = await getDoc(codiRef);
       
-      if (!handlerSnapshot.exists()) {
-        console.error('❌ Handler UID validation failed - account does not exist:', handler.id);
+      if (!codiSnapshot.exists()) {
+        console.error('❌ CODI member UID validation failed - account does not exist:', codiMember.id);
         toast({
-          title: 'Invalid Handler Account',
-          description: `The selected handler account (${handler.displayName}) no longer exists in the system. Please refresh and select another handler.`,
+          title: 'Invalid CODI Member Account',
+          description: `The selected CODI member account (${codiMember.displayName}) no longer exists in the system. Please refresh and select another CODI member.`,
           variant: 'destructive'
         });
         return;
       }
       
-      // Verify handler is still active
-      const handlerData = handlerSnapshot.data();
-      if (!handlerData.isActive) {
-        console.warn('⚠️ Handler account is inactive:', handler.id);
+      // Verify CODI member is still active
+      const codiData = codiSnapshot.data();
+      if (!codiData.isActive) {
+        console.warn('⚠️ CODI member account is inactive:', codiMember.id);
         toast({
-          title: 'Inactive Handler',
-          description: `${handler.displayName} is no longer active. Please select another handler.`,
+          title: 'Inactive CODI Member',
+          description: `${codiMember.displayName} is no longer active. Please select another CODI member.`,
           variant: 'destructive'
         });
         return;
       }
       
-      console.log('✅ Handler UID validation passed:', handler.id);
+      console.log('✅ CODI member UID validation passed:', codiMember.id);
 
       const now = Timestamp.now();
       const nowISO = now.toDate().toISOString();
@@ -171,11 +171,11 @@ export function AssignHandlerDialog({
       const submittedAt = new Date(complaint.reportedAt);
       const timeToAssignment = (now.toDate().getTime() - submittedAt.getTime()) / (1000 * 60 * 60);
 
-      // Create handler history entry
+      // Create CODI member history entry
       const historyEntry: any = {
-        handlerId: handler.id,
-        handlerName: handler.displayName,
-        handlerRole: handler.role,
+        handlerId: codiMember.id,
+        handlerName: codiMember.displayName,
+        handlerRole: codiMember.role,
         assignedAt: nowISO,
         assignedBy: currentUser.uid,
         assignedByName: currentUser.email || 'Admin'
@@ -186,9 +186,9 @@ export function AssignHandlerDialog({
         historyEntry.notes = notes.trim();
       }
 
-      // If there was a previous handler, mark them as unassigned
+      // If there was a previous CODI member, mark them as unassigned
       const handlerHistory = complaint.handlerHistory || [];
-      if (complaint.assignedTo && complaint.assignedTo !== selectedHandler) {
+      if (complaint.assignedTo && complaint.assignedTo !== selectedCODI) {
         // Find the last active assignment and mark it as unassigned
         const lastIndex = handlerHistory.length - 1;
         if (lastIndex >= 0 && !handlerHistory[lastIndex].unassignedAt) {
@@ -196,11 +196,11 @@ export function AssignHandlerDialog({
             ...handlerHistory[lastIndex],
             unassignedAt: nowISO,
             unassignedBy: currentUser.uid,
-            unassignedReason: 'Reassigned to another handler'
+            unassignedReason: 'Reassigned to another CODI member'
           };
         }
 
-        // Unassign case from previous handler
+        // Unassign case from previous CODI member
         if (complaint.assignedTo) {
           await RepresentativeService.unassignCase(complaint.assignedTo, complaint.id);
         }
@@ -208,9 +208,9 @@ export function AssignHandlerDialog({
 
       // Prepare update data (excluding undefined values)
       const updateData: any = {
-        assignedTo: handler.id,
-        assignedToName: handler.displayName,
-        assignedToRole: handler.role,
+        assignedTo: codiMember.id,
+        assignedToName: codiMember.displayName,
+        assignedToRole: codiMember.role,
         assignedAt: now,
         assignedBy: currentUser.uid,
         assignedByName: currentUser.email || 'Admin',
@@ -228,9 +228,9 @@ export function AssignHandlerDialog({
 
       console.log('📝 Assigning case to handler:', {
         complaintId: complaint.id,
-        handlerId: handler.id,
-        handlerName: handler.displayName,
-        handlerRole: handler.role,
+        handlerId: codiMember.id,
+        handlerName: codiMember.displayName,
+        handlerRole: codiMember.role,
         updateData
       });
 
@@ -248,11 +248,11 @@ export function AssignHandlerDialog({
           console.log('🔍 Verifying update - assignedTo:', verifyData.assignedTo);
           console.log('🔍 Verifying update - assignedToName:', verifyData.assignedToName);
           
-          if (verifyData.assignedTo === handler.id) {
+          if (verifyData.assignedTo === codiMember.id) {
             console.log('✅ VERIFIED: Assignment saved correctly!');
           } else {
             console.error('❌ VERIFICATION FAILED: assignedTo does not match!');
-            console.error('Expected:', handler.id);
+            console.error('Expected:', codiMember.id);
             console.error('Got:', verifyData.assignedTo);
           }
         }
@@ -262,10 +262,10 @@ export function AssignHandlerDialog({
       }
 
       // Assign case to representative
-      await RepresentativeService.assignCase(handler.id, complaint.id);
+      await RepresentativeService.assignCase(codiMember.id, complaint.id);
 
       console.log('✅ Case added to representative assignedCases array');
-      console.log('✅ Case assigned successfully - handler should now see this case');
+      console.log('✅ Case assigned successfully - CODI member should now see this case');
 
       // Send notification to complainant
       try {
@@ -275,7 +275,7 @@ export function AssignHandlerDialog({
             complainantId,
             complaint.id,
             complaint.title,
-            handler.displayName
+            codiMember.displayName
           );
           console.log('✅ Notification sent to complainant');
         }
@@ -284,25 +284,30 @@ export function AssignHandlerDialog({
         // Don't fail assignment if notification fails
       }
 
-      // Send notification to assigned handler
+      // Send notification to assigned CODI member (only if someone else is assigning)
       try {
-        // Use handler.userId (Firebase Auth UID) for notification, not handler.id (representative doc ID)
-        await NotificationService.sendHandlerCaseAssignedNotification(
-          handler.userId,
-          complaint.id,
-          complaint.title,
-          complaint.userName || 'Anonymous',
-          complaint.category || 'General',
-          complaint.severity || 'Medium'
-        );
-        console.log('✅ Notification sent to handler:', handler.userId);
+        // Skip notification if CODI member is assigning to themselves
+        if (currentUser?.uid !== codiMember.userId) {
+          // Use codiMember.userId (Firebase Auth UID) for notification, not codiMember.id (representative doc ID)
+          await NotificationService.sendHandlerCaseAssignedNotification(
+            codiMember.userId,
+            complaint.id,
+            complaint.title,
+            complaint.userName || 'Anonymous',
+            complaint.category || 'General',
+            complaint.severity || 'Medium'
+          );
+          console.log('✅ Notification sent to CODI member:', codiMember.userId);
+        } else {
+          console.log('ℹ️ CODI member assigning to themselves, skipping notification');
+        }
       } catch (notifError) {
         console.error('⚠️ Failed to send handler notification:', notifError);
       }
 
       toast({
         title: 'Case Assigned',
-        description: `Case assigned to ${handler.displayName} (${ROLE_LABELS[handler.role]})`
+        description: `Case assigned to ${codiMember.displayName} (${ROLE_LABELS[codiMember.role]})`
       });
 
       // Reset form
@@ -377,7 +382,7 @@ export function AssignHandlerDialog({
         description: 'Handler removed from this case'
       });
 
-      setSelectedHandler('');
+      setSelectedCODI('');
       setNotes('');
       
       if (onAssigned) {
@@ -484,10 +489,10 @@ export function AssignHandlerDialog({
                     <button
                       key={rep.id}
                       type="button"
-                      onClick={() => setSelectedHandler(rep.id)}
+                      onClick={() => setSelectedCODI(rep.id)}
                       className={`
                         p-3 border rounded-lg text-left transition-all
-                        ${selectedHandler === rep.id 
+                        ${selectedCODI === rep.id 
                           ? 'border-primary bg-primary/5 ring-2 ring-primary' 
                           : 'border-border hover:border-primary/50 hover:bg-accent'
                         }
@@ -567,9 +572,9 @@ export function AssignHandlerDialog({
           <Button
             type="button"
             onClick={handleAssign}
-            disabled={loading || !selectedHandler || representatives.length === 0}
+            disabled={loading || !selectedCODI || representatives.length === 0}
           >
-            {loading ? 'Assigning...' : complaint.assignedTo ? 'Reassign' : 'Assign Handler'}
+            {loading ? 'Assigning...' : complaint.assignedTo ? 'Reassign' : 'Assign CODI Member'}
           </Button>
         </DialogFooter>
       </DialogContent>

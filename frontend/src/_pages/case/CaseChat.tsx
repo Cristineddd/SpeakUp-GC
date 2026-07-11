@@ -6,7 +6,7 @@
 import { useParams, useNavigate } from '../../compat/router';
 import { useState, useEffect } from 'react';
 import { ChatInterface } from '../../components/chat/ChatInterface';
-import { HandlerChatInterface } from '../../components/chat/HandlerChatInterface';
+import { CODIMemberChatInterface } from '../../components/chat/HandlerChatInterface';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
@@ -276,7 +276,7 @@ export default function CaseChat() {
       <div className="flex-1 overflow-hidden">
         {isHandler ? (
           complaint ? (
-            <HandlerChatInterface
+            <CODIMemberChatInterface
               complaintId={complaintId}
               complaint={complaint}
               className="h-full rounded-none border-0 shadow-none"

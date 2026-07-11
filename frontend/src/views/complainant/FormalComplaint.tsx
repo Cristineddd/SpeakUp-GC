@@ -1117,6 +1117,60 @@ const FormalComplaint = () => {
         console.warn('⚠️ Could not send complaint created notification:', notifyError);
       }
 
+      // Auto-assign to a CODI member
+      try {
+        const codiMembers = await RepresentativeService.getAll({ isActive: true });
+        const activeCODI = codiMembers.filter(rep => (rep.role as string) === 'handler' || (rep.role as string) === 'codi');
+        
+        if (activeCODI.length > 0) {
+          // Select CODI member with least active cases (round-robin load balancing)
+          const sortedCODI = [...activeCODI].sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
+          const selectedCODI = sortedCODI[0];
+          
+          const complaintRef = doc(db, 'complaints', complaintId);
+          const now = Timestamp.now();
+          
+          await updateDoc(complaintRef, {
+            assignedTo: selectedCODI.id,
+            assignedToName: selectedCODI.displayName,
+            assignedToRole: selectedCODI.role,
+            assignedAt: now,
+            assignedBy: 'system',
+            assignedByName: 'Auto-Assignment',
+            status: 'inProgress',
+            processingStartedAt: now,
+            handlerHistory: [{
+              handlerId: selectedCODI.id,
+              handlerName: selectedCODI.displayName,
+              handlerRole: selectedCODI.role,
+              assignedAt: now.toDate().toISOString(),
+              assignedBy: 'system',
+              assignedByName: 'Auto-Assignment'
+            }]
+          });
+          
+          // Assign case to representative
+          await RepresentativeService.assignCase(selectedCODI.id, complaintId);
+          
+          // Send notification to assigned CODI member
+          await NotificationService.sendHandlerCaseAssignedNotification(
+            selectedCODI.userId,
+            complaintId,
+            formData.title || 'Formal Complaint',
+            isAnonymous ? 'Anonymous' : (formData.complainantName || 'Unknown'),
+            formData.type || 'General',
+            'Medium'
+          );
+          
+          console.log(`✅ Auto-assigned to CODI member: ${selectedCODI.displayName}`);
+        } else {
+          console.warn('⚠️ No active CODI members available for auto-assignment');
+        }
+      } catch (autoAssignError) {
+        console.error('❌ Auto-assignment failed:', autoAssignError);
+        // Don't fail the submission if auto-assignment fails
+      }
+
       // Send notifications to ALL admins about new complaint
       try {
         const admins = await RepresentativeService.getAllAdmins();
@@ -1273,6 +1327,9 @@ const FormalComplaint = () => {
                   "bg-white text-gray-900 border-gray-300"
                 }`}
               />
+              <div className="flex justify-end mt-1">
+                <span className="text-xs text-gray-500">{formData.complainantAddress.length} chars</span>
+              </div>
             </div>
 
             <div>
@@ -1766,6 +1823,9 @@ const FormalComplaint = () => {
                 rows={2}
                 className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               />
+              <div className="flex justify-end mt-1">
+                <span className="text-xs text-gray-500">{formData.witnesses.length} chars</span>
+              </div>
             </div>
 
             <div>
@@ -1779,6 +1839,9 @@ const FormalComplaint = () => {
                 rows={2}
                 className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 resize-y min-h-[60px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               />
+              <div className="flex justify-end mt-1">
+                <span className="text-xs text-gray-500">{formData.additionalInfo.length} chars</span>
+              </div>
             </div>
           </div>
         );

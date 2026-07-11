@@ -46,7 +46,7 @@ export interface AdminReport {
   evidenceExternalLinks?: string[]; // External links provided by complainant
   _collectionSource?: string;
   
-  // Case Handler Fields
+  // CODI Member Fields
   assignedToName?: string | null;
   assignedToRole?: string | null;
   assignedAt?: string | null;

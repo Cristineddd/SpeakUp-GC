@@ -172,7 +172,7 @@ export class MessageService {
     complaintId: string,
     senderId: string,
     senderName: string,
-    senderRole: 'complainant' | 'handler' | 'admin',
+    senderRole: 'complainant' | 'handler' | 'admin' | 'codi',
     content: string,
     attachments?: MessageAttachment[]
   ): Promise<Message> {
