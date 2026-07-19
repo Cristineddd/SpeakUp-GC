@@ -26,7 +26,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 import { useToast } from "../../hooks/use-toast";
 import { useNavigate } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
-import { ComplaintFormData, ComplaintType } from "../../types/complaints";
+import { ComplaintFormData, ComplaintType, PersonType, HarassmentDegree } from "../../types/complaints";
 import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCategories";
 import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -445,18 +445,21 @@ const FormalComplaint = () => {
     complainantName: currentUser?.displayName || currentUser?.email || "",
     complainantAddress: "",
     complainantContact: "",
+    complainantType: undefined,  // NEW: Person type
     
     // Respondent Information
     respondentName: "",
     respondentAddress: "",
     respondentPosition: "",
     respondentDepartment: "",
+    respondentType: undefined,  // NEW: Person type
     
     // Incident Details
     title: "",
     description: "",
     statementOfFacts: "",
     type: FORMAL_COMPLAINT_CATEGORIES[0].value as ComplaintType,
+    harassmentDegree: undefined,  // NEW: Harassment degree
     incidentDate: "",
     incidentTime: "",
     incidentLocation: "",
@@ -997,12 +1000,17 @@ const FormalComplaint = () => {
         respondentAddress: formData.respondentAddress,
         respondentPosition: formData.respondentPosition,
         respondentDepartment: formData.respondentDepartment,
+        respondentType: formData.respondentType,  // NEW: Respondent type
+        
+        // Complainant type
+        complainantType: formData.complainantType,  // NEW: Complainant type
         
         // Incident details
         title: formData.title,
         description: formData.description,
         statementOfFacts: formData.statementOfFacts,
         type: formData.type,
+        harassmentDegree: formData.harassmentDegree,  // NEW: Harassment degree
         category: formData.type, // Alias for compatibility
         incidentDate: formData.incidentDate,
         incidentTime: formData.incidentTime,
@@ -1140,8 +1148,33 @@ const FormalComplaint = () => {
         const activeCODI = codiMembers.filter(rep => (rep.role as string) === 'handler' || (rep.role as string) === 'codi');
         
         if (activeCODI.length > 0) {
-          // Select CODI member with least active cases (round-robin load balancing)
-          const sortedCODI = [...activeCODI].sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
+          // Enhanced auto-assignment: Consider complainant type and specialization
+          let eligibleCODI = [...activeCODI];
+          
+          // Filter by complainant type if specified and handler has targetGroups
+          if (formData.complainantType) {
+            const handlersForType = activeCODI.filter(codi => 
+              !codi.targetGroups || codi.targetGroups.length === 0 || codi.targetGroups.includes(formData.complainantType as any)
+            );
+            if (handlersForType.length > 0) {
+              eligibleCODI = handlersForType;
+              console.log(`🎯 Filtered to ${eligibleCODI.length} handlers for complainant type: ${formData.complainantType}`);
+            }
+          }
+          
+          // For sexual harassment, prioritize handlers with harassment specialization
+          if (formData.type === 'sexual_harassment') {
+            const harassmentSpecialists = eligibleCODI.filter(codi =>
+              codi.specializations?.includes('harassment') || codi.specializations?.includes('sexual_harassment')
+            );
+            if (harassmentSpecialists.length > 0) {
+              eligibleCODI = harassmentSpecialists;
+              console.log(`🎯 Prioritized ${eligibleCODI.length} harassment specialists`);
+            }
+          }
+          
+          // Select CODI member with least active cases from eligible pool
+          const sortedCODI = [...eligibleCODI].sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
           const selectedCODI = sortedCODI[0];
           
           const complaintRef = doc(db, 'complaints', complaintId);
@@ -1373,6 +1406,32 @@ const FormalComplaint = () => {
 
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                I am a *
+                {hasFieldError('complainantType') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
+              </label>
+              <Select
+                value={formData.complainantType}
+                onValueChange={(value) => handleInputChange("complainantType", value as PersonType)}
+                disabled={isAnonymous}
+              >
+                <SelectTrigger className={`w-full text-sm ${
+                  isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
+                  hasFieldError('complainantType') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
+                  "bg-white text-gray-900 border-gray-300"
+                }`}>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="faculty">Faculty</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 Contact number *
                 {hasFieldError('complainantContact') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
@@ -1501,6 +1560,24 @@ const FormalComplaint = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Respondent is a *</label>
+                  <Select
+                    value={formData.respondentType}
+                    onValueChange={(value) => handleInputChange("respondentType", value as PersonType)}
+                  >
+                    <SelectTrigger className="w-full text-sm border-gray-300 h-10">
+                      <SelectValue placeholder="Select respondent type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="faculty">Faculty</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}
@@ -1644,6 +1721,10 @@ const FormalComplaint = () => {
                 onChange={e => {
                   handleInputChange("type", e.target.value);
                   if (e.target.value !== "other") setOtherTypeDetail("");
+                  // Reset harassment degree if not sexual harassment
+                  if (e.target.value !== "sexual_harassment") {
+                    handleInputChange("harassmentDegree", undefined);
+                  }
                 }}
                 className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
               >
@@ -1651,6 +1732,45 @@ const FormalComplaint = () => {
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
+
+              {/* Harassment Degree - Only show for sexual harassment */}
+              {formData.type === "sexual_harassment" && (
+                <div className="mt-3">
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                    Degree of harassment *
+                    <span className="ml-2 font-normal text-gray-400">(Based on RA 11313)</span>
+                  </label>
+                  <Select
+                    value={formData.harassmentDegree}
+                    onValueChange={(value) => handleInputChange("harassmentDegree", value as HarassmentDegree)}
+                  >
+                    <SelectTrigger className="w-full text-sm border-gray-300 h-10">
+                      <SelectValue placeholder="Select degree" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Light</span>
+                          <span className="text-xs text-gray-500">Light gestures, jokes, or comments</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="severe">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Severe</span>
+                          <span className="text-xs text-gray-500">Unwelcome touching, advances</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="grave">
+                        <div className="flex flex-col">
+                          <span className="font-medium">Grave</span>
+                          <span className="text-xs text-gray-500">Sexual assault, rape</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {formData.type === "other" && (
                 <input
                   type="text"

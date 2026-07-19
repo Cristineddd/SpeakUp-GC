@@ -3,6 +3,8 @@
  * For Case Handlers and Administrators only
  */
 
+import { PersonType } from './complaints';
+
 export type RepresentativeRole = 
   | 'admin'        // Full system control
   | 'handler'      // Case handler: Can be assigned to process complaints
@@ -51,6 +53,7 @@ export interface Representative {
   // Metadata
   bio?: string;
   specializations?: string[];      // e.g., ["harassment", "discrimination"]
+  targetGroups?: ('student' | 'faculty' | 'staff' | 'other')[];     // NEW: Which groups they handle: student, faculty, staff
   languages?: string[];            // Languages spoken
   workingHours?: {
     start: string;                 // e.g., "09:00"

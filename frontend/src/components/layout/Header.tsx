@@ -22,7 +22,6 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "../../compat/router";
 import { cn } from "../../lib/utils";
-import { NotificationBell } from "../notifications/NotificationBell";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../firebase";
 
@@ -291,7 +290,6 @@ const Header = () => {
           <div className="hidden lg:flex items-center gap-2 xl:gap-3 ml-4 flex-shrink-0">
             {isAuthenticated ? (
               <>
-                <NotificationBell />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
@@ -342,7 +340,6 @@ const Header = () => {
 
           {/* Mobile menu button */}
           <div className="lg:hidden flex items-center space-x-2">
-            {isAuthenticated && <NotificationBell />}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-foreground hover:bg-muted focus:outline-none"

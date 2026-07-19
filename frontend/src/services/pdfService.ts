@@ -85,7 +85,7 @@ function addPageHeader(doc: jsPDF, title: string, subtitle?: string) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(13);
   doc.setFont("helvetica", "bold");
-  doc.text("SpeakUp GC — DEIU Platform", 30, 11);
+  doc.text("SpeakUp GC", 30, 11);
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -110,7 +110,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
 
   doc.setFontSize(7);
   doc.setTextColor(...GRAY);
-  doc.text("SpeakUp GC · Gordon College DEIU · Confidential Document", 14, pageH - 8);
+  doc.text("SpeakUp GC", 14, pageH - 8);
   doc.text(`Page ${pageNum} of ${totalPages}`, pageW - 14, pageH - 8, { align: "right" });
 }
 

@@ -36,20 +36,38 @@ export enum ComplaintType {
   OTHER = 'other'
 }
 
+// Person type for complainant and respondent
+export enum PersonType {
+  STUDENT = 'student',
+  FACULTY = 'faculty',
+  STAFF = 'staff',
+  OTHER = 'other'
+}
+
+// Degree of sexual harassment (RA 11313 classification)
+export enum HarassmentDegree {
+  LIGHT = 'light',              // Light gestures, jokes, or comments
+  SEVERE = 'severe',            // Unwelcome touching, advances
+  GRAVE = 'grave'               // Sexual assault, rape
+}
+
 
 // Core Complaint Interface
 export interface Complaint {
   id: string;
   complainantId: string;
+  complainantType?: PersonType;  // NEW: Type of complainant
   respondentId?: string;
   respondentName: string;
   respondentAddress: string;
+  respondentType?: PersonType;   // NEW: Type of respondent
   
   // Complaint Details
   title: string;
   description: string;
   statementOfFacts: string;
   type: ComplaintType;
+  harassmentDegree?: HarassmentDegree;  // NEW: Degree for sexual harassment cases
   
   // Timing and Location
   incidentDate: Date;
@@ -225,18 +243,21 @@ export interface ComplaintFormData {
   complainantName: string;
   complainantAddress: string;
   complainantContact: string;
+  complainantType?: PersonType;  // NEW: Type of complainant
   
   // Respondent Information
   respondentName: string;
   respondentAddress: string;
   respondentPosition?: string;
   respondentDepartment?: string;
+  respondentType?: PersonType;  // NEW: Type of respondent
   
   // Incident Details
   title: string;
   description: string;
   statementOfFacts: string;
   type: ComplaintType;
+  harassmentDegree?: HarassmentDegree;  // NEW: Degree for sexual harassment cases
   incidentDate: string;
   incidentTime?: string;
   incidentLocation: string;
