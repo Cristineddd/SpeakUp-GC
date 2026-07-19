@@ -8,38 +8,28 @@ const TermsAndConditions = () => {
   const sections = [
     {
       icon: FileCheck,
-      title: "Acceptance of Terms",
-      content: "By accessing and using SpeakUp GC, you accept and agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services."
+      title: "Acceptable Use",
+      content: "SpeakUp GC is a platform for reporting gender-based violence and harassment incidents in accordance with Philippine law. You agree to use this platform only for legitimate reporting purposes and not for false, malicious, or defamatory complaints."
     },
     {
       icon: Users,
-      title: "User Responsibilities",
-      content: "You agree to provide accurate information, maintain the confidentiality of your account, and use SpeakUp GC only for lawful purposes. Misuse of the platform may result in account suspension."
-    },
-    {
-      icon: Shield,
-      title: "Reporting & Confidentiality",
-      content: "All reports are treated confidentially and reviewed by authorized personnel. False reporting or abuse of the system is prohibited and may lead to disciplinary action."
-    },
-    {
-      icon: Users2,
-      title: "Code of Internal Discipline and Integrity (CODI)",
-      content: "CODI is the designated body responsible for investigating and resolving complaints of sexual harassment, discrimination, and other misconduct. CODI members are trained to handle cases with confidentiality and professionalism."
-    },
-    {
-      icon: Copyright,
-      title: "Intellectual Property",
-      content: "All content, features, and functionality on SpeakUp GC are owned by us and protected by copyright, trademark, and other laws. Unauthorized use is prohibited."
+      title: "Eligibility",
+      content: "This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Code of Internal Discipline and Integrity (CODI)."
     },
     {
       icon: AlertTriangle,
-      title: "Limitation of Liability",
-      content: "SpeakUp GC provides tools and resources to support you, but we are not liable for any direct, indirect, or consequential damages arising from your use of the platform."
+      title: "Prohibited Actions",
+      content: "You may not use SpeakUp GC to: (a) submit false or fabricated reports; (b) harass, threaten, or defame any individual; (c) violate any applicable laws or regulations; or (d) interfere with the proper functioning of the platform."
+    },
+    {
+      icon: Shield,
+      title: "Governing Law",
+      content: "This platform operates under Republic Act No. 11313 (Safe Spaces Act), Republic Act No. 7877 (Anti-Sexual Harassment Act), and the Gordon College Committee on Decorum and Investigation (GC-CODI) procedures. All complaints are subject to investigation and resolution in accordance with these legal frameworks."
     },
     {
       icon: RefreshCw,
-      title: "Changes to Terms",
-      content: "We reserve the right to modify these terms at any time. Continued use of SpeakUp GC after changes constitutes acceptance of the revised terms."
+      title: "Modifications",
+      content: "Gordon College reserves the right to modify these terms at any time. Continued use of the platform constitutes acceptance of any changes."
     }
   ]
 

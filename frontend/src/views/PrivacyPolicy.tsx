@@ -8,38 +8,23 @@ const PrivacyPolicy = () => {
   const sections = [
     {
       icon: Database,
-      title: "Information We Collect",
-      content: "We collect only essential information needed to provide our services: your email, account details, and any reports you choose to submit. All data is encrypted and stored securely."
+      title: "Data Collection & Use",
+      content: "All complaints submitted through SpeakUp GC are handled with strict confidentiality by the Diversity, Equity, and Inclusion Unit (DEIU) of Gordon College. Your identity will never be disclosed to respondents or any other party without your explicit consent."
     },
     {
       icon: Shield,
-      title: "How We Use Your Information",
-      content: "Your information is used solely to deliver SpeakUp GC services, connect you with support resources, and improve our platform. We never sell or share your personal data with third parties."
+      title: "Legal Compliance",
+      content: "This system complies with Republic Act No. 10173 (Data Privacy Act of 2012), Republic Act No. 11313 (Safe Spaces Act), and the Gordon College Code of Internal Discipline and Integrity (CODI)."
     },
     {
       icon: Lock,
       title: "Data Security",
-      content: "We implement industry-standard security measures including encryption, secure servers, and regular security audits to protect your information from unauthorized access."
+      content: "You may file complaints as an identified complainant or anonymously. Your data is stored securely using industry-standard encryption and accessed only by authorized DEIU personnel for investigation purposes."
     },
     {
       icon: UserCheck,
       title: "Your Rights",
-      content: "You have the right to access, update, or delete your personal information at any time. You can also request a copy of your data or withdraw consent for data processing."
-    },
-    {
-      icon: FileText,
-      title: "Confidential Reporting",
-      content: "All reports submitted through SpeakUp GC are treated with strict confidentiality. Access is limited to authorized personnel directly involved in case resolution."
-    },
-    {
-      icon: Users2,
-      title: "Code of Internal Discipline and Integrity (CODI)",
-      content: "CODI is the designated body responsible for investigating and resolving complaints of sexual harassment, discrimination, and other misconduct. CODI members are trained to handle cases with confidentiality and professionalism."
-    },
-    {
-      icon: Mail,
-      title: "Contact Us",
-      content: "If you have questions about our privacy practices or wish to exercise your privacy rights, please contact us at privacy@speakupgc.com."
+      content: "Under RA 10173, you have the right to access, correct, and request deletion of your personal data. You may also withdraw consent at any time, subject to legal and contractual restrictions."
     }
   ]
 
