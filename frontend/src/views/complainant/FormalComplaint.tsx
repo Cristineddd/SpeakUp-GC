@@ -860,7 +860,6 @@ const FormalComplaint = () => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-    formData.append('type', 'upload'); // Force public upload type
     
     try {
       console.log(`📤 Uploading ${file.name} to Cloudinary...`);
