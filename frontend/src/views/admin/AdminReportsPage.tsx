@@ -2460,6 +2460,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </div>
 
               <div className="bg-slate-50 p-3 rounded-lg border">
+                <p className="text-xs text-gray-600 mb-1">Assigned CODI</p>
+                <p className="text-sm font-semibold">{safeGet(quickSummaryReport, 'assignedToName') || 'Not assigned'}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-lg border">
                 <p className="text-xs text-gray-600 mb-1">Last Updated</p>
                 <p className="text-sm font-semibold">{getLastUpdated(quickSummaryReport)}</p>
               </div>
