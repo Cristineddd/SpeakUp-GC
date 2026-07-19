@@ -244,7 +244,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
 
                 <p className="font-semibold text-gray-700 mt-3">2. Eligibility</p>
                 <p>
-                  This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Code of Internal Discipline and Integrity (CODI).
+                  This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Committee on Decorum and Investigation (CODI).
                 </p>
 
                 <p className="font-semibold text-gray-700 mt-3">3. Prohibited Actions</p>
@@ -290,7 +290,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
 
                 <p className="font-semibold text-gray-700 mt-3">Legal Compliance</p>
                 <p>
-                  This system complies with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, and the <strong>Gordon College Code of Internal Discipline and Integrity (CODI)</strong>.
+                  This system complies with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, and the <strong>Gordon College Committee on Decorum and Investigation (CODI)</strong>.
                 </p>
 
                 <p className="font-semibold text-gray-700 mt-3">Data Security</p>
