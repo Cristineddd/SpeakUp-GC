@@ -1,5 +1,5 @@
 import { useNavigate } from '../compat/router'
-import { ArrowLeft, Shield, Database, Lock, UserCheck, FileText, Mail, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Shield, Database, Lock, UserCheck, FileText, Mail, ArrowRight, Users2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 
 const PrivacyPolicy = () => {
@@ -30,6 +30,11 @@ const PrivacyPolicy = () => {
       icon: FileText,
       title: "Confidential Reporting",
       content: "All reports submitted through SpeakUp GC are treated with strict confidentiality. Access is limited to authorized personnel directly involved in case resolution."
+    },
+    {
+      icon: Users2,
+      title: "Committee on Decorum and Investigation (CODI)",
+      content: "CODI is the designated body responsible for investigating and resolving complaints of sexual harassment, discrimination, and other misconduct. CODI members are trained to handle cases with confidentiality and professionalism."
     },
     {
       icon: Mail,

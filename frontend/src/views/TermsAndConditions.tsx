@@ -1,5 +1,5 @@
 import { useNavigate } from '../compat/router'
-import { ArrowLeft, Shield, FileCheck, Users, Copyright, AlertTriangle, RefreshCw, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Shield, FileCheck, Users, Copyright, AlertTriangle, RefreshCw, ArrowRight, Users2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 
 const TermsAndConditions = () => {
@@ -20,6 +20,11 @@ const TermsAndConditions = () => {
       icon: Shield,
       title: "Reporting & Confidentiality",
       content: "All reports are treated confidentially and reviewed by authorized personnel. False reporting or abuse of the system is prohibited and may lead to disciplinary action."
+    },
+    {
+      icon: Users2,
+      title: "Committee on Decorum and Investigation (CODI)",
+      content: "CODI is the designated body responsible for investigating and resolving complaints of sexual harassment, discrimination, and other misconduct. CODI members are trained to handle cases with confidentiality and professionalism."
     },
     {
       icon: Copyright,

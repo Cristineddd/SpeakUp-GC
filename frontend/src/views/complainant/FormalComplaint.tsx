@@ -1000,17 +1000,17 @@ const FormalComplaint = () => {
         respondentAddress: formData.respondentAddress,
         respondentPosition: formData.respondentPosition,
         respondentDepartment: formData.respondentDepartment,
-        respondentType: formData.respondentType,  // NEW: Respondent type
+        ...(formData.respondentType && { respondentType: formData.respondentType }),  // NEW: Respondent type (only if set)
         
         // Complainant type
-        complainantType: formData.complainantType,  // NEW: Complainant type
+        ...(formData.complainantType && { complainantType: formData.complainantType }),  // NEW: Complainant type (only if set)
         
         // Incident details
         title: formData.title,
         description: formData.description,
         statementOfFacts: formData.statementOfFacts,
         type: formData.type,
-        harassmentDegree: formData.harassmentDegree,  // NEW: Harassment degree
+        ...(formData.harassmentDegree && { harassmentDegree: formData.harassmentDegree }),  // NEW: Harassment degree (only if set)
         category: formData.type, // Alias for compatibility
         incidentDate: formData.incidentDate,
         incidentTime: formData.incidentTime,
