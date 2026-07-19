@@ -25,6 +25,7 @@ import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestor
 import { db } from '../../firebase';
 import { format } from 'date-fns';
 import { useNavigate } from '../../compat/router';
+import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
 
 interface ClosedCase {
   id: string;
@@ -192,7 +193,7 @@ const ClosedCasesPage = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium text-gray-900">{case_.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{case_.type}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{getFormalComplaintCategoryLabel(case_.type)}</p>
                         </div>
                       </TableCell>
                       <TableCell>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { getFormalComplaintCategoryLabel } from "../../constants/formalComplaintCategories";
 import {
   Table,
   TableBody,
@@ -579,7 +580,7 @@ const Reports = () => {
                         <TableCell className="font-semibold text-gray-600">{index + 1}</TableCell>
                         <TableCell className="font-medium">{report.id}</TableCell>
                         <TableCell>{report.title}</TableCell>
-                        <TableCell>{report.type}</TableCell>
+                        <TableCell>{getFormalComplaintCategoryLabel(report.type)}</TableCell>
                         <TableCell>{report.complainant}</TableCell>
                         <TableCell>{report.dateReported}</TableCell>
                         <TableCell>

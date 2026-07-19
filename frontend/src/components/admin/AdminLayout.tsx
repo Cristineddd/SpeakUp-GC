@@ -183,7 +183,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                           }}
                         />
                       </div>
-                      <h1 className="text-xl font-bold text-gray-900 leading-tight">SpeakUp GC</h1>
+                      <h1 className="text-xl font-bold text-gray-900 leading-tight whitespace-nowrap">SpeakUp GC</h1>
                     </div>
                     <button
                       onClick={() => setSidebarCollapsed(true)}
@@ -310,23 +310,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <div className="flex-1" />
               <div className="flex items-center gap-3">
                 <NotificationBell />
-                <div className="h-8 w-px bg-gray-200" />
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="hidden md:block">
-                      <p className="text-sm font-medium text-gray-900">{user?.displayName}</p>
-                      {isAdmin && (
-                        <p className="text-xs text-gray-500">Administrator</p>
-                      )}
-                      {role === 'handler' && !isAdmin && (
-                        <p className="text-xs text-gray-500">Case Handler</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
             <main className="flex-1 bg-gradient-to-b from-gray-50/90 to-gray-100/80 p-8">
