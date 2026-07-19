@@ -180,7 +180,7 @@ export class CaseActivityService {
           metadata: {
             statusBefore: oldStatus,
             statusAfter: newStatus,
-            notes,
+            ...(notes && { notes }),
             isSystemAction
           }
         },
