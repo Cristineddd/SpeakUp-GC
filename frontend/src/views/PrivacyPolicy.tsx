@@ -14,7 +14,7 @@ const PrivacyPolicy = () => {
     {
       icon: Shield,
       title: "Legal Compliance",
-      content: "This system complies with Republic Act No. 10173 (Data Privacy Act of 2012), Republic Act No. 11313 (Safe Spaces Act), and the Gordon College Code of Internal Discipline and Integrity (CODI)."
+      content: "This system complies with Republic Act No. 10173 (Data Privacy Act of 2012), Republic Act No. 11313 (Safe Spaces Act), and the Gordon College Committee on Decorum and Investigation (CODI)."
     },
     {
       icon: Lock,

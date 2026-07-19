@@ -14,7 +14,7 @@ const TermsAndConditions = () => {
     {
       icon: Users,
       title: "Eligibility",
-      content: "This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Code of Internal Discipline and Integrity (CODI)."
+      content: "This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Committee on Decorum and Investigation (CODI)."
     },
     {
       icon: AlertTriangle,
