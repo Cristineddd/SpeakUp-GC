@@ -673,10 +673,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       {/* Terms & Conditions Modal */}
       <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} title="Terms & Conditions">
         <div className="space-y-6 text-foreground">
-          <div><h3 className="text-lg font-semibold mb-2">Welcome to SpeakUp GC</h3><p className="text-muted-foreground">By using our platform, you agree to these terms and conditions.</p></div>
-          <div><h3 className="font-semibold mb-2">Acceptance of Terms</h3><p className="text-muted-foreground">By accessing and using SpeakUp GC, you accept and agree to be bound by these Terms and Conditions.</p></div>
-          <div><h3 className="font-semibold mb-2">User Responsibilities</h3><p className="text-muted-foreground">You agree to provide accurate information, maintain the confidentiality of your account, and use SpeakUp GC only for lawful purposes.</p></div>
-          <div><h3 className="font-semibold mb-2">Reporting & Confidentiality</h3><p className="text-muted-foreground">All reports are treated confidentially and reviewed by authorized personnel.</p></div>
+          <div><h3 className="text-lg font-semibold mb-2">Welcome to SpeakUp GC</h3><p className="text-muted-foreground">By using our platform, you agree to these terms and conditions. Please read them carefully to understand your rights and responsibilities.</p></div>
+          <div><h3 className="font-semibold mb-2">Acceptable Use</h3><p className="text-muted-foreground">SpeakUp GC is a platform for reporting gender-based violence and harassment incidents in accordance with Philippine law. You agree to use this platform only for legitimate reporting purposes and not for false, malicious, or defamatory complaints.</p></div>
+          <div><h3 className="font-semibold mb-2">Eligibility</h3><p className="text-muted-foreground">This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Committee on Decorum and Investigation (CODI).</p></div>
+          <div><h3 className="font-semibold mb-2">Prohibited Actions</h3><p className="text-muted-foreground">You may not use SpeakUp GC to: (a) submit false or fabricated reports; (b) harass, threaten, or defame any individual; (c) violate any applicable laws or regulations; or (d) interfere with the proper functioning of the platform.</p></div>
+          <div><h3 className="font-semibold mb-2">Governing Law</h3><p className="text-muted-foreground">This platform operates under Republic Act No. 11313 (Safe Spaces Act), Republic Act No. 7877 (Anti-Sexual Harassment Act), and the Gordon College Committee on Decorum and Investigation (GC-CODI) procedures. All complaints are subject to investigation and resolution in accordance with these legal frameworks.</p></div>
+          <div><h3 className="font-semibold mb-2">Modifications</h3><p className="text-muted-foreground">Gordon College reserves the right to modify these terms at any time. Continued use of the platform constitutes acceptance of any changes.</p></div>
           <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
@@ -684,10 +686,11 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       {/* Privacy Policy Modal */}
       <TermsModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Privacy Policy">
         <div className="space-y-6 text-foreground">
-          <div><h3 className="text-lg font-semibold mb-2">Privacy Policy</h3><p className="text-muted-foreground">Your privacy is our priority. SpeakUp GC is committed to protecting your personal information.</p></div>
-          <div><h3 className="font-semibold mb-2">Information We Collect</h3><p className="text-muted-foreground">We collect only essential information needed to provide our services.</p></div>
-          <div><h3 className="font-semibold mb-2">Data Security</h3><p className="text-muted-foreground">We implement industry-standard security measures including encryption and secure servers.</p></div>
-          <div><h3 className="font-semibold mb-2">Your Rights</h3><p className="text-muted-foreground">You have the right to access, update, or delete your personal information at any time.</p></div>
+          <div><h3 className="text-lg font-semibold mb-2">Privacy Policy</h3><p className="text-muted-foreground">Your privacy is our priority. SpeakUp GC is committed to protecting your personal information and ensuring a safe, confidential environment for all users.</p></div>
+          <div><h3 className="font-semibold mb-2">Data Collection & Use</h3><p className="text-muted-foreground">All complaints submitted through SpeakUp GC are handled with strict confidentiality by the Diversity, Equity, and Inclusion Unit (DEIU) of Gordon College. Your identity will never be disclosed to respondents or any other party without your explicit consent.</p></div>
+          <div><h3 className="font-semibold mb-2">Legal Compliance</h3><p className="text-muted-foreground">This system complies with Republic Act No. 10173 (Data Privacy Act of 2012), Republic Act No. 11313 (Safe Spaces Act), and the Gordon College Committee on Decorum and Investigation (CODI).</p></div>
+          <div><h3 className="font-semibold mb-2">Data Security</h3><p className="text-muted-foreground">You may file complaints as an identified complainant or anonymously. Your data is stored securely using industry-standard encryption and accessed only by authorized DEIU personnel for investigation purposes.</p></div>
+          <div><h3 className="font-semibold mb-2">Your Rights</h3><p className="text-muted-foreground">Under RA 10173, you have the right to access, correct, and request deletion of your personal data. You may also withdraw consent at any time, subject to legal and contractual restrictions.</p></div>
           <p className="text-sm text-muted-foreground italic">Last updated: March 17, 2026</p>
         </div>
       </TermsModal>
