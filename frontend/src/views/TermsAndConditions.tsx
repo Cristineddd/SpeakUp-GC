@@ -23,7 +23,7 @@ const TermsAndConditions = () => {
     },
     {
       icon: Users2,
-      title: "Committee on Decorum and Investigation (CODI)",
+      title: "Code of Internal Discipline and Integrity (CODI)",
       content: "CODI is the designated body responsible for investigating and resolving complaints of sexual harassment, discrimination, and other misconduct. CODI members are trained to handle cases with confidentiality and professionalism."
     },
     {
