@@ -79,6 +79,7 @@ interface SimpleComplaint {
   status: ComplaintStatus;
   createdAt: Date;
   updatedAt: Date;
+  complainantName?: string;
 }
 
 export default function Dashboard() {
@@ -168,6 +169,7 @@ export default function Dashboard() {
               status: toComplaintStatus(data.status || "submitted"),
               createdAt: safeToDate(data.createdAt),
               updatedAt: safeToDate(data.updatedAt || data.createdAt),
+              complainantName: data.complainantName || user?.displayName,
             };
           });
           merge();
@@ -434,7 +436,7 @@ export default function Dashboard() {
                               </span>
                             </div>
                             <p className="text-xs text-gray-400 mt-0.5">
-                              CASE-{String(idx + 1).padStart(3, "0")} · {safeToDate(complaint.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                              {complaint.complainantName || 'Anonymous'} · CASE-{String(idx + 1).padStart(3, "0")} · {safeToDate(complaint.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                             </p>
                             <div className="mt-2">
                               {complaint.status === ComplaintStatus.SUBMITTED || complaint.status === ComplaintStatus.UNDER_REVIEW ? (

@@ -777,7 +777,8 @@ const FormalComplaint = () => {
         }
         return step3Valid;
       case 4:
-        const step4Valid = formData.evidence.length > 0;
+        // Evidence is now optional - always return true
+        const step4Valid = true;
         if (lastValidationLog.current[4] !== step4Valid) {
           console.log('🔍 Step 4 validation:', {
             step4Valid,
@@ -835,8 +836,9 @@ const FormalComplaint = () => {
             : "Please fill in all required incident details.";
           break;
         case 4:
-          errorTitle = "Evidence Required";
-          errorDescription = "Please upload at least one evidence file or provide an external link (Google Drive, Dropbox, etc.) before proceeding.";
+          // Evidence is now optional
+          errorTitle = "Evidence Optional";
+          errorDescription = "You may proceed without evidence. However, uploading evidence (screenshots, photos, messages, or witness statements) can strengthen your case.";
           break;
         default:
           errorDescription = "Please fill in all required fields before proceeding.";

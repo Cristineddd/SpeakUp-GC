@@ -7,7 +7,7 @@
  *   UC-08 Update Case Status     — quick status update from the card
  *   UC-09 Generate Case Report   — PDF export via jsPDF (pdfService.ts)
  *
- * Role: UserRole.CODI | 'handler' | 'codi'
+ * Role: UserRole.CODI | 'codi'
  *
  * Tech stack: React, Tailwind CSS, Firebase Firestore (real-time onSnapshot),
  *             jsPDF + jspdf-autotable (PDF generation), Next.js router compat shim

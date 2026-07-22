@@ -137,21 +137,40 @@ export function MessageBubble({
           {message.attachments && message.attachments.length > 0 && (
             <div className="mt-3 space-y-2">
               {message.attachments.map((attachment) => {
-                // Display images as full-size embedded images
+                // Display images as full-size embedded images with preview button
                 if (attachment.type.startsWith('image/')) {
                   return (
-                    <div key={attachment.id} className="relative rounded-xl overflow-hidden max-w-xs">
+                    <div key={attachment.id} className="relative rounded-xl overflow-hidden max-w-xs group">
                       <img
                         src={attachment.url}
                         alt={attachment.name}
                         className="w-full h-auto max-h-96 object-cover"
                       />
+                      {/* Preview overlay on hover */}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          onClick={() => {
+                            setSelectedPdfUrl(attachment.url);
+                            setSelectedPdfName(attachment.name);
+                            setPdfViewerOpen(true);
+                          }}
+                          className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
+                        >
+                          <Eye className="h-5 w-5 text-gray-800" />
+                        </button>
+                      </div>
                     </div>
                   );
                 }
 
-                // Display non-image files with download button
+                // Display non-image files with download and preview buttons
                 const isPDF = attachment.type === 'application/pdf' || attachment.name.toLowerCase().endsWith('.pdf');
+                const isDocument = attachment.type.includes('document') || 
+                                   attachment.type.includes('word') || 
+                                   attachment.type.includes('text') ||
+                                   attachment.name.toLowerCase().endsWith('.doc') ||
+                                   attachment.name.toLowerCase().endsWith('.docx') ||
+                                   attachment.name.toLowerCase().endsWith('.txt');
                 
                 return (
                   <div
@@ -185,8 +204,8 @@ export function MessageBubble({
                       </p>
                     </div>
 
-                    {/* View button for PDFs */}
-                    {isPDF && (
+                    {/* Preview button for PDFs and documents */}
+                    {(isPDF || isDocument) && (
                       <button
                         onClick={() => {
                           setSelectedPdfUrl(attachment.url);
@@ -197,6 +216,7 @@ export function MessageBubble({
                           p-2 rounded-lg transition-colors
                           ${isOwn ? 'hover:bg-emerald-800/50' : 'hover:bg-gray-200'}
                         `}
+                        title="Preview file"
                       >
                         <Eye className={`
                           h-4 w-4
@@ -215,6 +235,7 @@ export function MessageBubble({
                         p-2 rounded-lg transition-colors
                         ${isOwn ? 'hover:bg-emerald-800/50' : 'hover:bg-gray-200'}
                       `}
+                      title="Download file"
                     >
                       <Download className={`
                         h-4 w-4

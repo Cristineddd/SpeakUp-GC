@@ -40,12 +40,57 @@ export const DEPARTMENTS: Department[] = [
 ];
 
 // Gordon College Buildings
-// TODO: Add actual building data when collected
-export const BUILDINGS: Building[] = [];
+export const BUILDINGS: Building[] = [
+  { id: 'bldg_001', name: 'Main Building', code: 'MB', campus: 'Gordon College' },
+  { id: 'bldg_002', name: 'College of Computer Studies Building', code: 'CCS', campus: 'Gordon College' },
+  { id: 'bldg_003', name: 'College of Business Administration Building', code: 'CBA', campus: 'Gordon College' },
+  { id: 'bldg_004', name: 'College of Education Building', code: 'CE', campus: 'Gordon College' },
+  { id: 'bldg_005', name: 'College of Hospitality Building', code: 'CHTM', campus: 'Gordon College' },
+  { id: 'bldg_006', name: 'College of Allied Health Building', code: 'CAHS', campus: 'Gordon College' },
+  { id: 'bldg_007', name: 'Administration Building', code: 'AD', campus: 'Gordon College' },
+  { id: 'bldg_008', name: 'Library Building', code: 'LIB', campus: 'Gordon College' },
+  { id: 'bldg_009', name: 'Student Center', code: 'SC', campus: 'Gordon College' },
+  { id: 'bldg_010', name: 'Gymnasium', code: 'GYM', campus: 'Gordon College' },
+];
 
 // Gordon College Rooms
-// TODO: Add actual room data when buildings are collected
-export const ROOMS: Room[] = [];
+export const ROOMS: Room[] = [
+  // Main Building
+  { id: 'rm_001', name: 'Room 101', number: '101', buildingId: 'bldg_001', buildingName: 'Main Building', floor: '1', type: 'classroom' },
+  { id: 'rm_002', name: 'Room 102', number: '102', buildingId: 'bldg_001', buildingName: 'Main Building', floor: '1', type: 'classroom' },
+  { id: 'rm_003', name: 'Room 103', number: '103', buildingId: 'bldg_001', buildingName: 'Main Building', floor: '1', type: 'classroom' },
+  { id: 'rm_004', name: 'Room 201', number: '201', buildingId: 'bldg_001', buildingName: 'Main Building', floor: '2', type: 'classroom' },
+  { id: 'rm_005', name: 'Room 202', number: '202', buildingId: 'bldg_001', buildingName: 'Main Building', floor: '2', type: 'classroom' },
+  // CCS Building
+  { id: 'rm_006', name: 'Computer Lab 1', number: 'CL1', buildingId: 'bldg_002', buildingName: 'College of Computer Studies Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_007', name: 'Computer Lab 2', number: 'CL2', buildingId: 'bldg_002', buildingName: 'College of Computer Studies Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_008', name: 'Computer Lab 3', number: 'CL3', buildingId: 'bldg_002', buildingName: 'College of Computer Studies Building', floor: '2', type: 'laboratory' },
+  { id: 'rm_009', name: 'CCS Faculty Room', number: 'FR1', buildingId: 'bldg_002', buildingName: 'College of Computer Studies Building', floor: '3', type: 'office' },
+  // CBA Building
+  { id: 'rm_010', name: 'Room 301', number: '301', buildingId: 'bldg_003', buildingName: 'College of Business Administration Building', floor: '1', type: 'classroom' },
+  { id: 'rm_011', name: 'Room 302', number: '302', buildingId: 'bldg_003', buildingName: 'College of Business Administration Building', floor: '1', type: 'classroom' },
+  { id: 'rm_012', name: 'CBA Faculty Room', number: 'FR2', buildingId: 'bldg_003', buildingName: 'College of Business Administration Building', floor: '2', type: 'office' },
+  // CHTM Building
+  { id: 'rm_013', name: 'Kitchen Lab 1', number: 'KL1', buildingId: 'bldg_005', buildingName: 'College of Hospitality Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_014', name: 'Kitchen Lab 2', number: 'KL2', buildingId: 'bldg_005', buildingName: 'College of Hospitality Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_015', name: 'CHTM Faculty Room', number: 'FR3', buildingId: 'bldg_005', buildingName: 'College of Hospitality Building', floor: '2', type: 'office' },
+  // CAHS Building
+  { id: 'rm_016', name: 'Nursing Lab 1', number: 'NL1', buildingId: 'bldg_006', buildingName: 'College of Allied Health Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_017', name: 'Nursing Lab 2', number: 'NL2', buildingId: 'bldg_006', buildingName: 'College of Allied Health Building', floor: '1', type: 'laboratory' },
+  { id: 'rm_018', name: 'CAHS Faculty Room', number: 'FR4', buildingId: 'bldg_006', buildingName: 'College of Allied Health Building', floor: '2', type: 'office' },
+  // Administration Building
+  { id: 'rm_019', name: 'Dean\'s Office', number: 'DO1', buildingId: 'bldg_007', buildingName: 'Administration Building', floor: '1', type: 'office' },
+  { id: 'rm_020', name: 'Registrar Office', number: 'RO1', buildingId: 'bldg_007', buildingName: 'Administration Building', floor: '1', type: 'office' },
+  { id: 'rm_021', name: 'Cashier Office', number: 'CO1', buildingId: 'bldg_007', buildingName: 'Administration Building', floor: '1', type: 'office' },
+  // Library
+  { id: 'rm_022', name: 'Main Library', number: 'LIB1', buildingId: 'bldg_008', buildingName: 'Library Building', floor: '1', type: 'other' },
+  { id: 'rm_023', name: 'Library Computer Section', number: 'LCS1', buildingId: 'bldg_008', buildingName: 'Library Building', floor: '2', type: 'other' },
+  // Student Center
+  { id: 'rm_024', name: 'Student Lounge', number: 'SL1', buildingId: 'bldg_009', buildingName: 'Student Center', floor: '1', type: 'other' },
+  { id: 'rm_025', name: 'Cafeteria', number: 'CAF1', buildingId: 'bldg_009', buildingName: 'Student Center', floor: '1', type: 'other' },
+  // Gymnasium
+  { id: 'rm_026', name: 'Main Gym', number: 'GYM1', buildingId: 'bldg_010', buildingName: 'Gymnasium', floor: '1', type: 'other' },
+];
 
 class LocationDataService {
   /**

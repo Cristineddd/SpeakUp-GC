@@ -2349,7 +2349,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       {/* Report Details Dialog - Shared across all reports */}
       {renderReportDetailsDialog()}
 
-      {/* NOTE: Removed AssignHandlerDialog - All CODI members now see all cases automatically */}
+      {/* NOTE: Removed AssignCODIMemberDialog - All CODI members now see all cases automatically */}
 
       {/* Escalation Controls Dialog */}
       {reportToEscalate && (
