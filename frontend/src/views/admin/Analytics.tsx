@@ -114,7 +114,7 @@ const Analytics = () => {
     const todayStart = startOfDay(today);
     const todayEnd = endOfDay(today);
 
-    const todayReporters = new Set(
+    const todayComplainants = new Set(
       reports
         .filter((report) => {
           try {
@@ -128,7 +128,7 @@ const Analytics = () => {
         .filter(Boolean)
     );
 
-    return todayReporters.size;
+    return todayComplainants.size;
   };
 
   const calculateReportsOverTime = (reports: AdminReport[]) => {

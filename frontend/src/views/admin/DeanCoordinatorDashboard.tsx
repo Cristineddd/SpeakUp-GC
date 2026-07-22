@@ -291,7 +291,7 @@ const DeanCoordinatorDashboard = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-gray-400" />
-                            <span><strong>Reporter:</strong> {report.userName || 'Unknown'}</span>
+                            <span><strong>Complainant:</strong> {report.userName || 'Unknown'}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4 text-gray-400" />
@@ -364,7 +364,7 @@ const DeanCoordinatorDashboard = () => {
                                       <div><strong>Title:</strong> {selectedReport.title || 'No title'}</div>
                                       <div><strong>Location:</strong> {selectedReport.location || 'N/A'}</div>
                                       <div><strong>Incident Date:</strong> {selectedReport.incidentDate ? format(new Date(selectedReport.incidentDate), 'MMM dd, yyyy') : 'N/A'}</div>
-                                      <div><strong>Reporter:</strong> {selectedReport.userName || 'Unknown'}</div>
+                                      <div><strong>Complainant:</strong> {selectedReport.userName || 'Unknown'}</div>
                                       <div><strong>Email:</strong> {selectedReport.userEmail || 'N/A'}</div>
                                       <div><strong>Reported On:</strong> {selectedReport.reportedAt ? format(new Date(selectedReport.reportedAt), 'MMM dd, h:mm a') : 'N/A'}</div>
                                     </div>

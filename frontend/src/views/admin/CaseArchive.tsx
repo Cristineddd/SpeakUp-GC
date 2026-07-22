@@ -94,7 +94,7 @@ const CaseArchive = () => {
           aVal = a.title || '';
           bVal = b.title || '';
           break;
-        case 'reporter':
+        case 'complainant':
           aVal = a.userName || '';
           bVal = b.userName || '';
           break;
@@ -204,7 +204,7 @@ const CaseArchive = () => {
           <CardContent>
             <input
               type="text"
-              placeholder="Search by title, description, location, or reporter..."
+              placeholder="Search by title, description, location, or complainant..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -242,11 +242,11 @@ const CaseArchive = () => {
                     </TableHead>
                     <TableHead>
                       <button 
-                        onClick={() => handleSort('reporter')} 
+                        onClick={() => handleSort('complainant')} 
                         className="flex items-center gap-1 hover:text-gray-900"
                       >
-                        Reporter
-                        {sortField === 'reporter' ? (
+                        Complainant
+                        {sortField === 'complainant' ? (
                           sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                         ) : (
                           <ArrowUpDown className="h-3 w-3 opacity-40" />

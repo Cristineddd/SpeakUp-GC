@@ -183,7 +183,7 @@ const AdminDashboard = () => {
     const todayStart = startOfDay(today);
     const todayEnd = endOfDay(today);
 
-    const todayReporters = new Set(
+    const todayComplainants = new Set(
       reports
         .filter(report => {
           try {
@@ -197,7 +197,7 @@ const AdminDashboard = () => {
         .filter(Boolean)
     );
 
-    return todayReporters.size;
+    return todayComplainants.size;
   };
 
   // Calculate yesterday's active users for trend comparison
@@ -206,7 +206,7 @@ const AdminDashboard = () => {
     const yesterdayStart = startOfDay(yesterday);
     const yesterdayEnd = endOfDay(yesterday);
 
-    const yesterdayReporters = new Set(
+    const yesterdayComplainants = new Set(
       reports
         .filter(report => {
           try {
@@ -220,7 +220,7 @@ const AdminDashboard = () => {
         .filter(Boolean)
     );
 
-    return yesterdayReporters.size;
+    return yesterdayComplainants.size;
   };
 
   // Generate real system alerts based on actual data

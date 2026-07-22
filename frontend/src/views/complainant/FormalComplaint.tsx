@@ -28,7 +28,7 @@ import { useNavigate } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import { ComplaintFormData, ComplaintType, PersonType, HarassmentDegree } from "../../types/complaints";
 import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCategories";
-import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
 import { RepresentativeService } from '../../services/representativeService';
@@ -1242,6 +1242,44 @@ const FormalComplaint = () => {
       } catch (autoAssignError) {
         console.error('❌ Auto-assignment failed:', autoAssignError);
         // Don't fail the submission if auto-assignment fails
+      }
+
+      // Send notification to respondent if they're a registered user
+      if (!unknownRespondent && formData.respondentName) {
+        try {
+          // Try to find respondent by email or name in users collection
+          const usersRef = collection(db, 'users');
+          const emailQuery = query(usersRef, where('email', '==', formData.respondentAddress));
+          const emailSnapshot = await getDocs(emailQuery);
+          
+          if (!emailSnapshot.empty) {
+            const respondentUser = emailSnapshot.docs[0];
+            await NotificationService.sendRespondentComplaintNotification(
+              respondentUser.id,
+              complaintId,
+              formData.title || 'Formal Complaint'
+            );
+            console.log('✅ Notification sent to respondent (found by email)');
+          } else {
+            // Try to find by display name
+            const nameQuery = query(usersRef, where('displayName', '==', formData.respondentName));
+            const nameSnapshot = await getDocs(nameQuery);
+            
+            if (!nameSnapshot.empty) {
+              const respondentUser = nameSnapshot.docs[0];
+              await NotificationService.sendRespondentComplaintNotification(
+                respondentUser.id,
+                complaintId,
+                formData.title || 'Formal Complaint'
+              );
+              console.log('✅ Notification sent to respondent (found by name)');
+            } else {
+              console.log('ℹ️ Respondent not found as registered user - no notification sent');
+            }
+          }
+        } catch (respondentNotifyError) {
+          console.warn('⚠️ Could not notify respondent:', respondentNotifyError);
+        }
       }
 
       // Send notifications to ALL admins about new complaint

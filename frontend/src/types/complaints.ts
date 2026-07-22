@@ -21,6 +21,10 @@ export enum ComplaintStatus {
   INVESTIGATING = 'investigating',
   AWAITING_RESPONSE = 'awaiting_response',
   UNDER_DELIBERATION = 'under_deliberation',
+  IN_MEDIATION = 'in_mediation',
+  AWAITING_EVIDENCE = 'awaiting_evidence',
+  ON_HOLD = 'on_hold',
+  ESCALATED = 'escalated',
   RESOLVED = 'resolved',
   DISMISSED = 'dismissed',
   WITHDRAWN = 'withdrawn'

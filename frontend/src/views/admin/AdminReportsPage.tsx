@@ -606,7 +606,7 @@ const AdminReportsPage = () => {
         case 'title':
           comparison = (safeGet(a, 'title', '') || '').localeCompare(safeGet(b, 'title', '') || '');
           break;
-        case 'reporter':
+        case 'complainant':
           comparison = (safeGet(a, 'userName', '') || '').localeCompare(safeGet(b, 'userName', '') || '');
           break;
         case 'handler':
@@ -801,7 +801,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       autoTable(doc, {
         startY: 32,
         head: [[
-          'ID', 'Title', 'Category', 'Status', 'Reporter', 'Location', 'Incident', 'Reported', 'Escalation'
+          'ID', 'Title', 'Category', 'Status', 'Complainant', 'Location', 'Incident', 'Reported', 'Escalation'
         ]],
         body: tableData,
         theme: 'grid',
@@ -834,7 +834,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           1: { cellWidth: 50, halign: 'left' },    // Title - MAXIMIZED
           2: { cellWidth: 28, halign: 'left' },    // Category
           3: { cellWidth: 22, halign: 'center' },  // Status
-          4: { cellWidth: 28, halign: 'left' },    // Reporter
+          4: { cellWidth: 28, halign: 'left' },    // Complainant
           5: { cellWidth: 35, halign: 'left' },    // Location - MAXIMIZED
           6: { cellWidth: 18, halign: 'center' },  // Incident Date
           7: { cellWidth: 18, halign: 'center' },  // Reported Date
@@ -1273,7 +1273,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         </p>
                       </div>
                       <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Reporter</p>
+                        <p className="text-sm text-gray-600 mb-1 font-medium">Complainant</p>
                         <p className="text-base font-semibold">{safeGet(selectedReport, 'userName', 'Unknown')}</p>
                       </div>
                       <div className="pb-3 border-b">
@@ -1317,7 +1317,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                         <p className="text-sm text-gray-600 mb-1 font-medium">Incident Date</p>
                         <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</p>
                       </div>
-                      <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-3 rounded">Contact admin for reporter details</p>
+                      <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-3 rounded">Contact admin for complainant details</p>
                     </div>
                   </div>
                 )}
@@ -2164,11 +2164,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   </TableHead>
                   <TableHead className="text-emerald-950/75">
                     <button 
-                      onClick={() => handleSort('reporter')} 
+                      onClick={() => handleSort('complainant')} 
                       className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
                     >
-                      Reporter
-                      {sortField === 'reporter' ? (
+                      Complainant
+                      {sortField === 'complainant' ? (
                         sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
                       ) : (
                         <ArrowUpDown className="h-3 w-3 opacity-40" />
@@ -2266,7 +2266,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                       </TableCell>
                       <TableCell>
                         {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
-                          <div className="flex items-center gap-1.5" title="Anonymous Reporter">
+                          <div className="flex items-center gap-1.5" title="Anonymous Complainant">
                             <Lock className="h-3.5 w-3.5 text-gray-400" />
                             <span className="text-gray-500 text-sm">Anonymous</span>
                           </div>
@@ -2386,7 +2386,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             </p>
             <ul className="mt-2 space-y-1 text-sm text-gray-600 list-disc list-inside">
               <li>Report ID, Title, and Category</li>
-              <li>Status and Reporter information</li>
+              <li>Status and Complainant information</li>
               <li>Location and Incident dates</li>
               <li>Escalation level (if any)</li>
             </ul>

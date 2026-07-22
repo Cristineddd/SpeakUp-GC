@@ -23,7 +23,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { ComplaintStatus } from "../../types/complaints";
-import { collection, query, where, onSnapshot, Unsubscribe, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, Unsubscribe, doc, getDoc, orderBy } from "firebase/firestore";
 import { db } from "../../firebase";
 import { NotificationService } from "../../services/notificationService";
 import type { Notification as AppNotification } from "../../types/notification";
@@ -57,6 +57,10 @@ const toComplaintStatus = (status: string): ComplaintStatus => {
     investigating: ComplaintStatus.INVESTIGATING,
     awaiting_response: ComplaintStatus.AWAITING_RESPONSE,
     under_deliberation: ComplaintStatus.UNDER_DELIBERATION,
+    in_mediation: ComplaintStatus.IN_MEDIATION,
+    awaiting_evidence: ComplaintStatus.AWAITING_EVIDENCE,
+    on_hold: ComplaintStatus.ON_HOLD,
+    escalated: ComplaintStatus.ESCALATED,
     resolved: ComplaintStatus.RESOLVED,
     dismissed: ComplaintStatus.DISMISSED,
     withdrawn: ComplaintStatus.WITHDRAWN,
@@ -140,7 +144,7 @@ export default function Dashboard() {
 
     try {
       reportsUnsub = onSnapshot(
-        query(collection(db, "reports"), where("userId", "==", user.uid)),
+        query(collection(db, "reports"), where("userId", "==", user.uid), orderBy("reportedAt", "desc")),
         (snap) => {
           reportsData = snap.docs.map((d) => {
             const data = d.data();
@@ -150,6 +154,7 @@ export default function Dashboard() {
               status: toComplaintStatus(data.status || "submitted"),
               createdAt: safeToDate(data.reportedAt || data.createdAt),
               updatedAt: safeToDate(data.lastUpdated || data.updatedAt),
+              complainantName: data.userName || data.complainantName || user?.displayName,
             };
           });
           merge();
@@ -159,7 +164,7 @@ export default function Dashboard() {
 
     try {
       complaintsUnsub = onSnapshot(
-        query(collection(db, "complaints"), where("complainantId", "==", user.uid)),
+        query(collection(db, "complaints"), where("complainantId", "==", user.uid), orderBy("createdAt", "desc")),
         (snap) => {
           complaintsData = snap.docs.map((d) => {
             const data = d.data();
