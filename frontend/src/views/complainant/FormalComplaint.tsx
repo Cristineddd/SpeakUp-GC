@@ -450,7 +450,6 @@ const FormalComplaint = () => {
     // Respondent Information
     respondentName: "",
     respondentAddress: "",
-    respondentPosition: "",
     respondentDepartment: "",
     respondentType: undefined,  // NEW: Person type
     
@@ -999,7 +998,6 @@ const FormalComplaint = () => {
         respondentId: '', // Will be filled later if respondent is a user
         respondentName: formData.respondentName,
         respondentAddress: formData.respondentAddress,
-        respondentPosition: formData.respondentPosition,
         respondentDepartment: formData.respondentDepartment,
         ...(formData.respondentType && { respondentType: formData.respondentType }),  // NEW: Respondent type (only if set)
         
@@ -1537,11 +1535,9 @@ const FormalComplaint = () => {
                   setUnknownRespondent(checked as boolean);
                   if (checked) {
                     handleInputChange("respondentName", "Unknown/Not Disclosed");
-                    handleInputChange("respondentPosition", "Unknown");
                     handleInputChange("respondentDepartment", "Unknown");
                   } else {
                     handleInputChange("respondentName", "");
-                    handleInputChange("respondentPosition", "");
                     handleInputChange("respondentDepartment", "");
                   }
                 }}
@@ -1564,41 +1560,22 @@ const FormalComplaint = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Position <span className="font-normal text-gray-400">(optional)</span></label>
-                    <Select
-                      value={formData.respondentPosition}
-                      onValueChange={(value) => handleInputChange("respondentPosition", value === "not-specified" ? "" : value)}
-                    >
-                      <SelectTrigger className="w-full text-sm border-gray-300 h-10">
-                        <SelectValue placeholder="Select position" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not-specified">Not specified</SelectItem>
-                        {positions.map((p) => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1.5">Department <span className="font-normal text-gray-400">(optional)</span></label>
-                    <Select
-                      value={formData.respondentDepartment}
-                      onValueChange={(value) => handleInputChange("respondentDepartment", value)}
-                    >
-                      <SelectTrigger className="w-full text-sm border-gray-300 h-10">
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not-specified">Not specified</SelectItem>
-                        {departments.map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1.5">Department <span className="font-normal text-gray-400">(optional)</span></label>
+                  <Select
+                    value={formData.respondentDepartment}
+                    onValueChange={(value) => handleInputChange("respondentDepartment", value)}
+                  >
+                    <SelectTrigger className="w-full text-sm border-gray-300 h-10">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not-specified">Not specified</SelectItem>
+                      {departments.map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
@@ -2198,7 +2175,7 @@ const FormalComplaint = () => {
               <div className="p-4 bg-white">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Respondent</p>
                 <p className="text-sm text-gray-700">{formData.respondentName || "—"}</p>
-                <p className="text-sm text-gray-500">{formData.respondentPosition || ""}{formData.respondentDepartment ? ` · ${formData.respondentDepartment}` : ""}</p>
+                <p className="text-sm text-gray-500">{formData.respondentDepartment || ""}</p>
               </div>
               <div className="p-4 bg-white">
                 <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Incident</p>
