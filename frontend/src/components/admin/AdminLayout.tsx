@@ -13,8 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Archive,
-  MapPin
+  Archive
 } from 'lucide-react';
 const gcLogo = '/LOGO.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -140,12 +139,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: FileCheck, 
       href: '/admin/compliance-reports',
       description: 'GDPR & privacy compliant reports'
-    },
-    { 
-      label: 'Locations', 
-      icon: MapPin, 
-      href: '/admin/locations',
-      description: 'Manage rooms, buildings, and departments'
     },
     { 
       label: 'Settings', 
