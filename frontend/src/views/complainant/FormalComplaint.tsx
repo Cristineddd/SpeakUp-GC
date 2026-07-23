@@ -493,6 +493,182 @@ const FormalComplaint = () => {
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
 
+  // Field validation errors
+  const [fieldErrors, setFieldErrors] = useState<{
+    complainantName?: string;
+    complainantAddress?: string;
+    complainantType?: string;
+    complainantContact?: string;
+  }>({});
+
+  // Validation functions
+  const validateFullName = (name: string): string | null => {
+    if (!name || name.trim() === '') {
+      return 'Full name is required';
+    }
+    
+    const trimmed = name.trim();
+    
+    // Min/max length
+    if (trimmed.length < 4) {
+      return 'Full name must be at least 4 characters';
+    }
+    if (trimmed.length > 100) {
+      return 'Full name must not exceed 100 characters';
+    }
+    
+    // At least 2 words
+    const words = trimmed.split(/\s+/).filter(w => w.length > 0);
+    if (words.length < 2) {
+      return 'Please enter both first and last name';
+    }
+    
+    // Check for vowels (reject gibberish)
+    const hasVowel = /[aeiouAEIOU]/.test(trimmed);
+    if (!hasVowel) {
+      return 'Please enter a valid name';
+    }
+    
+    // Check for all-caps gibberish (all caps and no vowels is suspicious)
+    const isAllCaps = trimmed === trimmed.toUpperCase() && trimmed !== trimmed.toLowerCase();
+    if (isAllCaps && !hasVowel) {
+      return 'Please enter a valid name';
+    }
+    
+    return null;
+  };
+
+  const validateAddress = (address: string): string | null => {
+    if (!address || address.trim() === '') {
+      return 'Address is required';
+    }
+    
+    const trimmed = address.trim();
+    
+    // Minimum 10 characters
+    if (trimmed.length < 10) {
+      return 'Address must be at least 10 characters';
+    }
+    
+    // Check for repeated characters (e.g., "aaaaa")
+    if (/([a-zA-Z])\1{4,}/.test(trimmed)) {
+      return 'Please enter a valid address';
+    }
+    
+    // Check for all whitespace
+    if (!/\S/.test(trimmed)) {
+      return 'Please enter a valid address';
+    }
+    
+    return null;
+  };
+
+  const validateContactNumber = (contact: string): string | null => {
+    if (!contact || contact.trim() === '') {
+      return 'Contact number is required';
+    }
+    
+    const trimmed = contact.trim();
+    
+    // Must be exactly 11 digits
+    if (trimmed.length !== 11) {
+      return 'Contact number must be exactly 11 digits';
+    }
+    
+    // Must start with "09"
+    if (!trimmed.startsWith('09')) {
+      return 'Contact number must start with 09';
+    }
+    
+    // Must be numbers only
+    if (!/^\d+$/.test(trimmed)) {
+      return 'Contact number must contain only digits';
+    }
+    
+    // Reject fake numbers (all same digit)
+    if (/^(\d)\1{10}$/.test(trimmed)) {
+      return 'Please enter a valid contact number';
+    }
+    
+    return null;
+  };
+
+  const validateComplainantType = (type: string): string | null => {
+    if (!type || type.trim() === '') {
+      return 'Please select your role';
+    }
+    return null;
+  };
+
+  // Validate all complainant fields
+  const validateComplainantInfo = (): boolean => {
+    const errors: {
+      complainantName?: string;
+      complainantAddress?: string;
+      complainantType?: string;
+      complainantContact?: string;
+    } = {};
+    
+    if (!isAnonymous) {
+      const nameError = validateFullName(formData.complainantName);
+      if (nameError) errors.complainantName = nameError;
+      
+      const addressError = validateAddress(formData.complainantAddress);
+      if (addressError) errors.complainantAddress = addressError;
+      
+      const contactError = validateContactNumber(formData.complainantContact);
+      if (contactError) errors.complainantContact = contactError;
+    }
+    
+    const typeError = validateComplainantType(formData.complainantType);
+    if (typeError) errors.complainantType = typeError;
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle field blur for validation
+  const handleFieldBlur = (field: string) => {
+    if (isAnonymous && ['complainantName', 'complainantAddress', 'complainantContact'].includes(field)) {
+      return;
+    }
+    
+    const errors: typeof fieldErrors = { ...fieldErrors };
+    
+    switch (field) {
+      case 'complainantName':
+        errors.complainantName = validateFullName(formData.complainantName) || undefined;
+        break;
+      case 'complainantAddress':
+        errors.complainantAddress = validateAddress(formData.complainantAddress) || undefined;
+        break;
+      case 'complainantType':
+        errors.complainantType = validateComplainantType(formData.complainantType) || undefined;
+        break;
+      case 'complainantContact':
+        errors.complainantContact = validateContactNumber(formData.complainantContact) || undefined;
+        break;
+    }
+    
+    setFieldErrors(errors);
+  };
+
+  // Check if form is valid for submission
+  const isFormValid = (): boolean => {
+    if (isAnonymous) {
+      // When anonymous, only complainantType is required
+      return !validateComplainantType(formData.complainantType);
+    }
+    
+    // When not anonymous, all fields are required
+    const nameValid = !validateFullName(formData.complainantName);
+    const addressValid = !validateAddress(formData.complainantAddress);
+    const typeValid = !validateComplainantType(formData.complainantType);
+    const contactValid = !validateContactNumber(formData.complainantContact);
+    
+    return nameValid && addressValid && typeValid && contactValid;
+  };
+
   // Fetch locations from Firestore
   useEffect(() => {
     const locationsQuery = query(collection(db, 'locations'), orderBy('name'));
@@ -533,6 +709,11 @@ const FormalComplaint = () => {
   ];
 
   const handleInputChange = (field: string, value: any) => {
+    // Clear field error when user starts typing
+    if (fieldErrors[field as keyof typeof fieldErrors]) {
+      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+
     // Handle date validation for incidentDate
     if (field === "incidentDate") {
       if (value) {
@@ -955,6 +1136,55 @@ const FormalComplaint = () => {
 
   // ✅ OPTIMIZED SUBMISSION FUNCTION WITH CLOUDINARY
   const handleSubmit = async () => {
+    // Validate complainant information first
+    if (!validateComplainantInfo()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in your information before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Backend validation for contact number
+    if (!isAnonymous && formData.complainantContact) {
+      const contactError = validateContactNumber(formData.complainantContact);
+      if (contactError) {
+        toast({
+          title: "Invalid Contact Number",
+          description: contactError,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Backend validation for full name
+    if (!isAnonymous && formData.complainantName) {
+      const nameError = validateFullName(formData.complainantName);
+      if (nameError) {
+        toast({
+          title: "Invalid Name",
+          description: nameError,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Backend validation for address
+    if (!isAnonymous && formData.complainantAddress) {
+      const addressError = validateAddress(formData.complainantAddress);
+      if (addressError) {
+        toast({
+          title: "Invalid Address",
+          description: addressError,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     // Check for date validation error
     if (dateError) {
       toast({
@@ -1396,6 +1626,13 @@ const FormalComplaint = () => {
                       complainantAddress: "Not Disclosed",
                       complainantContact: "Not Disclosed"
                     }));
+                    // Clear validation errors for anonymous fields
+                    setFieldErrors(prev => ({
+                      ...prev,
+                      complainantName: undefined,
+                      complainantAddress: undefined,
+                      complainantContact: undefined
+                    }));
                   } else {
                     setFormData(prev => ({
                       ...prev,
@@ -1425,15 +1662,19 @@ const FormalComplaint = () => {
               <Input
                 value={formData.complainantName}
                 onChange={(e) => handleInputChange("complainantName", e.target.value)}
+                onBlur={() => handleFieldBlur('complainantName')}
                 placeholder="Enter your full legal name"
                 disabled={isAnonymous}
                 className={`w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" : 
-                  hasFieldError('complainantName') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
+                  fieldErrors.complainantName ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
                 }`}
               />
-              {formData.complainantName && !isAnonymous && (
+              {fieldErrors.complainantName && !isAnonymous && (
+                <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantName}</p>
+              )}
+              {formData.complainantName && !isAnonymous && !fieldErrors.complainantName && (
                 <FormTip
                   message={getFormSuggestions("complainantName", formData.complainantName, 1, formData)?.message || ""}
                   type={getFormSuggestions("complainantName", formData.complainantName, 1, formData)?.type || "info"}
@@ -1450,14 +1691,18 @@ const FormalComplaint = () => {
               <Textarea
                 value={formData.complainantAddress}
                 onChange={(e) => handleInputChange("complainantAddress", e.target.value)}
+                onBlur={() => handleFieldBlur('complainantAddress')}
                 placeholder="Street, barangay, city"
                 disabled={isAnonymous}
                 className={`w-full text-sm px-3 py-2 border rounded-lg resize-y min-h-[72px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
                   isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
-                  hasFieldError('complainantAddress') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
+                  fieldErrors.complainantAddress ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
                 }`}
               />
+              {fieldErrors.complainantAddress && !isAnonymous && (
+                <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantAddress}</p>
+              )}
               <div className="flex justify-end mt-1">
                 <span className="text-xs text-gray-500">{formData.complainantAddress.length} chars</span>
               </div>
@@ -1470,12 +1715,15 @@ const FormalComplaint = () => {
               </label>
               <Select
                 value={formData.complainantType}
-                onValueChange={(value) => handleInputChange("complainantType", value as PersonType)}
+                onValueChange={(value) => {
+                  handleInputChange("complainantType", value as PersonType);
+                  handleFieldBlur('complainantType');
+                }}
                 disabled={isAnonymous}
               >
                 <SelectTrigger className={`w-full text-sm ${
                   isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
-                  hasFieldError('complainantType') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
+                  fieldErrors.complainantType ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
                 }`}>
                   <SelectValue placeholder="Select your role" />
@@ -1487,6 +1735,9 @@ const FormalComplaint = () => {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+              {fieldErrors.complainantType && !isAnonymous && (
+                <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantType}</p>
+              )}
             </div>
 
             <div>
@@ -1499,18 +1750,19 @@ const FormalComplaint = () => {
                 <Input
                   value={formData.complainantContact}
                   onChange={(e) => handleInputChange("complainantContact", e.target.value)}
+                  onBlur={() => handleFieldBlur('complainantContact')}
                   placeholder="09XXXXXXXX"
                   disabled={isAnonymous}
                   maxLength={11}
                   inputMode="numeric"
                   className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent transition-colors ${
                     isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
-                    hasFieldError('complainantContact') ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
+                    fieldErrors.complainantContact ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                     formData.complainantContact && formData.complainantContact.length === 11 ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" :
                     "bg-white text-gray-900 border-gray-300"
                   }`}
                 />
-                {formData.complainantContact && formData.complainantContact.length === 11 && !isAnonymous && (
+                {formData.complainantContact && formData.complainantContact.length === 11 && !isAnonymous && !fieldErrors.complainantContact && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <svg className="h-4 w-4 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -1518,23 +1770,26 @@ const FormalComplaint = () => {
                   </div>
                 )}
               </div>
-              {!isAnonymous && formData.complainantContact && formData.complainantContact.length < 11 && (
+              {fieldErrors.complainantContact && !isAnonymous && (
+                <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantContact}</p>
+              )}
+              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact && formData.complainantContact.length < 11 && (
                 <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
                   Numbers only. {11 - formData.complainantContact.length} more digit(s) needed.
                 </p>
               )}
-              {!isAnonymous && formData.complainantContact && formData.complainantContact.length === 11 && (
+              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact && formData.complainantContact.length === 11 && (
                 <p className="text-xs text-[#1D9E75] mt-1.5">
                   ✓ Valid 11-digit phone number
                 </p>
               )}
-              {!isAnonymous && !formData.complainantContact && (
+              {!isAnonymous && !fieldErrors.complainantContact && !formData.complainantContact && (
                 <p className="text-xs text-gray-500 mt-1.5">
                   Enter 11-digit mobile number (numbers only)
                 </p>
               )}
-              {formData.complainantContact && !isAnonymous && (
+              {formData.complainantContact && !isAnonymous && !fieldErrors.complainantContact && (
                 <FormTip
                   message={getFormSuggestions("complainantContact", formData.complainantContact, 1, formData)?.message || ""}
                   type={getFormSuggestions("complainantContact", formData.complainantContact, 1, formData)?.type || "info"}
@@ -2490,7 +2745,7 @@ const FormalComplaint = () => {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !isFormValid()}
                 className="bg-[#1D9E75] hover:bg-[#178F65] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150 flex items-center gap-2"
               >
                 {isSubmitting ? (
