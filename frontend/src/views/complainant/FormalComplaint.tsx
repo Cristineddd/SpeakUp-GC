@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
   FileText, 
   Upload, 
@@ -28,7 +28,7 @@ import { useNavigate } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import { ComplaintFormData, ComplaintType, PersonType, HarassmentDegree } from "../../types/complaints";
 import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCategories";
-import { collection, addDoc, Timestamp, doc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, doc, updateDoc, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
 import { RepresentativeService } from '../../services/representativeService';
@@ -478,6 +478,8 @@ const FormalComplaint = () => {
   const [selectedBarangay, setSelectedBarangay] = useState<string>("");
   const [availableBarangays, setAvailableBarangays] = useState<string[]>(LOCATIONS["Olongapo City"]);
   const [mapCoordinates, setMapCoordinates] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [locations, setLocations] = useState<{ id: string; name: string; category: string }[]>([]);
+  const [useCustomLocation, setUseCustomLocation] = useState(false);
 
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -490,6 +492,26 @@ const FormalComplaint = () => {
   const [titleGenerated, setTitleGenerated] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+
+  // Fetch locations from Firestore
+  useEffect(() => {
+    const locationsQuery = query(collection(db, 'locations'), orderBy('name'));
+    const unsubscribe = onSnapshot(
+      locationsQuery,
+      (snapshot) => {
+        const locationsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
+          category: doc.data().category
+        }));
+        setLocations(locationsData);
+      },
+      (error) => {
+        console.error('Error fetching locations:', error);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   const departments = [
     'Administration',
@@ -1921,6 +1943,49 @@ const FormalComplaint = () => {
                       <SelectItem value="Other">Other Platform</SelectItem>
                     </SelectContent>
                   </Select>
+                ) : locationVicinity === "inside" ? (
+                  <div className="space-y-2">
+                    {!useCustomLocation ? (
+                      <Select
+                        value={formData.incidentLocation || ""}
+                        onValueChange={(value) => handleInputChange("incidentLocation", value)}
+                      >
+                        <SelectTrigger className="w-full text-sm border-gray-300">
+                          <SelectValue placeholder="Select location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.length === 0 ? (
+                            <SelectItem value="" disabled>No locations available</SelectItem>
+                          ) : (
+                            locations.map((loc) => (
+                              <SelectItem key={loc.id} value={loc.name}>
+                                {loc.name} <span className="text-gray-400 text-xs ml-2">({loc.category})</span>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={formData.incidentLocation || ""}
+                        onChange={(e) => handleInputChange("incidentLocation", e.target.value)}
+                        placeholder="Enter custom location"
+                        className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseCustomLocation(!useCustomLocation);
+                        if (!useCustomLocation) {
+                          handleInputChange("incidentLocation", "");
+                        }
+                      }}
+                      className="text-xs text-[#1D9E75] hover:text-[#178F65] underline"
+                    >
+                      {useCustomLocation ? "Use location list" : "Enter custom location"}
+                    </button>
+                  </div>
                 ) : (
                   <Input
                     value={formData.incidentLocation || ""}
