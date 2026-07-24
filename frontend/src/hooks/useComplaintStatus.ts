@@ -106,6 +106,26 @@ export function useComplaintStatus() {
       return null;
     }
 
+    // Require notes for status changes (except for initial submission)
+    if (data.newStatus !== 'pending' && data.newStatus !== 'assigned' && !data.notes?.trim()) {
+      toast({
+        title: 'Description Required',
+        description: 'Please provide a description for this status change before submitting.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    // Validate minimum length for notes
+    if (data.notes && data.notes.trim().length < 10) {
+      toast({
+        title: 'Description Too Short',
+        description: 'Please provide at least 10 characters for the status change description.',
+        variant: 'destructive',
+      });
+      return null;
+    }
+
     setIsUpdating(true);
 
     try {

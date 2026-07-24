@@ -33,6 +33,8 @@ export interface CaseActivity {
   targetUserName?: string;
   createdAt: Date;
   attachments?: string[];
+  // Visibility: internal notes vs complainant-visible updates
+  isInternal?: boolean; // If true, only visible to case handlers/admin
   metadata?: {
     statusBefore?: string;
     statusAfter?: string;

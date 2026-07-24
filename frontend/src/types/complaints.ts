@@ -301,6 +301,7 @@ export interface CaseTimelineEvent {
   status: ComplaintStatus;
   description: string;
   actor: string;
+  actorRole?: string;
   timestamp: Date;
   attachments?: string[];
   details?: string;

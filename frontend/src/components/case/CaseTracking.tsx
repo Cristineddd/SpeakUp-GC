@@ -34,6 +34,7 @@ import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { CaseActivityService } from '../../services/caseActivityService';
 import { CaseActivity, ActivityType } from '../../types/caseActivity';
+import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -527,6 +528,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               const investigationStartDate = complaint.investigationStartDeadline || 
                 new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
               
+              // Sub-step 1: Preliminary investigation initiated
               activities.push({
                 id: "investigation_start",
                 complaintId: complaint.id,
@@ -538,7 +540,21 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 attachments: []
               });
 
-              // Add interview activity (only if investigation has progressed)
+              // Sub-step 2: Evidence collection and documentation
+              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
+                activities.push({
+                  id: "evidence_collection",
+                  complaintId: complaint.id,
+                  investigatorId: handler,
+                  activityType: "evidence_collection",
+                  description: "Evidence collection and documentation",
+                  findings: "Physical and digital evidence gathered, documents reviewed and catalogued",
+                  date: new Date(investigationStartDate.getTime() + 3 * 24 * 60 * 60 * 1000),
+                  attachments: ["evidence_log.pdf"]
+                });
+              }
+
+              // Sub-step 3: Formal interview with complainant
               if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
                 activities.push({
                   id: "interview_complainant",
@@ -548,6 +564,34 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   description: "Formal interview with complainant",
                   findings: "Detailed testimony obtained, supporting evidence collected",
                   date: new Date(investigationStartDate.getTime() + 5 * 24 * 60 * 60 * 1000),
+                  attachments: []
+                });
+              }
+
+              // Sub-step 4: Interview with respondent (if applicable)
+              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
+                activities.push({
+                  id: "interview_respondent",
+                  complaintId: complaint.id,
+                  investigatorId: handler,
+                  activityType: "interview",
+                  description: "Interview with respondent",
+                  findings: "Respondent statement recorded, opportunity to respond to allegations provided",
+                  date: new Date(investigationStartDate.getTime() + 8 * 24 * 60 * 60 * 1000),
+                  attachments: []
+                });
+              }
+
+              // Sub-step 5: Mediation scheduled (if applicable)
+              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
+                activities.push({
+                  id: "mediation_scheduled",
+                  complaintId: complaint.id,
+                  investigatorId: handler,
+                  activityType: "deliberation",
+                  description: "Mediation session scheduled",
+                  findings: "Mediation scheduled to facilitate resolution between parties",
+                  date: new Date(investigationStartDate.getTime() + 12 * 24 * 60 * 60 * 1000),
                   attachments: []
                 });
               }
@@ -674,10 +718,13 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       }
     };
 
-    const fromLogged: InvestigationActivity[] = realActivities.map((ra) => ({
+    const fromLogged: InvestigationActivity[] = realActivities
+      .filter((ra) => !ra.isInternal) // Filter out internal notes for complainant view
+      .map((ra) => ({
       id: `case_activity_${ra.id}`,
       complaintId: ra.complaintId,
       investigatorId: ra.performedByName, // This is the actor (who performed the action)
+      investigatorRole: ra.performedByRole, // Add role information
       activityType: mapCaseActivityType(ra.activityType),
       description: ra.description,
       findings: ra.findings,
@@ -704,28 +751,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const getStageProgress = () => {
     if (!complaint) return 0;
     
-    // Convert status to string for comparison (admin uses different status values)
+    // Use shared utility function for consistent progress calculation
     const statusStr = (complaint.status as any) as string;
-    
-    // Simplified 3-stage progress: Pending (33%), Investigating (66%), Resolved (100%)
-    
-    // Stage 3: Resolved (100%)
-    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved' || 
-        complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') {
-      return 100;
-    }
-    
-    // Stage 2: Investigating (66%)
-    if (statusStr === 'inProgress' || 
-        complaint.status === ComplaintStatus.VALIDATED || 
-        complaint.status === ComplaintStatus.INVESTIGATING || 
-        complaint.status === ComplaintStatus.AWAITING_RESPONSE || 
-        complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
-      return 66;
-    }
-    
-    // Stage 1: Submitted (33%) - default for pending/submitted states
-    return 33;
+    return getCaseProgress(statusStr as any);
   };
 
   const getStatusConfig = (status: ComplaintStatus) => {
@@ -734,8 +762,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       case ComplaintStatus.VALIDATED: return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500", label: "Validated" };
       case ComplaintStatus.INVESTIGATING: return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500", label: "Investigating" };
       case ComplaintStatus.UNDER_REVIEW: return { bg: "bg-sky-50", text: "text-sky-700", border: "border-sky-200", dot: "bg-sky-500", label: "Under Review" };
-      case ComplaintStatus.RESOLVED: return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", dot: "bg-green-500", label: "Resolved" };
-      case ComplaintStatus.DISMISSED: return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-500", label: "Dismissed" };
+      case ComplaintStatus.RESOLVED: return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200", dot: "bg-green-500", label: "Decision Already Made" };
+      case ComplaintStatus.DISMISSED: return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", dot: "bg-red-500", label: "Decision Already Made" };
       default: return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200", dot: "bg-gray-400", label: status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) };
     }
   };
@@ -817,30 +845,14 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const stageSteps = [
     { key: 'submitted', label: "Pending" },
     { key: 'investigating', label: "Investigating" },
-    { key: 'decided', label: "Resolved" },
+    { key: 'decided', label: "Decision Already Made" },
   ];
 
   // Determine current stage index based on status
   const getCurrentStageIdx = () => {
+    // Use shared utility function for consistent step calculation
     const statusStr = (complaint.status as any) as string;
-    
-    // Stage 2: Decision Already Made
-    if (complaint.status === ComplaintStatus.RESOLVED || statusStr === 'resolved' ||
-        complaint.status === ComplaintStatus.DISMISSED || statusStr === 'dismissed') {
-      return 2;
-    }
-    
-    // Stage 1: Ongoing Investigation
-    if (statusStr === 'inProgress' ||
-        complaint.status === ComplaintStatus.VALIDATED ||
-        complaint.status === ComplaintStatus.INVESTIGATING ||
-        complaint.status === ComplaintStatus.AWAITING_RESPONSE ||
-        complaint.status === ComplaintStatus.UNDER_DELIBERATION) {
-      return 1;
-    }
-    
-    // Stage 0: Submitted
-    return 0;
+    return getCaseStep(statusStr as any) - 1; // Convert to 0-based index
   };
   
   const currentStageIdx = getCurrentStageIdx();
@@ -967,7 +979,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                           {format(event.timestamp, "MMM d, yyyy · h:mm a")}
                         </time>
                       </div>
-                      <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{event.actor}</span></p>
+                      <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{event.actor}</span>{event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}</p>
                       {event.details && (
                         <p className="text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 mt-1">
                           {event.details}
@@ -993,56 +1005,107 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           <div className="bg-white rounded-2xl border border-gray-200 p-5">
             <h3 className="text-base font-semibold text-gray-900 mb-1">Investigation Activities</h3>
             <p className="text-xs text-gray-500 mb-5">Detailed log of all activities conducted on your case.</p>
-            {displayActivities.length > 0 ? (
-              <div className="space-y-3">
-                {displayActivities.map((activity) => {
-                  const typeColors: Record<string, string> = {
-                    document_review: "bg-blue-50 border-blue-200 text-blue-700",
-                    evidence_collection: "bg-amber-50 border-amber-200 text-amber-700",
-                    interview: "bg-purple-50 border-purple-200 text-purple-700",
-                    deliberation: "bg-green-50 border-green-200 text-green-700",
-                  };
-                  const colorClass = typeColors[activity.activityType] || "bg-gray-50 border-gray-200 text-gray-700";
-                  return (
-                    <div key={activity.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-                      <div className="flex-shrink-0 mt-0.5">
-                        <div className="w-2 h-2 rounded-full bg-[#1D9E75] mt-1.5" />
+            
+            {/* Separate audit-log actions from main timeline */}
+            {(() => {
+              const storyActivities = displayActivities.filter(a => 
+                ['document_review', 'evidence_collection', 'interview', 'investigation', 'report_preparation', 'deliberation'].includes(a.activityType)
+              );
+              const auditLogActivities = displayActivities.filter(a => 
+                !['document_review', 'evidence_collection', 'interview', 'investigation', 'report_preparation', 'deliberation'].includes(a.activityType)
+              );
+
+              return (
+                <>
+                  {/* Main Story Activities */}
+                  {storyActivities.length > 0 && (
+                    <>
+                      <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">Case Progress</h4>
+                      <div className="space-y-3 mb-6">
+                        {storyActivities.map((activity) => {
+                          const typeColors: Record<string, string> = {
+                            document_review: "bg-blue-50 border-blue-200 text-blue-700",
+                            evidence_collection: "bg-amber-50 border-amber-200 text-amber-700",
+                            interview: "bg-purple-50 border-purple-200 text-purple-700",
+                            deliberation: "bg-green-50 border-green-200 text-green-700",
+                          };
+                          const colorClass = typeColors[activity.activityType] || "bg-gray-50 border-gray-200 text-gray-700";
+                          return (
+                            <div key={activity.id} className="flex gap-3 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-2 h-2 rounded-full bg-[#1D9E75] mt-1.5" />
+                              </div>
+                              <div className="flex-grow min-w-0">
+                                <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
+                                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colorClass}`}>
+                                    {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  </span>
+                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
+                                </div>
+                                <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
+                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{activity.investigatorId}</span></p>
+                                {activity.findings && (
+                                  <div className="mt-2 bg-[#1D9E75]/5 border-l-4 border-[#1D9E75] rounded-r-lg p-3">
+                                    <p className="text-xs font-semibold text-[#178F65] mb-0.5">Key Findings:</p>
+                                    <p className="text-xs text-gray-700">{activity.findings}</p>
+                                  </div>
+                                )}
+                                {activity.attachments && activity.attachments.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-2">
+                                    {activity.attachments.map((a, i) => (
+                                      <Badge key={i} variant="outline" className="text-xs">{a}</Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="flex-grow min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colorClass}`}>
-                            {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </span>
-                          <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
-                        </div>
-                        <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
-                        {activity.findings && (
-                          <div className="mt-2 bg-[#1D9E75]/5 border-l-4 border-[#1D9E75] rounded-r-lg p-3">
-                            <p className="text-xs font-semibold text-[#178F65] mb-0.5">Key Findings:</p>
-                            <p className="text-xs text-gray-700">{activity.findings}</p>
-                          </div>
-                        )}
-                        {activity.attachments && activity.attachments.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {activity.attachments.map((a, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">{a}</Badge>
-                            ))}
-                          </div>
-                        )}
+                    </>
+                  )}
+
+                  {/* Audit Log Activities */}
+                  {auditLogActivities.length > 0 && (
+                    <>
+                      <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">System & Administrative Actions</h4>
+                      <div className="space-y-3">
+                        {auditLogActivities.map((activity) => {
+                          return (
+                            <div key={activity.id} className="flex gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gray-400 mt-1.5" />
+                              </div>
+                              <div className="flex-grow min-w-0">
+                                <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
+                                  <span className="text-xs font-medium text-gray-600">
+                                    {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  </span>
+                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
+                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{activity.investigatorId}</span></p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
+                    </>
+                  )}
+
+                  {/* No activities */}
+                  {storyActivities.length === 0 && auditLogActivities.length === 0 && (
+                    <div className="text-center py-10">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                        <FileText className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700">No activities yet</p>
+                      <p className="text-xs text-gray-500 mt-1">Activities will appear here as the case progresses.</p>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-10">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                  <FileText className="h-5 w-5 text-gray-400" />
-                </div>
-                <p className="text-sm font-medium text-gray-700">No activities yet</p>
-                <p className="text-xs text-gray-500 mt-1">Activities will appear here as the case progresses.</p>
-              </div>
-            )}
+                  )}
+                </>
+              );
+            })()}
           </div>
         </TabsContent>
 

@@ -24,7 +24,8 @@ export class CaseActivityService {
     userName: string,
     userRole: 'admin' | 'handler' | 'system',
     targetUserId?: string,
-    targetUserName?: string
+    targetUserName?: string,
+    isInternal: boolean = false
   ): Promise<string> {
     try {
       console.log('📝 Creating case activity:', input);
@@ -41,6 +42,7 @@ export class CaseActivityService {
         targetUserName: targetUserName || null,
         createdAt: Timestamp.now(),
         attachments: input.attachments || [],
+        isInternal: isInternal,
         metadata: input.metadata || {}
       };
 
@@ -85,6 +87,7 @@ export class CaseActivityService {
           targetUserName: data.targetUserName,
           createdAt: data.createdAt?.toDate() || new Date(),
           attachments: data.attachments || [],
+          isInternal: data.isInternal || false,
           metadata: data.metadata || {}
         });
       });
@@ -130,6 +133,7 @@ export class CaseActivityService {
           targetUserName: data.targetUserName,
           createdAt: data.createdAt?.toDate() || new Date(),
           attachments: data.attachments || [],
+          isInternal: data.isInternal || false,
           metadata: data.metadata || {}
         });
       });

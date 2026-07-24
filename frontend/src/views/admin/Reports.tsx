@@ -92,7 +92,7 @@ const Reports = () => {
   const [reportStats, setReportStats] = useState({
     totalReports: 0,
     pendingReports: 0,
-    resolvedReports: 0,
+    decisionMadeReports: 0,
     inProgressReports: 0,
     dismissedReports: 0,
     thisMonth: 0,
@@ -242,7 +242,7 @@ const Reports = () => {
         const pendingReports = complaints.filter(r => 
           ['submitted', 'under_review', 'requirements_pending'].includes(r.status)
         ).length;
-        const resolvedReports = complaints.filter(r => 
+        const decisionMadeReports = complaints.filter(r => 
           ['resolved', 'dismissed'].includes(r.status)
         ).length;
         const inProgressReports = complaints.filter(r => 
@@ -264,7 +264,7 @@ const Reports = () => {
         setReportStats({
           totalReports,
           pendingReports,
-          resolvedReports,
+          decisionMadeReports,
           inProgressReports,
           dismissedReports: 0, // Add this for old data fetch
           thisMonth,
@@ -337,7 +337,7 @@ const Reports = () => {
         setReportStats({
           totalReports: 0,
           pendingReports: 0,
-          resolvedReports: 0,
+          decisionMadeReports: 0,
           inProgressReports: 0,
           dismissedReports: 0, // Add this for error state
           thisMonth: 0,
@@ -442,13 +442,13 @@ const Reports = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+            <CardTitle className="text-sm font-medium">Decision Already Made</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{reportStats.resolvedReports}</div>
+            <div className="text-2xl font-bold">{reportStats.decisionMadeReports}</div>
             <p className="text-xs text-muted-foreground">
-              {((reportStats.resolvedReports / reportStats.totalReports) * 100).toFixed(1)}% resolution rate
+              {((reportStats.decisionMadeReports / reportStats.totalReports) * 100).toFixed(1)}% decision rate
             </p>
           </CardContent>
         </Card>
