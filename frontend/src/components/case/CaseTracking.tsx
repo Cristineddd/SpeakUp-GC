@@ -35,6 +35,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { CaseActivityService } from '../../services/caseActivityService';
 import { CaseActivity, ActivityType } from '../../types/caseActivity';
 import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
+import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -480,12 +481,13 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             const now = new Date();
             const updatedDate = complaint.updatedAt;
 
-            // Use actual handler info
-            const handler = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
+            // Use actual handler info with readable names
+            const handlerRaw = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
               ? complaint.assignedCODI[0] 
               : "Case Handler";
+            const handler = getCachedUserDisplayName(handlerRaw, "Case Handler");
             const authority = complaint.assignedAuthority && complaint.assignedAuthority !== 'Not yet assigned'
-              ? complaint.assignedAuthority
+              ? getCachedUserDisplayName(complaint.assignedAuthority, "Disciplining Authority")
               : "Disciplining Authority";
 
             // 1. Always add initial filing activity (at filing date)
@@ -684,9 +686,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     const statusLabels: Record<string, string> = {
       pending: 'Pending',
       submitted: 'Submitted',
-      inProgress: 'In Progress',
-      resolved: 'Resolved',
-      dismissed: 'Dismissed',
+      inProgress: 'Ongoing Investigation',
+      resolved: 'Decision Already Made',
+      dismissed: 'Decision Already Made',
     };
 
     const fromStatusHistory: InvestigationActivity[] = (
@@ -979,7 +981,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                           {format(event.timestamp, "MMM d, yyyy · h:mm a")}
                         </time>
                       </div>
-                      <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{event.actor}</span>{event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}</p>
+                      <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{getCachedUserDisplayName(event.actor, event.actor)}</span>{event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}</p>
                       {event.details && (
                         <p className="text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 mt-1">
                           {event.details}
@@ -1043,7 +1045,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
                                 </div>
                                 <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
-                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{activity.investigatorId}</span></p>
+                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{getCachedUserDisplayName(activity.investigatorId, activity.investigatorId)}</span></p>
                                 {activity.findings && (
                                   <div className="mt-2 bg-[#1D9E75]/5 border-l-4 border-[#1D9E75] rounded-r-lg p-3">
                                     <p className="text-xs font-semibold text-[#178F65] mb-0.5">Key Findings:</p>

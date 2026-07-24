@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   Clock, CheckCircle, AlertTriangle, Eye, Plus, MessageSquare,
   FileText, Search, Calendar as CalendarIcon, User, MapPin, X,
-  FolderOpen, Loader, Gavel
+  FolderOpen, Loader, Gavel, Shield
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Progress } from "../../components/ui/progress";
@@ -15,6 +15,8 @@ import { format } from "date-fns";
 import { useAuth } from "../../contexts/AuthContext";
 import { collection, query, where, onSnapshot, Unsubscribe } from "firebase/firestore";
 import { db } from "../../firebase";
+import { getCaseProgress } from "../../utils/caseProgress";
+import { getCachedUserDisplayName } from "../../utils/userDisplay";
 
 // ─── Helpers ───
 const safeToDate = (dateValue: any): Date => {
@@ -99,18 +101,6 @@ const getStatusConfig = (status: ComplaintStatus) => {
   }
 };
 
-const getStageProgress = (stage: ComplaintStage, status?: ComplaintStatus) => {
-  if (status === ComplaintStatus.RESOLVED) return 100;
-  if (status === ComplaintStatus.DISMISSED) return 0;
-  const stages = [
-    ComplaintStage.FILING, ComplaintStage.ACTION_ON_COMPLAINT,
-    ComplaintStage.PRELIMINARY_INVESTIGATION, ComplaintStage.INVESTIGATION_REPORT,
-    ComplaintStage.FINAL_DECISION,
-  ];
-  const idx = stages.indexOf(stage);
-  return idx >= 0 ? ((idx + 1) / stages.length) * 100 : 20;
-};
-
 const formatEnum = (v: string) => v.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
 // Get human-readable status label
@@ -180,7 +170,7 @@ export default function MyComplaints() {
             const data = d.data();
             return {
               id: d.id, complainantId: data.userId, respondentId: data.respondentId || "",
-              respondentName: data.respondentName || "Unknown/Not Disclosed", respondentAddress: data.respondentAddress || "",
+              respondentName: data.respondentName || (data.isAnonymous ? "Withheld for Privacy" : "Not Specified"), respondentAddress: data.respondentAddress || "",
               title: data.title || data.description || "Untitled Report", description: data.description || "",
               statementOfFacts: data.additionalInfo || data.description || "",
               type: toComplaintType(data.category || "other"), severity: data.severity || "medium",
@@ -205,7 +195,7 @@ export default function MyComplaints() {
             const data = d.data();
             return {
               id: d.id, complainantId: data.complainantId || user.uid,
-              respondentId: data.respondentId || "", respondentName: data.respondentName || "Unknown",
+              respondentId: data.respondentId || "", respondentName: data.respondentName || (data.isAnonymous ? "Withheld for Privacy" : "Not Specified"),
               respondentAddress: data.respondentAddress || "",
               title: data.title || "Untitled Complaint", description: data.description || "",
               statementOfFacts: data.statementOfFacts || data.description || "",
@@ -292,6 +282,15 @@ export default function MyComplaints() {
           </Button>
         </div>
 
+        {/* Privacy Assurance Notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+          <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900">Your Privacy is Protected</p>
+            <p className="text-xs text-blue-700 mt-1">All case information is handled confidentially under the Safe Spaces Act (RA 11313) and Anti-Sexual Harassment Act (RA 7877). Anti-retaliation protections apply to all parties.</p>
+          </div>
+        </div>
+
         {/* Stats Row (Minimal Outline Style) */}
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -355,7 +354,7 @@ export default function MyComplaints() {
           <div className="space-y-3">
             {filtered.map((complaint) => {
               const statusCfg = getStatusConfig(complaint.status);
-              const progress = getStageProgress(complaint.stage, complaint.status);
+              const progress = getCaseProgress(complaint.status as any);
               return (
                 <div
                   key={complaint.id}
@@ -378,7 +377,7 @@ export default function MyComplaints() {
                   </div>
 
                   {/* Progress bar */}
-                  <div className="mb-4">
+                  <div className="mb-6">
                     <div className="flex justify-between text-xs text-gray-500 mb-1.5">
                       <span>Case Progress</span>
                       <span className="font-medium text-gray-700">{Math.round(progress)}%</span>
@@ -392,7 +391,7 @@ export default function MyComplaints() {
                   </div>
 
                   {/* Details grid */}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4 text-sm">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-6 text-sm">
                     <div className="flex items-center gap-2 text-gray-600">
                       <CalendarIcon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                       <div>
