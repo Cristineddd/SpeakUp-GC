@@ -978,7 +978,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                           {event.isProjected && <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Projected</span>}
                         </h4>
                         <time className="text-xs text-gray-400 flex-shrink-0">
-                          {format(event.timestamp, "MMM d, yyyy · h:mm a")}
+                          {format(event.timestamp, "MMM d, yyyy · h:mm:ss a")}
                         </time>
                       </div>
                       <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{getCachedUserDisplayName(event.actor, event.actor)}</span>{event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}</p>
@@ -1042,7 +1042,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${colorClass}`}>
                                     {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                   </span>
-                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
+                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm:ss a")}</time>
                                 </div>
                                 <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
                                 <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{getCachedUserDisplayName(activity.investigatorId, activity.investigatorId)}</span></p>
@@ -1083,7 +1083,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   <span className="text-xs font-medium text-gray-600">
                                     {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                   </span>
-                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm a")}</time>
+                                  <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm:ss a")}</time>
                                 </div>
                                 <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
                                 <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{activity.investigatorId}</span></p>
