@@ -602,6 +602,11 @@ const FormalComplaint = () => {
 
   // Validate all complainant fields
   const validateComplainantInfo = (): boolean => {
+    if (isAnonymous) {
+      setFieldErrors({});
+      return true;
+    }
+
     const errors: {
       complainantName?: string;
       complainantAddress?: string;
@@ -609,16 +614,14 @@ const FormalComplaint = () => {
       complainantContact?: string;
     } = {};
     
-    if (!isAnonymous) {
-      const nameError = validateFullName(formData.complainantName);
-      if (nameError) errors.complainantName = nameError;
-      
-      const addressError = validateAddress(formData.complainantAddress);
-      if (addressError) errors.complainantAddress = addressError;
-      
-      const contactError = validateContactNumber(formData.complainantContact);
-      if (contactError) errors.complainantContact = contactError;
-    }
+    const nameError = validateFullName(formData.complainantName);
+    if (nameError) errors.complainantName = nameError;
+    
+    const addressError = validateAddress(formData.complainantAddress);
+    if (addressError) errors.complainantAddress = addressError;
+    
+    const contactError = validateContactNumber(formData.complainantContact);
+    if (contactError) errors.complainantContact = contactError;
     
     const typeError = validateComplainantType(formData.complainantType);
     if (typeError) errors.complainantType = typeError;
@@ -629,7 +632,7 @@ const FormalComplaint = () => {
 
   // Handle field blur for validation
   const handleFieldBlur = (field: string) => {
-    if (isAnonymous && ['complainantName', 'complainantAddress', 'complainantContact'].includes(field)) {
+    if (isAnonymous && field.startsWith('complainant')) {
       return;
     }
     
@@ -1654,7 +1657,8 @@ const FormalComplaint = () => {
                       ...prev,
                       complainantName: undefined,
                       complainantAddress: undefined,
-                      complainantContact: undefined
+                      complainantContact: undefined,
+                      complainantType: undefined,
                     }));
                   } else {
                     setFormData(prev => ({
@@ -1731,21 +1735,20 @@ const FormalComplaint = () => {
               </div>
             </div>
 
+            {!isAnonymous && (
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">
                 I am a *
                 {hasFieldError('complainantType') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <Select
-                value={formData.complainantType || undefined}
+                value={formData.complainantType ?? ""}
                 onValueChange={(value) => {
                   handleInputChange("complainantType", value as PersonType);
                   handleFieldBlur('complainantType');
                 }}
-                disabled={isAnonymous}
               >
                 <SelectTrigger className={`w-full text-sm ${
-                  isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
                   fieldErrors.complainantType ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
                   "bg-white text-gray-900 border-gray-300"
                 }`}>
@@ -1758,10 +1761,11 @@ const FormalComplaint = () => {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
-              {fieldErrors.complainantType && !isAnonymous && (
+              {fieldErrors.complainantType && (
                 <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantType}</p>
               )}
             </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -1863,7 +1867,7 @@ const FormalComplaint = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">Department <span className="font-normal text-gray-400">(optional)</span></label>
                   <Select
-                    value={formData.respondentDepartment}
+                    value={formData.respondentDepartment ?? ""}
                     onValueChange={(value) => handleInputChange("respondentDepartment", value)}
                   >
                     <SelectTrigger className="w-full text-sm border-gray-300 h-10">
@@ -1881,7 +1885,7 @@ const FormalComplaint = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">Respondent is a *</label>
                   <Select
-                    value={formData.respondentType}
+                    value={formData.respondentType ?? ""}
                     onValueChange={(value) => handleInputChange("respondentType", value as PersonType)}
                   >
                     <SelectTrigger className="w-full text-sm border-gray-300 h-10">
@@ -2039,7 +2043,7 @@ const FormalComplaint = () => {
                   if (e.target.value !== "other") setOtherTypeDetail("");
                   // Reset harassment degree if not sexual harassment
                   if (e.target.value !== "sexual_harassment") {
-                    handleInputChange("harassmentDegree", undefined);
+                    handleInputChange("harassmentDegree", "");
                   }
                 }}
                 className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
@@ -2057,7 +2061,7 @@ const FormalComplaint = () => {
                     <span className="ml-2 font-normal text-gray-400">(Based on RA 11313)</span>
                   </label>
                   <Select
-                    value={formData.harassmentDegree}
+                    value={formData.harassmentDegree ?? ""}
                     onValueChange={(value) => handleInputChange("harassmentDegree", value as HarassmentDegree)}
                   >
                     <SelectTrigger className="w-full text-sm border-gray-300 h-10">
@@ -2155,7 +2159,7 @@ const FormalComplaint = () => {
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Time of incident <span className="font-normal text-gray-400">(optional)</span>
                 </label>
-                <Select value={formData.incidentTime || undefined} onValueChange={(value) => handleInputChange("incidentTime", value)}>
+                <Select value={formData.incidentTime ?? ""} onValueChange={(value) => handleInputChange("incidentTime", value)}>
                   <SelectTrigger className={`w-full text-sm ${
                     formData.incidentTime ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" : "border-gray-300"
                   }`}>
