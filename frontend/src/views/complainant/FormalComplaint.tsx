@@ -656,8 +656,8 @@ const FormalComplaint = () => {
   // Check if form is valid for submission
   const isFormValid = (): boolean => {
     if (isAnonymous) {
-      // When anonymous, only complainantType is required
-      return !validateComplainantType(formData.complainantType);
+      // When anonymous, no complainant fields are required
+      return true;
     }
     
     // When not anonymous, all fields are required
