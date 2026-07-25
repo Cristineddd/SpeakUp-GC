@@ -1149,7 +1149,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 <p className="text-xs text-gray-400 mb-0.5">Location</p>
                 <p className="text-sm font-medium text-gray-800">{complaint.incidentLocation || 'Not specified'}</p>
               </div>
-              {(complaint as any).mapAddress && (
+              {(complaint as any).mapAddress && complaint.locationVicinity !== 'online' && (
                 <div className="col-span-2">
                   <p className="text-xs text-gray-400 mb-0.5">📍 Exact Location (Map)</p>
                   <p className="text-sm font-medium text-gray-800">{(complaint as any).mapAddress}</p>
