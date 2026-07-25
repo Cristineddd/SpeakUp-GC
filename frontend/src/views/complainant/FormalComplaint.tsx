@@ -1138,9 +1138,15 @@ const FormalComplaint = () => {
   const handleSubmit = async () => {
     // Validate complainant information first
     if (!validateComplainantInfo()) {
+      const errorFields = Object.keys(fieldErrors).filter(key => fieldErrors[key as keyof typeof fieldErrors]);
+      const errorMessages = errorFields.map(key => {
+        const fieldName = key.replace('complainant', '').toLowerCase();
+        return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: ${fieldErrors[key as keyof typeof fieldErrors]}`;
+      }).join('; ');
+      
       toast({
         title: "Validation Error",
-        description: "Please fix the errors in your information before submitting.",
+        description: errorMessages || "Please fix the errors in your information before submitting.",
         variant: "destructive"
       });
       return;
@@ -1198,8 +1204,25 @@ const FormalComplaint = () => {
     // Additional check: validate incident date one more time before submission
     if (formData.incidentDate && formData.incidentDate > getTodayString()) {
       toast({
-        title: "Error", 
+        title: "Invalid Incident Date", 
         description: "Hindi pwedeng future date ang incident date. Piliin ang nakaraang petsa o ngayon.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate incident details (Step 3)
+    const missingFields = [];
+    if (!formData.title) missingFields.push("Title");
+    if (!formData.description || formData.description.trim().length < 20) missingFields.push("Description (minimum 20 characters)");
+    if (!formData.incidentDate) missingFields.push("Date of Incident");
+    if (!formData.incidentLocation) missingFields.push("Location/Platform");
+    if (formData.type === "other" && otherTypeDetail.trim().length === 0) missingFields.push("Other Complaint Type Details");
+    
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing Required Fields",
+        description: `Please complete: ${missingFields.join(', ')}`,
         variant: "destructive"
       });
       return;
@@ -1714,7 +1737,7 @@ const FormalComplaint = () => {
                 {hasFieldError('complainantType') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <Select
-                value={formData.complainantType}
+                value={formData.complainantType || undefined}
                 onValueChange={(value) => {
                   handleInputChange("complainantType", value as PersonType);
                   handleFieldBlur('complainantType');
@@ -2132,7 +2155,7 @@ const FormalComplaint = () => {
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">
                   Time of incident <span className="font-normal text-gray-400">(optional)</span>
                 </label>
-                <Select value={formData.incidentTime || ""} onValueChange={(value) => handleInputChange("incidentTime", value)}>
+                <Select value={formData.incidentTime || undefined} onValueChange={(value) => handleInputChange("incidentTime", value)}>
                   <SelectTrigger className={`w-full text-sm ${
                     formData.incidentTime ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" : "border-gray-300"
                   }`}>
