@@ -22,6 +22,7 @@ import type { Representative } from '../../types/representative';
 import type { AdminReport } from '../../services/adminReportService';
 import { ROLE_LABELS, ROLE_COLORS } from '../../types/representative';
 import { User, Clock, Briefcase } from 'lucide-react';
+import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
 
 interface AssignCODIMemberDialogProps {
   open: boolean;
@@ -219,13 +220,7 @@ export function AssignCODIMemberDialog({
         timeToAssignment: Math.round(timeToAssignment),
         lastActivityAt: now,
         updatedAt: now,
-        status: complaint.status === 'pending' ? 'inProgress' : complaint.status
       };
-
-      // Only add processingStartedAt if not already set
-      if (!complaint.processingStartedAt) {
-        updateData.processingStartedAt = now;
-      }
 
       console.log('📝 Assigning case to CODI member:', {
         complaintId: complaint.id,
@@ -276,7 +271,8 @@ export function AssignCODIMemberDialog({
           codiMember.userId,
           currentUser?.uid,
           currentUser?.displayName || 'Admin',
-          false // isSystemAction = false for manual assignment
+          false,
+          isSensitiveCaseType(complaint.category)
         );
         console.log('✅ CODI member assignment logged');
       } catch (logError) {

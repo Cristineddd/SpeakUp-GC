@@ -6,7 +6,7 @@
  * all components (case cards, detail pages, etc.).
  * 
  * Status Flow:
- * - Pending → step 1 (33%)
+ * - Pending (incl. assigned, awaiting first handler update) → step 1 (33%)
  * - Investigating → step 2 (66%)
  * - Decision Already Made → step 3 (100% - terminal state)
  * - Closed → 100% (terminal state)

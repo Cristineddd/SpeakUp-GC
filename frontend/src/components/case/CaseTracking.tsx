@@ -36,6 +36,7 @@ import { CaseActivityService } from '../../services/caseActivityService';
 import { CaseActivity, ActivityType } from '../../types/caseActivity';
 import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
 import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
+import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE, getComplainantHandlerLabel } from '../../utils/sensitiveCaseTypes';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -131,6 +132,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   : data.assignedTo 
                     ? [data.assignedTo] 
                     : ['Not yet assigned'],
+                assignedToName: data.assignedToName || '',
+                assignedAt: data.assignedAt ? safeToDate(data.assignedAt) : undefined,
                 assignedAuthority: data.assignedAuthority || 'Not yet assigned',
                 responseDeadline: data.responseDeadline ? safeToDate(data.responseDeadline) : undefined,
                 investigationStartDeadline: data.investigationStartDeadline ? safeToDate(data.investigationStartDeadline) : undefined,
@@ -155,9 +158,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           // Create an enhanced timeline with detailed events for each stage
           const generateTimelineEvents = (complaint: Complaint): CaseTimelineEvent[] => {
             const events: CaseTimelineEvent[] = [];
-            const now = new Date();
+            const c = complaint as any;
+            const sensitive = isSensitiveCaseType(complaint.type);
 
-            // Filing Stage - Always present
             events.push({
               id: "filing",
               stage: ComplaintStage.FILING,
@@ -166,18 +169,17 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               actor: "Complainant",
               timestamp: complaint.filingDate,
               attachments: [],
-              details: `Complaint filed regarding ${complaint.type.replace('_', ' ')} incident. Case is now under review by the appropriate authority.`
+              details: `Complaint filed regarding ${complaint.type.replace(/_/g, ' ')} incident. Your report is pending review and case handler assignment.`
             });
 
-            // Add status history events if available
-            const statusHistory = (complaint as any).statusHistory;
+            const statusHistory = c.statusHistory;
             if (statusHistory && Array.isArray(statusHistory)) {
               statusHistory.forEach((historyEntry: any, index: number) => {
-                const statusLabel = historyEntry.status === 'inProgress' ? 'In Progress' :
+                const statusLabel = historyEntry.status === 'inProgress' ? 'Investigating' :
                                   historyEntry.status === 'resolved' ? 'Resolved' :
                                   historyEntry.status === 'dismissed' ? 'Dismissed' :
+                                  historyEntry.status === 'pending' ? 'Pending' :
                                   historyEntry.status;
-                
                 const noteText =
                   typeof historyEntry.notes === 'string' ? historyEntry.notes.trim() : '';
                 events.push({
@@ -188,175 +190,43 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   actor: historyEntry.updatedByName || 'Case Handler',
                   timestamp: historyEntry.updatedAt?.toDate ? historyEntry.updatedAt.toDate() : new Date(historyEntry.updatedAt),
                   attachments: [],
-                  details:
-                    noteText ||
-                    `The case status has been changed to ${statusLabel}.`
+                  details: noteText || `The case status has been changed to ${statusLabel}.`
                 });
               });
             }
 
-            // Handler Assignment Event - Add when CODI investigators are assigned
-            if (complaint.assignedCODI && complaint.assignedCODI.length > 0 && complaint.assignedCODI[0] !== 'Not yet assigned') {
-              const assignmentDate = complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : new Date(complaint.filingDate.getTime() + 48 * 60 * 60 * 1000); // Assume assignment happens after filing
+            const isAssigned = complaint.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned';
+            if (isAssigned && c.assignedAt) {
+              const handlerLabel = sensitive ? 'Case Handler' : (c.assignedToName || 'Case Handler');
               events.push({
                 id: "handler_assignment",
                 stage: ComplaintStage.ACTION_ON_COMPLAINT,
                 status: complaint.status,
-                description: `Case handler assigned`,
-                actor: complaint.assignedCODI[0],
-                timestamp: assignmentDate,
+                description: "Case handler assigned",
+                actor: handlerLabel,
+                timestamp: c.assignedAt,
                 attachments: [],
-                details: `${complaint.assignedCODI[0]} has been assigned to handle this case. The investigation process will begin shortly.`
+                details: sensitive
+                  ? GENERIC_HANDLER_ASSIGNED_MESSAGE
+                  : `${c.assignedToName || 'A case handler'} has been assigned to handle this case.`
               });
             }
 
-            // Action on Complaint Stage - Only add if status has changed from SUBMITTED and not resolved/dismissed yet
-            if (complaint.status !== ComplaintStatus.SUBMITTED && 
-                complaint.status !== ComplaintStatus.RESOLVED && 
-                complaint.status !== ComplaintStatus.DISMISSED) {
-              const actionDate = complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : new Date(complaint.filingDate.getTime() + 24 * 60 * 60 * 1000);
-              
-              // Determine the proper actor
-              const eventActor = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
-                ? complaint.assignedCODI[0] 
-                : "CODI Office";
-              
-              events.push({
-                id: "action_on_complaint",
-                stage: ComplaintStage.ACTION_ON_COMPLAINT,
-                status: complaint.status,
-                description: complaint.status === ComplaintStatus.VALIDATED ? "Complaint validated and accepted for investigation" :
-                           complaint.status === ComplaintStatus.UNDER_REVIEW ? "Complaint under review for validation" :
-                           `Complaint status updated to ${complaint.status.replace('_', ' ')}`,
-                actor: eventActor,
-                timestamp: actionDate,
-                attachments: [],
-                details: complaint.status === ComplaintStatus.VALIDATED
-                  ? "The complaint has been reviewed and deemed valid for further investigation. Investigation will begin shortly."
-                  : complaint.status === ComplaintStatus.UNDER_REVIEW
-                  ? "The CODI office is reviewing the complaint to determine if it meets the criteria for investigation."
-                  : "The complaint status has been updated based on initial review."
-              });
-            }
-
-            // Preliminary Investigation Stage - Only add if actually in investigation AND not already dismissed/resolved
-            if ((complaint.status === ComplaintStatus.INVESTIGATING || complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) &&
-                complaint.status !== ComplaintStatus.RESOLVED && 
-                complaint.status !== ComplaintStatus.DISMISSED) {
-              const prelimDate = complaint.investigationStartDeadline || new Date(complaint.filingDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-              
-              // Use assigned handler as actor
-              const investigationActor = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned'
-                ? complaint.assignedCODI[0]
-                : "Case Handler";
-              
-              events.push({
-                id: "preliminary_investigation",
-                stage: ComplaintStage.PRELIMINARY_INVESTIGATION,
-                status: ComplaintStatus.INVESTIGATING,
-                description: "Preliminary investigation initiated",
-                actor: investigationActor,
-                timestamp: prelimDate,
-                attachments: [],
-                details: "Initial evidence is being gathered, witnesses are being interviewed, and allegations are being assessed. This phase typically takes 2-4 weeks."
-              });
-            }
-
-            // Investigation Report Stage - Only add if report has been submitted or is due AND not dismissed/resolved
-            if (complaint.stage >= ComplaintStage.INVESTIGATION_REPORT &&
-                complaint.status !== ComplaintStatus.RESOLVED && 
-                complaint.status !== ComplaintStatus.DISMISSED) {
-              const reportDate = complaint.reportSubmissionDeadline || new Date(complaint.filingDate.getTime() + 45 * 24 * 60 * 60 * 1000);
-              
-              // Use assigned handler as actor
-              const reportActor = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned'
-                ? complaint.assignedCODI[0]
-                : "Case Handler";
-              
-              events.push({
-                id: "investigation_report",
-                stage: ComplaintStage.INVESTIGATION_REPORT,
-                status: ComplaintStatus.INVESTIGATING,
-                description: "Investigation report submitted for review",
-                actor: reportActor,
-                timestamp: reportDate,
-                attachments: [],
-                details: "Investigation findings have been compiled into a comprehensive report. This will be reviewed by the disciplining authority for final decision."
-              });
-            }
-
-            // Final Decision Stage - Only add if decision has been made
             if (complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED) {
-              const decisionDate = complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : new Date(complaint.filingDate.getTime() + 60 * 24 * 60 * 60 * 1000);
-              
-              // Determine the proper actor for final decision
-              const decisionActor = complaint.assignedAuthority && complaint.assignedAuthority !== 'Not yet assigned'
-                ? complaint.assignedAuthority
-                : (complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned')
-                  ? complaint.assignedCODI[0]
-                  : "Disciplining Authority";
-              
               events.push({
                 id: "final_decision",
                 stage: ComplaintStage.FINAL_DECISION,
                 status: complaint.status,
                 description: complaint.status === ComplaintStatus.RESOLVED ? "Case resolved" : "Case dismissed",
-                actor: decisionActor,
-                timestamp: decisionDate,
+                actor: sensitive ? 'Case Handler' : (c.assignedToName || 'Disciplining Authority'),
+                timestamp: complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : complaint.filingDate,
                 attachments: [],
                 details: complaint.adminNotes || (complaint.status === ComplaintStatus.RESOLVED
-                  ? "Case reviewed. Findings sustained with appropriate disciplinary action determined"
-                  : "Case dismissed. Complaint dismissed based on investigation findings")
+                  ? "Case reviewed. Findings sustained with appropriate action determined."
+                  : "Case dismissed based on investigation findings.")
               });
             }
 
-            // Add future projected events only when appropriate - not for brand new complaints
-            if (complaint.status !== ComplaintStatus.RESOLVED && complaint.status !== ComplaintStatus.DISMISSED) {
-              // Only show projected events if complaint has been validated or is under review
-              const shouldShowProjections = complaint.status === ComplaintStatus.VALIDATED ||
-                                          complaint.status === ComplaintStatus.UNDER_REVIEW ||
-                                          complaint.stage >= ComplaintStage.ACTION_ON_COMPLAINT;
-
-              if (shouldShowProjections) {
-                const nextStages = [];
-
-                // Add investigation projection only if validated but not yet investigating
-                if (complaint.status === ComplaintStatus.VALIDATED && complaint.stage < ComplaintStage.PRELIMINARY_INVESTIGATION) {
-                  nextStages.push({ stage: ComplaintStage.PRELIMINARY_INVESTIGATION, description: "Investigation to begin", days: 7 });
-                }
-
-                // Add report projection only if investigating but not yet at report stage
-                if (complaint.status === ComplaintStatus.INVESTIGATING && complaint.stage < ComplaintStage.INVESTIGATION_REPORT) {
-                  nextStages.push({ stage: ComplaintStage.INVESTIGATION_REPORT, description: "Investigation report due", days: 30 });
-                }
-
-                // Add final decision projection only if at report stage or investigating
-                if (complaint.stage >= ComplaintStage.INVESTIGATION_REPORT || complaint.status === ComplaintStatus.INVESTIGATING) {
-                  nextStages.push({ stage: ComplaintStage.FINAL_DECISION, description: "Final decision expected", days: 15 });
-                }
-
-                nextStages.forEach(({ stage, description, days }) => {
-                  if (complaint.stage < stage) {
-                    const projectedDate = new Date(complaint.filingDate.getTime() + days * 24 * 60 * 60 * 1000);
-                    if (projectedDate > now) {
-                      events.push({
-                        id: `projected_${stage}`,
-                        stage,
-                        status: ComplaintStatus.SUBMITTED,
-                        description,
-                        actor: "System Projection",
-                        timestamp: projectedDate,
-                        attachments: [],
-                        details: `Estimated timeline based on institutional procedures. Actual dates may vary.`,
-                        isProjected: true
-                      });
-                    }
-                  }
-                });
-              }
-            }
-
-            // Sort events by timestamp (default: latest first)
             return events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
           };
 
@@ -480,17 +350,13 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             const baseDate = complaint.filingDate;
             const now = new Date();
             const updatedDate = complaint.updatedAt;
+            const sensitive = isSensitiveCaseType(complaint.type);
+            const c = complaint as any;
 
-            // Use actual handler info with readable names
-            const handlerRaw = complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
-              ? complaint.assignedCODI[0] 
-              : "Case Handler";
-            const handler = getCachedUserDisplayName(handlerRaw, "Case Handler");
             const authority = complaint.assignedAuthority && complaint.assignedAuthority !== 'Not yet assigned'
               ? getCachedUserDisplayName(complaint.assignedAuthority, "Disciplining Authority")
               : "Disciplining Authority";
 
-            // 1. Always add initial filing activity (at filing date)
             activities.push({
               id: "filing_activity",
               complaintId: complaint.id,
@@ -502,143 +368,24 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               attachments: []
             });
 
-            // 2. Add validation activity if status shows it's been reviewed (1-2 days after filing)
-            if (complaint.status !== ComplaintStatus.SUBMITTED || complaint.assignedCODI?.[0] !== 'Not yet assigned') {
-              const validationDate = new Date(Math.min(
-                baseDate.getTime() + 2 * 24 * 60 * 60 * 1000, // 2 days after filing
-                updatedDate.getTime() // Or when it was updated
-              ));
-              
-              activities.push({
-                id: "validation_activity",
-                complaintId: complaint.id,
-                investigatorId: "CODI Office",
-                activityType: "document_review",
-                description: "Complaint validation and case handler assignment",
-                findings: complaint.status === ComplaintStatus.VALIDATED
-                  ? `Complaint validated and assigned to ${handler} for investigation`
-                  : complaint.assignedCODI?.[0] !== 'Not yet assigned'
-                    ? `Case assigned to ${handler} for preliminary review`
-                    : "Complaint under initial review by CODI office",
-                date: validationDate,
-                attachments: []
-              });
-            }
-
-            // 3. Only add investigation activities if actually investigating or beyond
-            if (complaint.status === ComplaintStatus.INVESTIGATING || complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
-              const investigationStartDate = complaint.investigationStartDeadline || 
-                new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-              
-              // Sub-step 1: Preliminary investigation initiated
-              activities.push({
-                id: "investigation_start",
-                complaintId: complaint.id,
-                investigatorId: handler,
-                activityType: "evidence_collection",
-                description: "Preliminary investigation initiated",
-                findings: "Initial evidence review conducted, relevant parties identified for interviews",
-                date: investigationStartDate,
-                attachments: []
-              });
-
-              // Sub-step 2: Evidence collection and documentation
-              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
-                activities.push({
-                  id: "evidence_collection",
-                  complaintId: complaint.id,
-                  investigatorId: handler,
-                  activityType: "evidence_collection",
-                  description: "Evidence collection and documentation",
-                  findings: "Physical and digital evidence gathered, documents reviewed and catalogued",
-                  date: new Date(investigationStartDate.getTime() + 3 * 24 * 60 * 60 * 1000),
-                  attachments: ["evidence_log.pdf"]
-                });
-              }
-
-              // Sub-step 3: Formal interview with complainant
-              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
-                activities.push({
-                  id: "interview_complainant",
-                  complaintId: complaint.id,
-                  investigatorId: handler,
-                  activityType: "interview",
-                  description: "Formal interview with complainant",
-                  findings: "Detailed testimony obtained, supporting evidence collected",
-                  date: new Date(investigationStartDate.getTime() + 5 * 24 * 60 * 60 * 1000),
-                  attachments: []
-                });
-              }
-
-              // Sub-step 4: Interview with respondent (if applicable)
-              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
-                activities.push({
-                  id: "interview_respondent",
-                  complaintId: complaint.id,
-                  investigatorId: handler,
-                  activityType: "interview",
-                  description: "Interview with respondent",
-                  findings: "Respondent statement recorded, opportunity to respond to allegations provided",
-                  date: new Date(investigationStartDate.getTime() + 8 * 24 * 60 * 60 * 1000),
-                  attachments: []
-                });
-              }
-
-              // Sub-step 5: Mediation scheduled (if applicable)
-              if (complaint.stage >= ComplaintStage.PRELIMINARY_INVESTIGATION) {
-                activities.push({
-                  id: "mediation_scheduled",
-                  complaintId: complaint.id,
-                  investigatorId: handler,
-                  activityType: "deliberation",
-                  description: "Mediation session scheduled",
-                  findings: "Mediation scheduled to facilitate resolution between parties",
-                  date: new Date(investigationStartDate.getTime() + 12 * 24 * 60 * 60 * 1000),
-                  attachments: []
-                });
-              }
-            }
-
-            // 4. Only add report activities if report stage reached
-            if (complaint.stage >= ComplaintStage.INVESTIGATION_REPORT) {
-              const reportDate = complaint.reportSubmissionDeadline || 
-                new Date(baseDate.getTime() + 40 * 24 * 60 * 60 * 1000);
-              
-              activities.push({
-                id: "report_preparation",
-                complaintId: complaint.id,
-                investigatorId: handler,
-                activityType: "deliberation",
-                description: "Investigation report compiled",
-                findings: "All evidence analyzed and documented. Findings prepared for authority review",
-                date: reportDate,
-                attachments: ["investigation_report.pdf"]
-              });
-            }
-
-            // 5. Only add decision activity if case is actually resolved/dismissed
             if (complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED) {
-              // Use the actual update date when case was resolved
-              const decisionDate = updatedDate > baseDate ? updatedDate : new Date(baseDate.getTime() + 50 * 24 * 60 * 60 * 1000);
-              
-              // Get handler notes if available
-              const handlerNotes = (complaint as any).adminNotes;
-              
+              const decisionDate = updatedDate > baseDate ? updatedDate : baseDate;
+              const handlerNotes = c.adminNotes;
+
               activities.push({
                 id: "decision_making",
                 complaintId: complaint.id,
-                investigatorId: authority,
+                investigatorId: sensitive ? 'Case Handler' : authority,
                 activityType: "deliberation",
                 description: "Final decision rendered",
                 findings: complaint.status === ComplaintStatus.RESOLVED
                   ? (handlerNotes || "Case reviewed. Findings sustained with appropriate disciplinary action determined")
-                  : (handlerNotes || "Case dismissed. Complaint dismissed based on investigation findings"),
+                  : (handlerNotes || "Case dismissed based on investigation findings"),
                 date: decisionDate,
-                attachments: complaint.status === ComplaintStatus.RESOLVED ? ["decision_document.pdf"] : []
+                attachments: []
               });
             }
 
-            // Filter out future activities and sort by date
             return activities
               .filter(activity => activity.date <= now)
               .sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -721,12 +468,12 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     };
 
     const fromLogged: InvestigationActivity[] = realActivities
-      .filter((ra) => !ra.isInternal) // Filter out internal notes for complainant view
+      .filter((ra) => !ra.isInternal)
       .map((ra) => ({
       id: `case_activity_${ra.id}`,
       complaintId: ra.complaintId,
-      investigatorId: ra.performedByName, // This is the actor (who performed the action)
-      investigatorRole: ra.performedByRole, // Add role information
+      investigatorId: isSensitiveCaseType(complaint.type) ? 'Case Handler' : ra.performedByName,
+      investigatorRole: ra.performedByRole,
       activityType: mapCaseActivityType(ra.activityType),
       description: ra.description,
       findings: ra.findings,
@@ -1119,7 +866,11 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             {[
               { label: "Type", value: complaint.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: FileText },
               { label: "Filed", value: format(complaint.filingDate, "MMM d, yyyy"), icon: Calendar },
-              { label: "Handler", value: complaint.assignedCODI?.[0] !== 'Not yet assigned' ? complaint.assignedCODI?.[0] || '—' : 'Pending', icon: User },
+              { label: "Handler", value: getComplainantHandlerLabel(
+                complaint.type,
+                !!(complaint.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned'),
+                (complaint as any).assignedToName
+              ), icon: User },
             ].map(item => (
               <div key={item.label} className="bg-white border border-gray-200 rounded-xl p-3">
                 <p className="text-xs text-gray-400 mb-1">{item.label}</p>

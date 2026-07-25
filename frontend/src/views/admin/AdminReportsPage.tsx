@@ -326,7 +326,7 @@ const AdminReportsPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const statusParam = params.get('status');
-    if (statusParam && ['all', 'active', 'investigating', 'resolved'].includes(statusParam)) {
+    if (statusParam && ['all', 'active', 'unassigned', 'investigating', 'resolved', 'needs-attention'].includes(statusParam)) {
       setActiveTab(statusParam);
     }
   }, [location.search]);
@@ -559,6 +559,12 @@ const AdminReportsPage = () => {
       filtered = filtered.filter(report => {
         const status = safeGet(report, 'status');
         return status === 'pending' || status === 'submitted';
+      });
+    } else if (activeTab === 'unassigned') {
+      filtered = filtered.filter(report => {
+        const status = safeGet(report, 'status');
+        const assigned = safeGet(report, 'assignedTo');
+        return !assigned && (status === 'pending' || status === 'submitted');
       });
     } else if (activeTab === 'investigating') {
       filtered = filtered.filter(report => safeGet(report, 'status') === 'inProgress');
@@ -1054,34 +1060,32 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             variant="outline" 
             size="sm"
             onClick={async () => {
-              try {
-                // Self-assign the case
-                const reportRef = doc(db, 'complaints', report.id);
-                await updateDoc(reportRef, {
-                  assignedTo: representativeId,
-                  assignedToName: currentUser?.displayName || currentUser?.email || 'CODI Member',
-                  assignedToRole: 'codi',
-                  assignedAt: new Date(),
-                  status: 'inProgress' // Auto-start investigation
+              if (!representativeId || !currentUser) {
+                toast({
+                  title: 'Error',
+                  description: 'Could not identify your handler profile. Please contact an administrator.',
+                  variant: 'destructive',
                 });
-
-                // Notify complainant
-                const { NotificationService } = await import('../../services/notificationService');
-                await NotificationService.createNotification(
-                  report.userId,
-                  'case_assigned',
-                  'CODI is Investigating Your Case',
-                  `A CODI member has started investigating your case: "${report.title}". You will be contacted for updates.`,
-                  {
-                    priority: 'high',
-                    actionUrl: `/case-tracking/${report.id}`,
-                    data: { reportId: report.id }
-                  }
-                );
+                return;
+              }
+              try {
+                const { takeCase } = await import('../../services/caseAssignmentService');
+                await takeCase({
+                  complaintId: report.id,
+                  handlerRepId: representativeId,
+                  handlerName: representativeData?.displayName || currentUser.displayName || currentUser.email || 'Case Handler',
+                  handlerRole: representativeData?.role || 'handler',
+                  handlerUserId: currentUser.uid,
+                  assignedByUserId: currentUser.uid,
+                  assignedByName: currentUser.displayName || currentUser.email || 'Case Handler',
+                  complaintType: report.category,
+                  complainantUserId: report.userId,
+                  complaintTitle: report.title,
+                });
 
                 toast({
                   title: 'Case Taken',
-                  description: 'You are now assigned to this case. The complainant has been notified.',
+                  description: 'You are now assigned to this case. Status remains Pending until you post your first update.',
                 });
 
                 fetchReports();
@@ -1707,6 +1711,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
   const tabCounts = {
     all: reports.filter(r => (r.status as string) !== 'closed').length, // Exclude closed from "All"
     active: reports.filter(r => r.status === 'pending' || (r.status as string) === 'submitted').length,
+    unassigned: reports.filter(r => !r.assignedTo && (r.status === 'pending' || (r.status as string) === 'submitted')).length,
     investigating: reports.filter(r => r.status === 'inProgress').length,
     resolved: reports.filter(r => r.status === 'resolved').length,
     needsAttention: reports.filter(r => needsAttention(r)).length,
@@ -1963,6 +1968,26 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 : 'bg-gray-100 text-gray-600'
             }`}>
               {tabCounts.active}
+            </span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('unassigned')}
+            className={`
+              py-4 px-1 border-b-2 font-medium text-sm transition-colors
+              ${activeTab === 'unassigned'
+                ? 'border-[#1D9E75] text-[#1D9E75]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }
+            `}
+          >
+            Unassigned
+            <span className={`ml-2 py-0.5 px-2 rounded-full text-xs font-semibold ${
+              activeTab === 'unassigned'
+                ? 'bg-[#1D9E75]/10 text-[#1D9E75]'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
+              {tabCounts.unassigned}
             </span>
           </button>
           

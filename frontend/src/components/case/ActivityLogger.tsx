@@ -64,6 +64,13 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
         role === 'admin' ? 'admin' : 'handler'
       );
 
+      const { maybeStartInvestigation } = await import('../../services/caseAssignmentService');
+      await maybeStartInvestigation(
+        complaintId,
+        currentUser.uid,
+        currentUser.displayName || currentUser.email || 'Handler'
+      );
+
       toast({
         title: 'Success',
         description: 'Activity logged successfully'

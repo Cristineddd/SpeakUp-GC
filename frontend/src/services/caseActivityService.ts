@@ -198,6 +198,28 @@ export class CaseActivityService {
   }
 
   /**
+   * Log complaint submission (handler/admin only — typically not called from complainant client).
+   */
+  static async logComplaintSubmission(complaintId: string): Promise<void> {
+    try {
+      await this.createActivity(
+        {
+          complaintId,
+          activityType: ActivityType.DOCUMENT_REVIEW,
+          description: 'Formal complaint submitted',
+          findings: 'Complaint received and recorded. Awaiting case handler assignment.',
+          metadata: { event: 'complaint_submitted' },
+        },
+        SYSTEM_ACTOR.id,
+        SYSTEM_ACTOR.name,
+        SYSTEM_ACTOR.role
+      );
+    } catch (error) {
+      console.error('❌ Error logging complaint submission:', error);
+    }
+  }
+
+  /**
    * Auto-log handler assignment
    */
   static async logHandlerAssignment(
@@ -206,7 +228,8 @@ export class CaseActivityService {
     handlerId?: string,
     userId?: string,
     userName?: string,
-    isSystemAction: boolean = false
+    isSystemAction: boolean = false,
+    maskHandlerIdentity: boolean = false
   ): Promise<void> {
     try {
       // Use System actor for automated actions
@@ -214,24 +237,33 @@ export class CaseActivityService {
       const actorName = isSystemAction ? SYSTEM_ACTOR.name : (userName || SYSTEM_ACTOR.name);
       const actorRole = isSystemAction ? SYSTEM_ACTOR.role : 'admin';
 
+      const publicDescription = maskHandlerIdentity
+        ? 'Case handler assigned'
+        : isSystemAction
+          ? `Case automatically assigned to CODI member ${handlerName} for review.`
+          : 'Case handler assigned';
+
+      const publicFindings = maskHandlerIdentity
+        ? 'A case handler has been assigned to your report. You will be contacted when the investigation begins.'
+        : `${handlerName} has been assigned to handle this case. The investigation will begin once the handler reviews the complaint.`;
+
       await this.createActivity(
         {
           complaintId,
           activityType: ActivityType.ASSIGNMENT,
-          description: isSystemAction 
-            ? `Case automatically assigned to CODI member ${handlerName} for review.`
-            : 'CODI member assigned',
-          findings: `${handlerName} has been assigned to handle this case. The investigation process will begin shortly.`,
+          description: publicDescription,
+          findings: publicFindings,
           metadata: {
-            assignedHandler: handlerName,
-            isSystemAction
+            assignedHandler: maskHandlerIdentity ? undefined : handlerName,
+            isSystemAction,
+            maskHandlerIdentity,
           }
         },
         actorId,
         actorName,
         actorRole,
-        handlerId, // targetUserId
-        handlerName // targetUserName
+        maskHandlerIdentity ? undefined : handlerId,
+        maskHandlerIdentity ? undefined : handlerName
       );
     } catch (error) {
       console.error('❌ Error logging handler assignment:', error);

@@ -58,7 +58,6 @@ export class EscalationService {
       await updateDoc(complaintRef, {
         handlerId: handlerId,
         handlerName: handlerName,
-        status: 'inProgress',
         assignedAt: now,
         updatedAt: now
       });

@@ -487,7 +487,6 @@ export class AdminReportService {
       const updateData: any = {
         assignedTo: adminId,
         assignedToName: adminName,
-        status: 'inProgress',
         lastUpdated: new Date().toISOString(),
         assignedAt: new Date().toISOString()
       };

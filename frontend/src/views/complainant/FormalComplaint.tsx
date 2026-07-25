@@ -32,7 +32,6 @@ import { collection, addDoc, Timestamp, doc, updateDoc, query, where, getDocs, o
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
 import { RepresentativeService } from '../../services/representativeService';
-import { CaseActivityService } from '../../services/caseActivityService';
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/FormAssistant";
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
@@ -1309,7 +1308,7 @@ const FormalComplaint = () => {
         additionalInfo: formData.additionalInfo,
         
         // Status and metadata
-        status: 'submitted',
+        status: 'pending',
         stage: 'filing',
         confidentialityLevel: 'confidential',
         
@@ -1417,107 +1416,6 @@ const FormalComplaint = () => {
         );
       } catch (notifyError) {
         console.warn('⚠️ Could not send complaint created notification:', notifyError);
-      }
-
-      // Auto-assign to a CODI member
-      try {
-        const codiMembers = await RepresentativeService.getAll({ isActive: true });
-        const activeCODI = codiMembers.filter(rep => (rep.role as string) === 'handler' || (rep.role as string) === 'codi');
-        
-        if (activeCODI.length > 0) {
-          // Enhanced auto-assignment: Consider complainant type and specialization
-          let eligibleCODI = [...activeCODI];
-          
-          // Filter by complainant type if specified and handler has targetGroups
-          if (formData.complainantType) {
-            const handlersForType = activeCODI.filter(codi => 
-              !codi.targetGroups || codi.targetGroups.length === 0 || codi.targetGroups.includes(formData.complainantType as any)
-            );
-            if (handlersForType.length > 0) {
-              eligibleCODI = handlersForType;
-              console.log(`🎯 Filtered to ${eligibleCODI.length} handlers for complainant type: ${formData.complainantType}`);
-            }
-          }
-          
-          // For sexual harassment, prioritize handlers with harassment specialization
-          if (formData.type === 'sexual_harassment') {
-            const harassmentSpecialists = eligibleCODI.filter(codi =>
-              codi.specializations?.includes('harassment') || codi.specializations?.includes('sexual_harassment')
-            );
-            if (harassmentSpecialists.length > 0) {
-              eligibleCODI = harassmentSpecialists;
-              console.log(`🎯 Prioritized ${eligibleCODI.length} harassment specialists`);
-            }
-          }
-          
-          // Select CODI member with least active cases from eligible pool
-          const sortedCODI = [...eligibleCODI].sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
-          const selectedCODI = sortedCODI[0];
-          
-          const complaintRef = doc(db, 'complaints', complaintId);
-          const now = Timestamp.now();
-          
-          await updateDoc(complaintRef, {
-            assignedTo: selectedCODI.id,
-            assignedToName: selectedCODI.displayName,
-            assignedToRole: selectedCODI.role,
-            assignedAt: now,
-            assignedBy: 'system',
-            assignedByName: 'Auto-Assignment',
-            status: 'inProgress',
-            processingStartedAt: now,
-            handlerHistory: [{
-              handlerId: selectedCODI.id,
-              handlerName: selectedCODI.displayName,
-              handlerRole: selectedCODI.role,
-              assignedAt: now.toDate().toISOString(),
-              assignedBy: 'system',
-              assignedByName: 'Auto-Assignment'
-            }]
-          });
-          
-          // Log automated status change with System as actor
-          await CaseActivityService.logStatusChange(
-            complaintId,
-            'submitted',
-            'inProgress',
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            true // isSystemAction
-          );
-          
-          // Log automated handler assignment with System as actor
-          await CaseActivityService.logHandlerAssignment(
-            complaintId,
-            selectedCODI.displayName,
-            selectedCODI.userId,
-            undefined,
-            undefined,
-            true // isSystemAction
-          );
-          
-          // Assign case to representative
-          await RepresentativeService.assignCase(selectedCODI.id, complaintId);
-          
-          // Send notification to assigned CODI member
-          await NotificationService.sendHandlerCaseAssignedNotification(
-            selectedCODI.userId,
-            complaintId,
-            formData.title || 'Formal Complaint',
-            isAnonymous ? 'Anonymous' : (formData.complainantName || 'Unknown'),
-            formData.type || 'General',
-            'Medium'
-          );
-          
-          console.log(`✅ Auto-assigned to CODI member: ${selectedCODI.displayName}`);
-        } else {
-          console.warn('⚠️ No active CODI members available for auto-assignment');
-        }
-      } catch (autoAssignError) {
-        console.error('❌ Auto-assignment failed:', autoAssignError);
-        // Don't fail the submission if auto-assignment fails
       }
 
       // Send notification to respondent if they're a registered user
