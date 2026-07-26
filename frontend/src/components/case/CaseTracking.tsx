@@ -116,8 +116,10 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 respondentAddress: data.respondentAddress || '',
                 title: data.title || data.description || 'Untitled Case',
                 description: data.description || '',
-                statementOfFacts: data.statementOfFacts || data.additionalInfo || data.description || '',
+                statementOfFacts: data.statementOfFacts || data.additionalInfo || '',
                 type: data.type || data.category || 'other',
+                harassmentDegree: data.harassmentDegree || undefined,
+                incidentTime: data.incidentTime || '',
                 incidentDate: safeToDate(data.incidentDate),
                 incidentLocation: data.incidentLocation || data.location || '',
                 locationVicinity: data.locationVicinity || '', // 'inside' or 'outside'
@@ -590,6 +592,33 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     return 'Not specified';
   };
 
+  const formatIncidentTime = (time?: string) => {
+    if (!time) return null;
+    if (time === 'AM') return 'Morning (12:00 AM – 11:59 AM)';
+    if (time === 'PM') return 'Afternoon/Evening (12:00 PM – 11:59 PM)';
+    return time;
+  };
+
+  const formatHarassmentDegree = (degree?: string) => {
+    const labels: Record<string, string> = {
+      light: 'Light',
+      severe: 'Severe',
+      grave: 'Grave',
+    };
+    return degree ? labels[degree] || degree.replace(/_/g, ' ') : null;
+  };
+
+  const c = complaint as Complaint & {
+    incidentTime?: string;
+    harassmentDegree?: string;
+    mapAddress?: string;
+    caseId?: string;
+    assignedToName?: string;
+  };
+  const showSeparateStatement =
+    !!c.statementOfFacts &&
+    c.statementOfFacts.trim() !== (c.description || '').trim();
+
   // Simplified to 3 stages
   const stageSteps = [
     { key: 'submitted', label: "Pending" },
@@ -886,24 +915,36 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               Incident Details
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <p className="text-xs text-gray-400 mb-0.5">Complaint Title</p>
+                <p className="text-sm font-medium text-gray-800">{c.title || 'Not specified'}</p>
+              </div>
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Incident Date</p>
                 <p className="text-sm font-medium text-gray-800">{format(complaint.incidentDate, "MMMM d, yyyy")}</p>
               </div>
-              {(complaint as any).incidentTime && (
+              {c.incidentTime && (
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Incident Time</p>
-                  <p className="text-sm font-medium text-gray-800">{(complaint as any).incidentTime}</p>
+                  <p className="text-sm font-medium text-gray-800">{formatIncidentTime(c.incidentTime)}</p>
+                </div>
+              )}
+              {c.type === 'sexual_harassment' && c.harassmentDegree && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Degree of Harassment</p>
+                  <p className="text-sm font-medium text-gray-800">{formatHarassmentDegree(c.harassmentDegree)}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-gray-400 mb-0.5">Location</p>
+                <p className="text-xs text-gray-400 mb-0.5">
+                  {complaint.locationVicinity === 'online' ? 'Platform' : 'Location'}
+                </p>
                 <p className="text-sm font-medium text-gray-800">{complaint.incidentLocation || 'Not specified'}</p>
               </div>
-              {(complaint as any).mapAddress && complaint.locationVicinity !== 'online' && (
+              {c.mapAddress && complaint.locationVicinity !== 'online' && (
                 <div className="col-span-2">
-                  <p className="text-xs text-gray-400 mb-0.5">📍 Exact Location (Map)</p>
-                  <p className="text-sm font-medium text-gray-800">{(complaint as any).mapAddress}</p>
+                  <p className="text-xs text-gray-400 mb-0.5">Exact Location (Map)</p>
+                  <p className="text-sm font-medium text-gray-800">{c.mapAddress}</p>
                 </div>
               )}
               <div>
@@ -913,7 +954,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   complaint.locationVicinity === 'inside' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                   'bg-orange-50 text-orange-700 border-orange-200'
                 }`}>
-                  {formatVicinity(complaint.locationVicinity)}
+                  {formatVicinity(complaint.locationVicinity || '')}
                 </span>
               </div>
             </div>
@@ -926,16 +967,19 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               Complaint Description
             </h3>
             {complaint.description && (
-              <div className="mb-3">
-                <p className="text-xs text-gray-400 mb-1">Summary</p>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Description</p>
                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{complaint.description}</p>
               </div>
             )}
-            {complaint.statementOfFacts && (
-              <div>
+            {showSeparateStatement && (
+              <div className="mt-3">
                 <p className="text-xs text-gray-400 mb-1">Statement of Facts</p>
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{complaint.statementOfFacts}</p>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{c.statementOfFacts}</p>
               </div>
+            )}
+            {!complaint.description && !showSeparateStatement && (
+              <p className="text-sm text-gray-500">No description provided.</p>
             )}
           </div>
 

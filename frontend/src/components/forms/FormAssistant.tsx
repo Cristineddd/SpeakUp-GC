@@ -6,34 +6,42 @@
 import React from 'react';
 import { AlertCircle, Lightbulb, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
+import { cn } from '../../lib/utils';
 
 interface FormTipProps {
   message: string;
   type: 'info' | 'warning' | 'tip' | 'success';
   show?: boolean;
   onDismiss?: () => void;
+  variant?: 'default' | 'inline';
+  className?: string;
 }
 
 export const FormTip: React.FC<FormTipProps> = ({ 
   message, 
   type = 'info',
   show = true,
-  onDismiss
+  onDismiss,
+  variant = 'default',
+  className,
 }) => {
   if (!show) return null;
+
+  const isInline = variant === 'inline';
+  const iconSize = isInline ? 'h-3.5 w-3.5' : 'h-4 w-4';
 
   const getIcon = () => {
     switch (type) {
       case 'info':
-        return <Lightbulb className="h-4 w-4" />;
+        return <Lightbulb className={iconSize} />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4" />;
+        return <AlertTriangle className={iconSize} />;
       case 'tip':
-        return <Zap className="h-4 w-4" />;
+        return <Zap className={iconSize} />;
       case 'success':
-        return <CheckCircle2 className="h-4 w-4" />;
+        return <CheckCircle2 className={iconSize} />;
       default:
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className={iconSize} />;
     }
   };
 
@@ -67,12 +75,28 @@ export const FormTip: React.FC<FormTipProps> = ({
     }
   };
 
+  if (isInline && type === 'success') {
+    return (
+      <p className={cn('mt-1.5 flex items-center gap-1.5 text-xs text-emerald-700', className)}>
+        <span className={cn('flex-shrink-0', getIconColor())}>{getIcon()}</span>
+        <span>{message}</span>
+      </p>
+    );
+  }
+
   return (
-    <div className={`border rounded-lg p-3 flex gap-3 items-start ${getColors()} animate-fadeIn`}>
-      <div className={`flex-shrink-0 mt-0.5 ${getIconColor()}`}>
+    <div
+      className={cn(
+        'border rounded-lg flex items-start',
+        isInline ? 'mt-1.5 gap-2 p-2 text-xs leading-snug' : 'gap-3 p-3 text-sm leading-relaxed animate-fadeIn',
+        getColors(),
+        className,
+      )}
+    >
+      <div className={cn('flex-shrink-0', !isInline && 'mt-0.5', getIconColor())}>
         {getIcon()}
       </div>
-      <div className="flex-1 text-sm leading-relaxed">
+      <div className="flex-1">
         {message}
       </div>
       {onDismiss && (

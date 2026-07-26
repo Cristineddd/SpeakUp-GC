@@ -408,6 +408,12 @@ const LANDMARK_COORDINATES: { [key: string]: [number, number] } = {
   "Bataan People's Center": [14.6758, 120.5375],
 };
 
+const HARASSMENT_DEGREE_OPTIONS = [
+  { value: HarassmentDegree.LIGHT, label: 'Light', description: 'Light gestures, jokes, or comments' },
+  { value: HarassmentDegree.SEVERE, label: 'Severe', description: 'Unwelcome touching, advances' },
+  { value: HarassmentDegree.GRAVE, label: 'Grave', description: 'Sexual assault, rape' },
+] as const;
+
 const FormalComplaint = () => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
@@ -601,9 +607,21 @@ const FormalComplaint = () => {
 
   const COMPLAINANT_FIELD_LABELS: Record<string, string> = {
     complainantName: 'Full name',
-    complainantAddress: 'Complete address',
-    complainantType: 'I am a',
-    complainantContact: 'Contact number',
+    complainantAddress: 'Address',
+    complainantType: 'Role',
+    complainantContact: 'Contact',
+  };
+
+  const shortMissingFieldsDescription = (fields: string[]): string => {
+    if (fields.length === 0) return 'Fill in all required fields.';
+    if (fields.length === 1) return `Missing: ${fields[0]}.`;
+    if (fields.length <= 3) return `Missing: ${fields.join(', ')}.`;
+    return `${fields.length} required fields missing.`;
+  };
+
+  const shortComplainantDescription = (errors: typeof fieldErrors): string => {
+    const missing = Object.keys(errors).map((key) => COMPLAINANT_FIELD_LABELS[key] ?? key);
+    return shortMissingFieldsDescription(missing);
   };
 
   /** Returns validation result without mutating state (safe for toasts). */
@@ -851,8 +869,8 @@ const FormalComplaint = () => {
     // Show error if there are invalid files
     if (invalidFiles.length > 0) {
       toast({
-        title: "Invalid Files",
-        description: `${invalidFiles.length} file(s) not allowed:\n${invalidFiles.join('\n')}`,
+        title: "Invalid files",
+        description: `${invalidFiles.length} file(s) not allowed.`,
         variant: "destructive"
       });
     }
@@ -866,8 +884,8 @@ const FormalComplaint = () => {
 
       if (validFiles.length > 0) {
         toast({
-          title: "Files Added",
-          description: `${validFiles.length} file(s) added successfully`,
+          title: "Files added",
+          description: `${validFiles.length} file(s) added.`,
         });
       }
     }
@@ -897,8 +915,8 @@ const FormalComplaint = () => {
     setTitleGenerated(true);
     
     toast({
-      title: "Title Generated",
-      description: "You may edit the generated title if needed.",
+      title: "Title generated",
+      description: "You can edit it if needed.",
     });
   };
 
@@ -918,8 +936,8 @@ const FormalComplaint = () => {
     }
 
     toast({
-      title: "Evidence Added",
-      description: `${evidence.files.length} file(s) and ${evidence.externalLinks.length} link(s) added successfully.`,
+      title: "Evidence added",
+      description: `${evidence.files.length} file(s), ${evidence.externalLinks.length} link(s).`,
     });
   };
 
@@ -1022,48 +1040,44 @@ const FormalComplaint = () => {
 
       switch (currentStep) {
         case 1: {
-          errorTitle = "Your information — required fields missing";
+          errorTitle = "Incomplete info";
           const complainantResult = getComplainantValidation();
           setFieldErrors(complainantResult.errors);
           errorDescription = complainantResult.messages.length > 0
-            ? complainantResult.messages.join(" • ")
+            ? shortComplainantDescription(complainantResult.errors)
             : isAnonymous
-              ? "Please check the anonymous option properly."
-              : "Please fill in all required fields before proceeding.";
+              ? "Check the anonymous option."
+              : "Fill in all required fields.";
           break;
         }
         case 2:
-          errorTitle = "Respondent Information Required";
-          if (unknownRespondent) {
-            errorDescription = "Since the respondent's identity is unknown, please provide at least 20 characters of physical description or identifying details.";
-          } else {
-            errorDescription = "Please provide the respondent's name before proceeding.";
-          }
+          errorTitle = "Respondent required";
+          errorDescription = unknownRespondent
+            ? "Add at least 20 characters of description."
+            : "Enter the respondent's name.";
           break;
-        case 3:
-          errorTitle = "Incident Details Required";
+        case 3: {
+          errorTitle = "Incident details missing";
           const missingFields = [];
-          if (!formData.title) missingFields.push("Complaint Title");
+          if (!formData.title) missingFields.push("Title");
           if (!formData.description || formData.description.trim().length < 20) {
-            missingFields.push("Description (minimum 20 characters)");
+            missingFields.push("Description");
           }
-          if (!formData.incidentDate) missingFields.push("Date of Incident");
-          if (!formData.incidentLocation) missingFields.push("Location/Platform");
+          if (!formData.incidentDate) missingFields.push("Date");
+          if (!formData.incidentLocation) missingFields.push("Location");
           if (formData.type === "other" && otherTypeDetail.trim().length === 0) {
-            missingFields.push("Other Complaint Type Details");
+            missingFields.push("Complaint type");
           }
-          
-          errorDescription = missingFields.length > 0
-            ? `Please complete the following fields:\n• ${missingFields.join('\n• ')}`
-            : "Please fill in all required incident details.";
+
+          errorDescription = shortMissingFieldsDescription(missingFields);
           break;
+        }
         case 4:
-          // Evidence is now optional
-          errorTitle = "Evidence Optional";
-          errorDescription = "You may proceed without evidence. However, uploading evidence (screenshots, photos, messages, or witness statements) can strengthen your case.";
+          errorTitle = "Evidence optional";
+          errorDescription = "You can add evidence later.";
           break;
         default:
-          errorDescription = "Please fill in all required fields before proceeding.";
+          errorDescription = "Fill in all required fields.";
       }
 
       toast({
@@ -1163,8 +1177,8 @@ const FormalComplaint = () => {
       setValidationAttempted(true);
       setCurrentStep(1);
       toast({
-        title: "Your information — required fields missing",
-        description: complainantResult.messages.join(" • ") || "Please fix the errors in your information before submitting.",
+        title: "Incomplete info",
+        description: shortComplainantDescription(complainantResult.errors),
         variant: "destructive"
       });
       return;
@@ -1212,8 +1226,8 @@ const FormalComplaint = () => {
     // Check for date validation error
     if (dateError) {
       toast({
-        title: "Error",
-        description: "Hindi pwedeng mag-submit kapag may error sa incident date. Ayusin muna ang petsa.",
+        title: "Invalid date",
+        description: "Ayusin muna ang incident date.",
         variant: "destructive"
       });
       return;
@@ -1222,8 +1236,8 @@ const FormalComplaint = () => {
     // Additional check: validate incident date one more time before submission
     if (formData.incidentDate && formData.incidentDate > getTodayString()) {
       toast({
-        title: "Invalid Incident Date", 
-        description: "Hindi pwedeng future date ang incident date. Piliin ang nakaraang petsa o ngayon.",
+        title: "Invalid date", 
+        description: "Hindi pwedeng future date.",
         variant: "destructive"
       });
       return;
@@ -1232,15 +1246,15 @@ const FormalComplaint = () => {
     // Validate incident details (Step 3)
     const missingFields = [];
     if (!formData.title) missingFields.push("Title");
-    if (!formData.description || formData.description.trim().length < 20) missingFields.push("Description (minimum 20 characters)");
-    if (!formData.incidentDate) missingFields.push("Date of Incident");
-    if (!formData.incidentLocation) missingFields.push("Location/Platform");
-    if (formData.type === "other" && otherTypeDetail.trim().length === 0) missingFields.push("Other Complaint Type Details");
+    if (!formData.description || formData.description.trim().length < 20) missingFields.push("Description");
+    if (!formData.incidentDate) missingFields.push("Date");
+    if (!formData.incidentLocation) missingFields.push("Location");
+    if (formData.type === "other" && otherTypeDetail.trim().length === 0) missingFields.push("Complaint type");
     
     if (missingFields.length > 0) {
       toast({
-        title: "Missing Required Fields",
-        description: `Please complete: ${missingFields.join(', ')}`,
+        title: "Missing fields",
+        description: shortMissingFieldsDescription(missingFields),
         variant: "destructive"
       });
       return;
@@ -1248,8 +1262,8 @@ const FormalComplaint = () => {
 
     if (!validateStep(4)) {
       toast({
-        title: "Required Evidence Missing",
-        description: "Please upload at least one evidence file or provide an external link before submitting.",
+        title: "Evidence required",
+        description: "Upload at least 1 file or link.",
         variant: "destructive"
       });
       return;
@@ -1257,8 +1271,8 @@ const FormalComplaint = () => {
 
     if (!currentUser) {
       toast({
-        title: "Authentication Required",
-        description: "You must be logged in to submit a complaint.",
+        title: "Login required",
+        description: "Log in to submit.",
         variant: "destructive"
       });
       return;
@@ -1300,7 +1314,7 @@ const FormalComplaint = () => {
         // Incident details
         title: formData.title,
         description: formData.description,
-        statementOfFacts: formData.statementOfFacts,
+        ...(formData.statementOfFacts.trim() && { statementOfFacts: formData.statementOfFacts.trim() }),
         type: formData.type,
         ...(formData.harassmentDegree && { harassmentDegree: formData.harassmentDegree }),  // NEW: Harassment degree (only if set)
         category: formData.type, // Alias for compatibility
@@ -1359,8 +1373,8 @@ const FormalComplaint = () => {
 
       // Show immediate feedback to user
       toast({
-        title: "Complaint Registered",
-        description: `Your complaint has been registered. Case ID: ${formattedCaseId}. Now uploading files...`,
+        title: "Complaint registered",
+        description: `Case ID: ${formattedCaseId}. Uploading files...`,
         duration: 3000,
       });
 
@@ -1383,8 +1397,8 @@ const FormalComplaint = () => {
         console.error('⚠️ Some Cloudinary uploads failed, but continuing:', uploadError);
         // Continue with complaint submission even if file uploads fail
         toast({
-          title: "File Upload Warning",
-          description: "Some files couldn't be uploaded, but your complaint was saved. You can add files later.",
+          title: "Upload warning",
+          description: "Some files failed; complaint saved.",
           variant: "default"
         });
       }
@@ -1506,8 +1520,8 @@ const FormalComplaint = () => {
       }
       
       toast({
-        title: "Complaint Submitted Successfully!",
-        description: `Your formal complaint has been filed. Case ID: ${formattedCaseId}`,
+        title: "Submitted!",
+        description: `Case ID: ${formattedCaseId}`,
         duration: 5000,
       });
       
@@ -1617,6 +1631,7 @@ const FormalComplaint = () => {
               )}
               {formData.complainantName && !isAnonymous && !fieldErrors.complainantName && (
                 <FormTip
+                  variant="inline"
                   message={getFormSuggestions("complainantName", formData.complainantName, 1, formData)?.message || ""}
                   type={getFormSuggestions("complainantName", formData.complainantName, 1, formData)?.type || "info"}
                   show={!!getFormSuggestions("complainantName", formData.complainantName, 1, formData)}
@@ -1730,13 +1745,17 @@ const FormalComplaint = () => {
                   Enter 11-digit mobile number (numbers only)
                 </p>
               )}
-              {formData.complainantContact && !isAnonymous && !fieldErrors.complainantContact && (
-                <FormTip
-                  message={getFormSuggestions("complainantContact", formData.complainantContact, 1, formData)?.message || ""}
-                  type={getFormSuggestions("complainantContact", formData.complainantContact, 1, formData)?.type || "info"}
-                  show={!!getFormSuggestions("complainantContact", formData.complainantContact, 1, formData)}
-                />
-              )}
+              {(() => {
+                const contactSuggestion = getFormSuggestions("complainantContact", formData.complainantContact, 1, formData);
+                return contactSuggestion && contactSuggestion.type !== 'success' ? (
+                  <FormTip
+                    variant="inline"
+                    message={contactSuggestion.message}
+                    type={contactSuggestion.type}
+                    show={true}
+                  />
+                ) : null;
+              })()}
             </div>
           </div>
         );
@@ -1978,28 +1997,20 @@ const FormalComplaint = () => {
                     value={formData.harassmentDegree ?? ""}
                     onValueChange={(value) => handleInputChange("harassmentDegree", value as HarassmentDegree)}
                   >
-                    <SelectTrigger className="w-full text-sm border-gray-300 h-10">
-                      <SelectValue placeholder="Select degree" />
+                    <SelectTrigger className="w-full text-sm border-gray-300 h-10 text-left">
+                      <SelectValue placeholder="Select degree">
+                        {HARASSMENT_DEGREE_OPTIONS.find((opt) => opt.value === formData.harassmentDegree)?.label}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="light">
-                        <div className="flex flex-col">
-                          <span className="font-medium">Light</span>
-                          <span className="text-xs text-gray-500">Light gestures, jokes, or comments</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="severe">
-                        <div className="flex flex-col">
-                          <span className="font-medium">Severe</span>
-                          <span className="text-xs text-gray-500">Unwelcome touching, advances</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="grave">
-                        <div className="flex flex-col">
-                          <span className="font-medium">Grave</span>
-                          <span className="text-xs text-gray-500">Sexual assault, rape</span>
-                        </div>
-                      </SelectItem>
+                      {HARASSMENT_DEGREE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="items-start">
+                          <div className="flex flex-col text-left">
+                            <span className="font-medium">{opt.label}</span>
+                            <span className="text-xs text-gray-500">{opt.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
