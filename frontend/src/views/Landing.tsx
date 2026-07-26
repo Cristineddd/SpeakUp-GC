@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Lock, GraduationCap, Menu, X, MessageCircle, ClipboardList,
   Activity, EyeOff, BookOpen, HeadphonesIcon, CheckCircle2,
-  ArrowRight, ShieldCheck, Users, ChevronDown, Shield,
+  ArrowRight, ShieldCheck, Users,
 } from "lucide-react";
-import { Link, useLocation, useSearchParams, useNavigate } from "../compat/router";
+import { Link, useLocation, useSearchParams } from "../compat/router";
 import WalkthroughModal from "../components/WalkthroughModal";
 
 function useInView(options: IntersectionObserverInit = {}) {
@@ -25,13 +25,73 @@ function useInView(options: IntersectionObserverInit = {}) {
   return { ref, inView };
 }
 
+const QUICK_ACTIONS = [
+  { icon: ClipboardList, title: "File a Complaint", desc: "Submit securely under RA 11313 & RA 7877." },
+  { icon: Activity, title: "Track Your Case", desc: "Real-time status updates at every milestone." },
+  { icon: MessageCircle, title: "Direct Messaging", desc: "Encrypted chat with DEIU administrators." },
+  { icon: BookOpen, title: "Know Your Rights", desc: "Guides, policies, and legal protections." },
+];
+
+const FEATURED = [
+  {
+    icon: ClipboardList,
+    title: "File a Complaint",
+    desc: "Anonymous or identified filing with secure document upload.",
+    action: "Open",
+  },
+  {
+    icon: Activity,
+    title: "Case Tracker",
+    desc: "Monitor status live — from filing to resolution.",
+    action: "Open",
+  },
+  {
+    icon: Lock,
+    title: "Privacy First",
+    desc: "End-to-end encryption. Your data stays yours.",
+    action: "Open",
+  },
+  {
+    icon: HeadphonesIcon,
+    title: "DEIU Support",
+    desc: "Trained administrators guide you every step.",
+    action: "Open",
+  },
+];
+
+const STEPS = [
+  { n: "01", title: "Submit", desc: "Fill out the secure form. Stay anonymous or identify yourself." },
+  { n: "02", title: "Track", desc: "Get real-time updates at each stage of your case." },
+  { n: "03", title: "Resolve", desc: "Communicate with DEIU through encrypted messaging." },
+];
+
+const DID_YOU_KNOW = [
+  {
+    icon: ShieldCheck,
+    color: "green",
+    title: "Safe Spaces Act (RA 11313)",
+    points: ["Protects from gender-based harassment in public & online spaces", "Covers catcalling, unwanted remarks, and cyber harassment", "Schools must establish complaint mechanisms"],
+  },
+  {
+    icon: Users,
+    color: "purple",
+    title: "Gender-Based Violence",
+    points: ["Includes physical, sexual, and psychological abuse", "Right to report without fear of retaliation", "Support: counseling, legal aid, and safe spaces"],
+  },
+  {
+    icon: X,
+    color: "red",
+    title: "Bawal Bastos!",
+    points: ["Unwanted touching is harassment", "Sexual jokes create a hostile environment", "No means no — consent must be clear and ongoing"],
+  },
+];
+
 const Landing = () => {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [walkthroughInitialView, setWalkthroughInitialView] = useState<
     "choose" | "login" | "signup-email" | undefined
   >(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigateTo = useNavigate();
 
   useEffect(() => {
     const authParam = searchParams.get("auth");
@@ -65,11 +125,14 @@ const Landing = () => {
   }, [location]);
 
   const featuresRef = useInView();
-  const stepsRef    = useInView();
-  const missionRef  = useInView();
-  const ctaRef      = useInView();
+  const aboutRef = useInView();
 
-  // ── Inline Header ────────────────────────────────────────────────
+  const openWalkthrough = (view?: "login") => {
+    setWalkthroughInitialView(view);
+    setShowWalkthrough(true);
+  };
+
+  // ── Inline Header (kept as-is) ───────────────────────────────────
   const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     return (
@@ -81,18 +144,18 @@ const Landing = () => {
               <span className="text-lg font-bold text-gray-900 tracking-tight">SpeakUp GC</span>
             </Link>
             <nav className="hidden lg:flex items-center gap-1">
-              <Link to="#" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">Home</Link>
+              <Link to="#" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">Home</Link>
               <Link to="/#features" className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">Features</Link>
-              <Link to="/#about"    className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">About</Link>
+              <Link to="/#about" className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">About</Link>
             </nav>
             <div className="hidden lg:flex items-center gap-2">
               <button
                 className="text-sm font-medium text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-                onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
+                onClick={() => openWalkthrough("login")}
               >Log in</button>
               <button
                 className="text-sm font-semibold bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-xl px-4 py-2 transition-colors"
-                onClick={() => { setWalkthroughInitialView(undefined); setShowWalkthrough(true); }}
+                onClick={() => openWalkthrough()}
                 title="Sign up to file a complaint"
               >Get Started</button>
             </div>
@@ -104,12 +167,12 @@ const Landing = () => {
             <div className="lg:hidden mt-2 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
               <nav className="flex flex-col p-3 gap-1">
                 <Link to="/#features" className="px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>Features</Link>
-                <Link to="/#about"    className="px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>About</Link>
+                <Link to="/#about" className="px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>About</Link>
                 <div className="border-t border-gray-100 mt-1 pt-2 flex flex-col gap-2">
                   <button className="w-full py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50"
-                    onClick={() => { setIsMenuOpen(false); setWalkthroughInitialView("login"); setShowWalkthrough(true); }}>Log in</button>
+                    onClick={() => { setIsMenuOpen(false); openWalkthrough("login"); }}>Log in</button>
                   <button className="w-full py-2.5 text-sm font-semibold bg-[#1D9E75] text-white rounded-xl hover:bg-[#178F65]"
-                    onClick={() => { setIsMenuOpen(false); setWalkthroughInitialView(undefined); setShowWalkthrough(true); }}>Get Started</button>
+                    onClick={() => { setIsMenuOpen(false); openWalkthrough(); }}>Get Started</button>
                 </div>
               </nav>
             </div>
@@ -120,324 +183,218 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans">
+    <div className="min-h-screen bg-[#f8faf9] text-gray-900 font-sans">
       <Header />
 
-      {/* ── Hero ──────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-32 pb-20 overflow-hidden bg-gradient-to-br from-white via-green-50/30 to-white">
-        {/* Enhanced dot grid with animation */}
-        <div
-          className="absolute inset-0 opacity-40 animate-pulse"
-          style={{ 
-            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-            backgroundSize: "32px 32px",
-            animationDuration: "4s"
-          }}
-        />
-        {/* Multiple green glows for depth */}
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1D9E75]/10 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/8 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
-        
-        <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Text Content */}
-            <div className="max-w-xl">
-              {/* Headline with staggered animation */}
-              <h1 className="text-[clamp(3rem,8vw,5rem)] font-black leading-[0.9] tracking-tight text-gray-900 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <span className="inline-block animate-in fade-in slide-in-from-left-4 duration-700">Speak up.</span><br />
-                <span className="text-[#1D9E75] inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-150">Be heard.</span><br />
-                <span className="text-gray-600 inline-block animate-in fade-in slide-in-from-left-4 duration-700 delay-300">Be safe.</span>
-              </h1>
-
-              <p className="text-lg sm:text-xl text-gray-500 leading-relaxed mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
-                A confidential platform for Gordon College students to file complaints, track cases, and communicate directly with DEIU — anonymously if you choose. Protected under Philippine law.
-              </p>
-              <a href="#about" className="inline-flex items-center gap-1 text-sm font-medium text-[#1D9E75] hover:text-[#178F65] mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
-                Learn more about your rights
-                <ArrowRight className="w-4 h-4" />
-              </a>
-
-              {/* CTAs with hover effects */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
-                <button
-                  onClick={() => setShowWalkthrough(true)}
-                  className="group inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white font-semibold text-base px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
-                >
-                  Get Started 
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                </button>
-                <button
-                  onClick={() => { setWalkthroughInitialView("login"); setShowWalkthrough(true); }}
-                  className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-green-50 border-2 border-gray-300 hover:border-[#1D9E75] text-gray-700 hover:text-[#1D9E75] font-medium text-base px-8 py-4 rounded-2xl transition-all duration-300"
-                >
-                  Log In
-                </button>
+      {/* ── Hero ───────────────────────────────────────────────────── */}
+      <section className="pt-24 pb-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm">
+            {/* Subtle dot pattern — left side only, fades out toward the card */}
+            <div
+              className="absolute inset-y-0 left-0 w-1/2 pointer-events-none opacity-[0.35]"
+              style={{
+                backgroundImage: "radial-gradient(circle, #1D9E75 0.5px, transparent 0.5px)",
+                backgroundSize: "20px 20px",
+                maskImage: "linear-gradient(to right, black 40%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to right, black 40%, transparent 100%)",
+              }}
+            />
+            <div className="relative px-6 py-8 sm:px-10 sm:py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              {/* Left: Text */}
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 mb-2">SpeakUp GC</h1>
+                <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-4">
+                  A confidential platform for Gordon College students to file complaints, track cases, and communicate directly with DEIU — anonymously if you choose. Protected under Philippine law.
+                </p>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  <button
+                    onClick={() => openWalkthrough()}
+                    className="inline-flex items-center gap-1.5 bg-[#1D9E75] hover:bg-[#178F65] text-white font-semibold text-sm px-5 py-2 rounded-xl transition-colors"
+                  >
+                    Get Started <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <a
+                    href="#about"
+                    className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 font-medium text-sm px-5 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Learn more
+                  </a>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { icon: ShieldCheck, label: "Encrypted" },
+                    { icon: EyeOff, label: "Anonymous" },
+                    { icon: Users, label: "DEIU managed" },
+                  ].map((t) => (
+                    <span key={t.label} className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                      <t.icon className="w-3.5 h-3.5 text-[#1D9E75]" /> {t.label}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              {/* Trust pills */}
-              <div className="flex flex-wrap gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-900">
-                {[
-                  { icon: <ShieldCheck className="w-4 h-4" />, label: "End-to-end encrypted" },
-                  { icon: <EyeOff className="w-4 h-4" />,      label: "Anonymous filing" },
-                  { icon: <Users className="w-4 h-4" />,        label: "DEIU managed" },
-                ].map((t) => (
-                  <span key={t.label} className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                    <span className="text-[#1D9E75]">{t.icon}</span>
-                    {t.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Dashboard Illustration */}
-            <div className="relative hidden lg:block animate-in fade-in slide-in-from-right-8 duration-700 delay-300">
-              <div className="relative">
-                {/* Main dashboard card with elevated shadow */}
-                <div className="bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] border border-gray-200 p-8 space-y-6">
-                  {/* Success notification - attached to card */}
-                  <div className="-mt-8 -mx-8 mb-4 bg-green-50 border-2 border-green-200 rounded-t-3xl p-4 flex items-start gap-3">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle2 className="w-5 h-5 text-white" />
+              {/* Right: Dashboard Illustration */}
+              <div className="hidden lg:block">
+                <div className="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-200 overflow-hidden">
+                  <div className="bg-green-50 border-b border-green-200 px-5 py-3 flex items-start gap-3">
+                    <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 text-sm">Complaint Filed!</p>
                       <p className="text-xs text-gray-600">CASE-002 is now active</p>
                     </div>
                   </div>
-
-                  {/* Active case card */}
-                  <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-wide">Active Case</p>
-                        <p className="text-2xl font-black text-gray-900 mt-1">CASE-002</p>
-                        <p className="text-xs text-gray-500 mt-1">Sexual harassment in classroom</p>
-                      </div>
-                      <div className="bg-[#1D9E75] rounded-xl px-4 py-2">
-                        <p className="text-xs text-white font-bold">Anonymous Mode</p>
-                      </div>
-                    </div>
-
-                    {/* Timeline - Matching actual system workflow */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="w-4 h-4 text-white" />
+                  <div className="p-5">
+                    <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-wide">Active Case</p>
+                          <p className="text-xl font-black text-gray-900 mt-0.5">CASE-002</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Sexual harassment in classroom</p>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-gray-900">Complaint Filed</p>
-                          <p className="text-xs text-gray-500">Jan 14, 2026</p>
+                        <div className="bg-[#1D9E75] rounded-lg px-3 py-1.5">
+                          <p className="text-[10px] text-white font-bold">Anonymous Mode</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-gray-900">Under Review</p>
-                          <p className="text-xs text-gray-500">Jan 15, 2026</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-[#1D9E75] rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
-                          <div className="w-2 h-2 bg-white rounded-full" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-bold text-[#1D9E75]">Investigation Ongoing</p>
-                          <p className="text-xs text-green-600 font-medium">In progress</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 opacity-40">
-                        <div className="w-6 h-6 bg-gray-200 rounded-full flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-400">Decision Pending</p>
-                        </div>
+                      <div className="space-y-2.5">
+                        {[
+                          { done: true, title: "Complaint Filed", sub: "Jan 14, 2026" },
+                          { done: true, title: "Under Review", sub: "Jan 15, 2026" },
+                          { active: true, title: "Investigation Ongoing", sub: "In progress" },
+                          { pending: true, title: "Decision Pending", sub: "" },
+                        ].map((step) => (
+                          <div key={step.title} className={`flex items-center gap-3 ${step.pending ? "opacity-40" : ""}`}>
+                            {step.done ? (
+                              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <CheckCircle2 className="w-3 h-3 text-white" />
+                              </div>
+                            ) : step.active ? (
+                              <div className="w-5 h-5 bg-[#1D9E75] rounded-full flex items-center justify-center flex-shrink-0 animate-pulse">
+                                <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 bg-gray-200 rounded-full flex-shrink-0" />
+                            )}
+                            <div>
+                              <p className={`text-sm font-bold ${step.active ? "text-[#1D9E75]" : step.pending ? "text-gray-400" : "text-gray-900"}`}>{step.title}</p>
+                              {step.sub && <p className={`text-xs ${step.active ? "text-green-600 font-medium" : "text-gray-500"}`}>{step.sub}</p>}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Scroll cue */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 opacity-30">
-          <span className="text-xs text-gray-500 tracking-widest uppercase">Scroll</span>
-          <ChevronDown className="w-4 h-4 text-gray-500 animate-bounce" />
+      {/* ── Quick Actions ──────────────────────────────────────────── */}
+      <section className="pb-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-xs text-gray-500 mb-3">New here? Get started to file complaints and access resources.</p>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {QUICK_ACTIONS.map((item) => (
+              <button
+                key={item.title}
+                onClick={() => openWalkthrough()}
+                className="group text-left bg-white border border-gray-200 hover:border-[#1D9E75]/50 rounded-xl p-4 transition-all hover:shadow-md"
+              >
+                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-green-100 transition-colors">
+                  <item.icon className="w-4.5 h-4.5 text-[#1D9E75]" />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900 mb-0.5">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-snug">{item.desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── Features Bento ───────────────────────────────────────────── */}
-      <section id="features" className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
-        {/* Dot grid background */}
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{ 
-            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-            backgroundSize: "32px 32px"
-          }}
-        />
+      {/* ── Trust Banner ───────────────────────────────────────────── */}
+      <section className="pb-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+              <ShieldCheck className="w-5 h-5 text-[#1D9E75]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-bold text-gray-900 mb-0.5">Protected & confidential records</h2>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                All complaints handled under RA 11313 &amp; RA 7877. End-to-end encrypted with anonymous filing options — your identity is never disclosed without consent.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4 flex-shrink-0">
+              {[
+                { icon: ShieldCheck, label: "Encrypted" },
+                { icon: EyeOff, label: "Anonymous" },
+                { icon: Users, label: "DEIU managed" },
+              ].map((t) => (
+                <span key={t.label} className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+                  <t.icon className="w-3.5 h-3.5 text-[#1D9E75]" /> {t.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Featured Services ──────────────────────────────────────── */}
+      <section id="features" className="pb-6">
         <div
           ref={featuresRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
+          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
         >
-          {/* Section label */}
-          <div className={`mb-16 transition-all duration-700 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-3">Features</p>
-            <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight max-w-lg">
-              Built for the community.<br />Backed by law &amp; trust.
-            </h2>
-          </div>
-
-          {/* Bento grid — uniform card styling */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-            {/* File a Complaint card - same size as others */}
-            <div className={`bg-white border-2 border-[#1D9E75]/30 hover:border-[#1D9E75] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 delay-100 hover:shadow-xl hover:scale-[1.02] ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-              <div className="w-12 h-12 bg-green-50 border-2 border-[#1D9E75]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                <ClipboardList className="w-6 h-6 text-[#1D9E75]" />
-              </div>
-              <h3 className="text-xl font-black text-gray-900 mb-3">File a Complaint</h3>
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">Submit securely and confidentially under <span className="font-semibold text-gray-700">RA 11313 (Safe Spaces Act)</span> or <span className="font-semibold text-gray-700">RA 7877 (Anti-Sexual Harassment Act)</span>. Stay anonymous or identify yourself — the choice is always yours.</p>
-              <ul className="mt-auto space-y-2.5">
-                {["Anonymous or identified", "Secure document upload", "Evidence attachment"].map((b) => (
-                  <li key={b} className="flex items-center gap-2 text-sm text-gray-600">
-                    <CheckCircle2 className="w-4 h-4 text-[#1D9E75] flex-shrink-0" /> {b}
-                  </li>
-                ))}
-              </ul>
+          <div className={`flex items-end justify-between mb-4 transition-all duration-500 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <div>
+              <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Online Services</p>
+              <h2 className="text-lg font-black text-gray-900">Featured</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Quick access to common complaint services and resources.</p>
             </div>
+            <button onClick={() => openWalkthrough()} className="text-xs font-medium text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1">
+              View all <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
 
-            {/* Standard cards — uniform height and styling */}
-            {[
-              {
-                icon: <Activity className="w-6 h-6 text-[#1D9E75]" />,
-                title: "Real-Time Tracker",
-                desc: "Monitor your case status live. Get notified at every milestone.",
-                delay: "delay-150",
-              },
-              {
-                icon: <MessageCircle className="w-6 h-6 text-[#1D9E75]" />,
-                title: "Direct Messaging",
-                desc: "Communicate securely with DEIU administrators — encrypted and private.",
-                delay: "delay-200",
-              },
-              {
-                icon: <Lock className="w-6 h-6 text-[#1D9E75]" />,
-                title: "Privacy First",
-                desc: "End-to-end encryption. Your data is yours alone.",
-                delay: "delay-250",
-              },
-              {
-                icon: <BookOpen className="w-6 h-6 text-[#1D9E75]" />,
-                title: "Resources Hub",
-                desc: "Policy guides on RA 11313 and RA 7877, FAQs, and support articles to help you navigate your rights and the complaint process.",
-                delay: "delay-300",
-              },
-            ].map((card, i) => (
-              <div
-                key={i}
-                className={`bg-white border-2 border-[#1D9E75]/30 hover:border-[#1D9E75] rounded-3xl p-8 flex flex-col h-full transition-all duration-700 hover:shadow-xl hover:scale-[1.02] ${card.delay} ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {FEATURED.map((item, i) => (
+              <button
+                key={item.title}
+                onClick={() => openWalkthrough()}
+                className={`group text-left bg-white border border-gray-200 hover:border-[#1D9E75]/40 rounded-xl p-4 transition-all duration-500 hover:shadow-md ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                style={{ transitionDelay: `${i * 60}ms` }}
               >
-                <div className="w-12 h-12 bg-green-50 border-2 border-[#1D9E75]/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                  {card.icon}
-                </div>
-                <h3 className="text-xl font-black text-gray-900 mb-3">{card.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">{card.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ─────────────────────────────────────────────── */}
-      <section className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
-        {/* Dot grid background - reduced opacity for mobile */}
-        <div
-          className="absolute inset-0 opacity-20 md:opacity-30"
-          style={{ 
-            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-            backgroundSize: "32px 32px"
-          }}
-        />
-        <div
-          ref={stepsRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
-        >
-          <div className={`mb-20 transition-all duration-700 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-3">Process</p>
-            <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight">
-              Three steps<br />to resolution.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { n: "01", title: "Submit",  desc: "Fill out the secure complaint form. Choose to stay anonymous or identify yourself." },
-              { n: "02", title: "Track",   desc: "Get real-time status updates and notifications at each stage of your case." },
-              { n: "03", title: "Resolve", desc: "Communicate with DEIU administrators directly through secure, encrypted messaging." },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className={`group relative bg-gradient-to-br from-white via-green-50/30 to-white border-2 border-[#1D9E75]/20 hover:border-[#1D9E75]/50 rounded-3xl px-8 py-10 overflow-hidden transition-all duration-700 hover:shadow-2xl hover:shadow-[#1D9E75]/10 hover:-translate-y-2 ${stepsRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-                style={{ transitionDelay: `${i * 120}ms` }}
-              >
-                <p className="relative text-7xl font-black text-[#1D9E75] mb-6 leading-none select-none group-hover:scale-110 transition-transform duration-500">
-                  {s.n}
-                </p>
-                <h3 className="relative text-xl font-black text-gray-900 mb-3 group-hover:text-[#1D9E75] transition-colors duration-300">{s.title}</h3>
-                <p className="relative text-sm text-gray-500 leading-relaxed">{s.desc}</p>
-                
-                {/* Bottom accent line */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#1D9E75]/30 to-transparent group-hover:via-[#1D9E75]/60 transition-all duration-500" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── About & Mission ──────────────────────────────────────────── */}
-      <section id="about" className="relative bg-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
-        {/* Dot grid background */}
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{ 
-            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-            backgroundSize: "32px 32px"
-          }}
-        />
-        <div
-          ref={missionRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-start">
-            <div className={`transition-all duration-700 ${missionRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-              <p className="text-xs font-bold text-[#1D9E75] uppercase tracking-widest mb-4">About & Mission</p>
-              <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-tight mb-8">
-                Every student<br />deserves to be<br /><span className="text-[#1D9E75]">heard.</span>
-              </h2>
-              <p className="text-gray-500 text-base leading-relaxed mb-5">
-                SpeakUp GC empowers Gordon College students with a safe, confidential channel to raise concerns under the <span className="font-semibold text-gray-700">Safe Spaces Act (RA 11313)</span> and the <span className="font-semibold text-gray-700">Anti-Sexual Harassment Act (RA 7877)</span>. We bridge the gap between students and DEIU — ensuring every complaint is heard, tracked, and resolved with care.
-              </p>
-              <p className="text-gray-500 text-base leading-relaxed">
-                Our mission is to promote accountability, transparency, and well-being across the Gordon College community — grounded in Philippine law and guided by respect for every student's rights.
-              </p>
-            </div>
-
-            <div className={`grid grid-cols-1 gap-3 transition-all duration-700 delay-200 ${missionRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-              {[
-                { icon: <Lock className="w-5 h-5 text-[#1D9E75]" />, title: "Secure & Private", desc: "End-to-end encryption with anonymous filing options. Your identity is always protected." },
-                { icon: <HeadphonesIcon className="w-5 h-5 text-[#1D9E75]" />, title: "DEIU-Backed Support", desc: "Direct access to trained DEIU administrators who guide you through every step." },
-                { icon: <GraduationCap className="w-5 h-5 text-[#1D9E75]" />, title: "Know Your Rights", desc: "Educational resources on RA 11313 and RA 7877, policies, and guides to help you understand the complaint process and your legal protections." },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4 bg-gray-50 border border-gray-200 rounded-2xl p-6">
-                  <div className="w-10 h-10 bg-white border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">{item.icon}</div>
-                  <div>
-                    <p className="font-bold text-gray-900 mb-1">{item.title}</p>
-                    <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
+                    <item.icon className="w-4 h-4 text-[#1D9E75]" />
                   </div>
+                  <span className="text-[10px] font-semibold text-[#1D9E75] bg-green-50 px-2 py-0.5 rounded-full">{item.action}</span>
+                </div>
+                <h3 className="text-sm font-bold text-gray-900 mb-1">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-snug">{item.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How It Works ───────────────────────────────────────────── */}
+      <section className="pb-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Process</p>
+            <h2 className="text-base font-black text-gray-900 mb-4">Three steps to resolution</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {STEPS.map((s) => (
+                <div key={s.n} className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-2xl font-black text-[#1D9E75]/30 leading-none mb-1">{s.n}</p>
+                  <h3 className="text-sm font-bold text-gray-900 mb-1">{s.title}</h3>
+                  <p className="text-xs text-gray-500 leading-snug">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -445,255 +402,125 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────────────────── */}
-      <section id="mission" className="relative bg-gradient-to-br from-gray-50 to-white py-28 lg:py-36 border-t border-gray-100 overflow-hidden">
-        {/* Dot grid background */}
+      {/* ── About (compact) ────────────────────────────────────────── */}
+      <section id="about" className="pb-6">
         <div
-          className="absolute inset-0 opacity-40"
-          style={{ 
-            backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-            backgroundSize: "32px 32px"
-          }}
-        />
-        <div
-          ref={ctaRef.ref as React.RefObject<HTMLDivElement>}
-          className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"
+          ref={aboutRef.ref as React.RefObject<HTMLDivElement>}
+          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
         >
-          <div className={`max-w-4xl mx-auto text-center transition-all duration-700 ${ctaRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-tight tracking-tight mb-6">
-              Your privacy is our priority.
-            </h2>
-            <p className="text-gray-600 text-base sm:text-lg leading-relaxed mb-12 max-w-3xl mx-auto">
-              All complaints and communications are handled with strict confidentiality by the DEIU office. Your identity is never disclosed to respondents without your explicit consent.
-            </p>
-            
-            {/* Privacy features grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12">
+          <div className={`bg-white border border-gray-200 rounded-xl p-5 sm:p-6 transition-all duration-500 ${aboutRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">Identity Protected</h3>
-                <p className="text-sm text-gray-600">Anonymous filing available</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">Admin-Only Access</h3>
-                <p className="text-sm text-gray-600">Only DEIU staff can view reports</p>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">No Public Disclosure</h3>
-                <p className="text-sm text-gray-600">Your name stays confidential</p>
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={() => setShowWalkthrough(true)}
-                className="group inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#1D9E75] to-emerald-600 hover:from-[#178F65] hover:to-emerald-700 text-white font-bold text-lg px-10 py-5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-[#1D9E75]/30 hover:scale-105 active:scale-95"
-              >
-                Get Started
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Did You Know Section ─────────────────────────────────────── */}
-      <section className="py-24 bg-gradient-to-b from-white via-green-50/30 to-white">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Did You Know?
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Important facts about your rights and protections under Philippine law
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Safe Spaces Act */}
-            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-green-200">
-              <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center mb-4">
-                <ShieldCheck className="h-7 w-7 text-green-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3">
-                Safe Spaces Act (RA 11313)
-              </h3>
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Protects you from gender-based sexual harassment in streets, public spaces, online, and workplaces</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Covers catcalling, wolf-whistling, unwanted sexual remarks, and cyber harassment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Educational institutions must establish mechanisms to address complaints</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Penalties include fines and imprisonment for violators</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Gender-Based Violence */}
-            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-purple-200">
-              <div className="w-14 h-14 bg-purple-50 rounded-xl flex items-center justify-center mb-4">
-                <Users className="h-7 w-7 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3">
-                Gender-Based Violence
-              </h3>
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Includes physical, sexual, psychological, and economic abuse based on gender</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Affects people of all genders, but disproportionately impacts women and LGBTQ+ individuals</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>You have the right to report and seek protection without fear of retaliation</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                  <span>Support services include counseling, legal aid, and safe spaces</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Bawal Bastos */}
-            <div className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-red-200">
-              <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mb-4">
-                <X className="h-7 w-7 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3">
-                Bawal Bastos!
-              </h3>
-              <ul className="space-y-3 text-sm text-gray-600">
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>Unwanted touching</strong> or physical contact is harassment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>Sexual jokes, comments, or gestures</strong> create a hostile environment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>Sharing intimate images</strong> without consent is a crime</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <span><strong>No means no</strong> — consent must be clear, voluntary, and ongoing</span>
-                </li>
-              </ul>
-              <div className="mt-4 p-3 bg-red-50/50 rounded-lg border border-red-100">
-                <p className="text-xs font-medium text-red-700 text-center">
-                  Remember: Respect is not optional. Bastos behavior has consequences.
+                <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">About & Mission</p>
+                <h2 className="text-lg font-black text-gray-900 mb-2">
+                  Every student deserves to be <span className="text-[#1D9E75]">heard.</span>
+                </h2>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  SpeakUp GC empowers Gordon College students with a safe, confidential channel to raise concerns under the Safe Spaces Act (RA 11313) and Anti-Sexual Harassment Act (RA 7877). We bridge the gap between students and DEIU — ensuring every complaint is heard, tracked, and resolved with care.
                 </p>
               </div>
-            </div>
-          </div>
-
-          {/* Know Your Rights Preview with Login Prompt */}
-          <div className="mt-16">
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <p className="text-2xl font-bold text-gray-900 mb-2">
-                  Know your rights. Speak up.
-                </p>
-                <p className="text-gray-600">
-                  You are not alone. Learn about your legal protections and institutional policies.
-                </p>
-              </div>
-
-              {/* Preview Content with Fade Overlay */}
-              <div className="relative bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-lg">
-                {/* Preview Content */}
-                <div className="p-8 space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-[#1D9E75]" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+                {[
+                  { icon: Lock, title: "Secure & Private", desc: "End-to-end encryption with anonymous filing." },
+                  { icon: HeadphonesIcon, title: "DEIU-Backed Support", desc: "Trained administrators guide every step." },
+                  { icon: GraduationCap, title: "Know Your Rights", desc: "Resources on RA 11313, RA 7877, and policies." },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                    <div className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-4 h-4 text-[#1D9E75]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">How to File a Complaint at Gordon College</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        Learn the step-by-step process for reporting incidents through SpeakUp GC. Understand what information you need, how to submit evidence, and what happens after you file. You can choose to remain anonymous or identify yourself.
-                      </p>
+                      <p className="text-xs font-bold text-gray-900">{item.title}</p>
+                      <p className="text-[11px] text-gray-500">{item.desc}</p>
                     </div>
                   </div>
-
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Shield className="w-6 h-6 text-[#1D9E75]" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">Your Rights as a Gordon College Student</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        Know your protections under RA 11313 (Safe Spaces Act) and RA 7877 (Anti-Sexual Harassment Act) as they apply to campus life. Understand what behaviors are prohibited, your right to confidentiality, and the support available from DEIU.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-4 opacity-60">
-                    <div className="w-12 h-12 bg-[#1D9E75]/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <GraduationCap className="w-6 h-6 text-[#1D9E75]" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">Investigation & Resolution Process</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        What happens after you file? Learn about the CODI (Committee on Decorum and Investigation) process, expected timelines, your role in the investigation, and how decisions are made...
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Gradient Fade Overlay with Login Prompt */}
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white pointer-events-none" style={{ top: '60%' }}></div>
-                
-                {/* Login Prompt */}
-                <div className="absolute bottom-0 left-0 right-0 p-8 text-center pointer-events-auto">
-                  <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-6 shadow-xl">
-                    <Lock className="w-8 h-8 text-[#1D9E75] mx-auto mb-3" />
-                    <p className="text-gray-900 font-semibold mb-2">Sign in to access full knowledge base</p>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Get complete guides, policies, FAQs, and step-by-step procedures
-                    </p>
-                    <div className="flex gap-3 justify-center">
-                      <Link
-                        to="/?auth=login"
-                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1D9E75] hover:bg-[#178F65] text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
-                      >
-                        Sign In to Continue
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────── */}
-      <footer className="bg-gray-50 border-t border-gray-200">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center gap-3 mb-6">
-            <img src="/LOGO.png" alt="GC Logo" className="w-10 h-10 object-contain" />
-            <span className="font-bold text-gray-700 text-lg">SpeakUp GC</span>
+      {/* ── Did You Know (compact) ─────────────────────────────────── */}
+      <section className="pb-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-4">
+            <h2 className="text-lg font-black text-gray-900">Did You Know?</h2>
+            <p className="text-xs text-gray-500">Important facts about your rights under Philippine law</p>
           </div>
-          <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="flex flex-wrap items-center gap-6">
-              <Link to="/privacy" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Privacy Policy</Link>
-              <Link to="/terms" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Terms & Conditions</Link>
-              <Link to="/mission" className="text-sm text-gray-600 hover:text-[#1D9E75] transition-colors">Mission</Link>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {DID_YOU_KNOW.map((card) => {
+              const colorMap = {
+                green: { bg: "bg-green-50", icon: "text-green-600", check: "text-green-600" },
+                purple: { bg: "bg-purple-50", icon: "text-purple-600", check: "text-purple-600" },
+                red: { bg: "bg-red-50", icon: "text-red-600", check: "text-red-600" },
+              }[card.color];
+              return (
+                <div key={card.title} className="bg-white border border-gray-200 rounded-xl p-4">
+                  <div className={`w-9 h-9 ${colorMap.bg} rounded-lg flex items-center justify-center mb-2`}>
+                    <card.icon className={`w-4 h-4 ${colorMap.icon}`} />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-2">{card.title}</h3>
+                  <ul className="space-y-1.5">
+                    {card.points.map((pt) => (
+                      <li key={pt} className="flex items-start gap-1.5 text-[11px] text-gray-600 leading-snug">
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${colorMap.check} flex-shrink-0 mt-0.5`} />
+                        <span>{pt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Know Your Rights CTA */}
+          <div className="mt-4 bg-gradient-to-r from-[#1D9E75]/5 to-emerald-50 border border-[#1D9E75]/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Lock className="w-5 h-5 text-[#1D9E75]" />
+              <div>
+                <p className="text-sm font-bold text-gray-900">Sign in to access the full knowledge base</p>
+                <p className="text-xs text-gray-500">Complete guides, policies, FAQs, and step-by-step procedures</p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500">© {new Date().getFullYear()} SpeakUp GC · Complaints handled under RA 11313 (Safe Spaces Act) &amp; RA 7877 (Anti-Sexual Harassment Act)</p>
+            <Link
+              to="/?auth=login"
+              className="inline-flex items-center gap-1.5 px-5 py-2 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-medium rounded-xl transition-colors flex-shrink-0"
+            >
+              Sign In <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Compact Footer ─────────────────────────────────────────── */}
+      <footer className="bg-white border-t border-gray-200">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3 min-w-0">
+              <img src="/LOGO.png" alt="GC Logo" className="w-8 h-8 object-contain flex-shrink-0" />
+              <div className="min-w-0">
+                <span className="font-bold text-gray-900 text-sm block">SpeakUp GC</span>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  A confidential platform for Gordon College students to file complaints and communicate with DEIU.
+                </p>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <h4 className="text-xs font-bold text-gray-900 mb-2 sm:text-right">Quick Links</h4>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1 sm:justify-end">
+                <li><Link to="/#features" className="text-xs text-gray-500 hover:text-[#1D9E75] whitespace-nowrap">Features</Link></li>
+                <li><Link to="/#about" className="text-xs text-gray-500 hover:text-[#1D9E75] whitespace-nowrap">About</Link></li>
+                <li><Link to="/privacy" className="text-xs text-gray-500 hover:text-[#1D9E75] whitespace-nowrap">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="text-xs text-gray-500 hover:text-[#1D9E75] whitespace-nowrap">Terms & Conditions</Link></li>
+                <li><Link to="/mission" className="text-xs text-gray-500 hover:text-[#1D9E75] whitespace-nowrap">Mission</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-100 pt-4">
+            <p className="text-[10px] text-gray-400 text-center">
+              © {new Date().getFullYear()} SpeakUp GC · Complaints handled under RA 11313 (Safe Spaces Act) &amp; RA 7877 (Anti-Sexual Harassment Act)
+            </p>
           </div>
         </div>
       </footer>

@@ -241,7 +241,7 @@ export default function MyComplaints() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-full flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1D9E75] border-t-transparent mx-auto mb-4" />
           <p className="text-gray-500 text-sm">Loading your complaints...</p>
@@ -252,7 +252,7 @@ export default function MyComplaints() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-full flex items-center justify-center bg-white">
         <div className="text-center">
           <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-4" />
           <h2 className="text-lg font-semibold mb-2">Authentication Required</h2>
@@ -265,7 +265,7 @@ export default function MyComplaints() {
 
   return (
     <div className="min-h-full">
-      <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="space-y-6">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -20,7 +20,6 @@ import {
   LogOut,
   UserCircle,
   Scale,
-  Phone,
   HelpCircle,
   Heart,
   Gavel,
@@ -29,6 +28,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUnreadCasesCount } from "../../hooks/useUnreadCasesCount";
+import {
+  sidebarShell,
+  sidebarBrandTitle,
+  navLinkClass,
+  navIconWrapClass,
+  navIconClass,
+  sidebarUserAvatar,
+  complainantNavAccents,
+  APP_SHELL_TOP,
+} from "../../lib/sidebar-styles";
 const gcLogo = '/LOGO.png';
 
 interface NavItem {
@@ -138,20 +147,20 @@ export default function Sidebar() {
     return (
       <>
       {/* Desktop loading skeleton */}
-      <aside className="hidden lg:flex lg:flex-shrink-0">
-        <div className="w-68 flex flex-col border-r border-gray-200 bg-white">
-          <div className="flex items-center justify-between px-6 py-6 border-b border-gray-200">
+      <aside className="hidden lg:flex lg:flex-shrink-0 h-screen">
+        <div className="w-60 flex h-screen flex-col border-r border-gray-200 bg-white">
+          <div className={`flex items-center justify-between px-4 ${APP_SHELL_TOP} pb-5 border-b border-gray-200`}>
             <div className="flex items-center gap-3 w-full">
-              <div className="w-11 h-11 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-11 h-11 bg-gray-100 rounded-xl animate-pulse"></div>
               <div className="flex-1">
                 <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
-                <div className="h-3 bg-gray-200 rounded w-32 animate-pulse"></div>
+                <div className="h-3 bg-gray-100 rounded w-32 animate-pulse"></div>
               </div>
             </div>
           </div>
           <div className="flex-1 px-4 py-6 space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-10 bg-gray-200 rounded animate-pulse"></div>
+              <div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -177,25 +186,23 @@ export default function Sidebar() {
   return (
     <>
     {/* ── Desktop sidebar ── */}
-    <aside className="hidden lg:flex lg:flex-shrink-0">
-      <div className={cn(
-        "flex flex-col border-r border-green-200 transition-all duration-300",
-        isCollapsed ? "w-20" : "w-60"
-      )}
-      style={{ backgroundColor: isCollapsed ? '#F0FAF6' : '#E8F5EE' }}>
+    <aside className="hidden lg:flex lg:flex-shrink-0 h-screen">
+      <div className={sidebarShell(isCollapsed)}>
         {/* Logo & Collapse Button */}
-        <div className="px-4 py-5 border-b border-green-200">
+        <div className={`px-4 ${APP_SHELL_TOP} pb-5 border-b border-gray-200`}>
           {!isCollapsed ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 flex items-center justify-center flex-shrink-0 rounded-xl bg-green-50 border border-gray-200 p-1">
                   <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
                 </div>
-                <h1 className="text-base font-bold text-gray-900 whitespace-nowrap">SpeakUp GC</h1>
+                <div>
+                  <h1 className={sidebarBrandTitle()}>SpeakUp GC</h1>
+                </div>
               </div>
               <button
                 onClick={() => setIsCollapsed(true)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Collapse sidebar"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -203,12 +210,12 @@ export default function Sidebar() {
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-2">
-              <div className="w-9 h-9 flex items-center justify-center">
+              <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-green-50 border border-gray-200 p-0.5">
                 <img src={gcLogo} alt="Gordon College" className="w-full h-full object-contain" />
               </div>
               <button
                 onClick={() => setIsCollapsed(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-green-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Expand sidebar"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -218,11 +225,12 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
             const isKnowYourRights = item.href === "/know-your-rights";
+            const accent = complainantNavAccents[item.href];
 
             const subNav = [
               { label: "Legal Rights",  hash: "laws",      icon: Scale       },
@@ -236,16 +244,12 @@ export default function Sidebar() {
               <div key={item.name}>
                 <Link
                   to={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
-                    isCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
-                    active
-                      ? "bg-[#1D9E75] text-white shadow-md"
-                      : "text-gray-700 hover:bg-green-200/60 hover:text-gray-900"
-                  )}
+                  className={navLinkClass(active, isCollapsed)}
                   title={isCollapsed ? item.name : undefined}
                 >
-                  <Icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white" : "text-gray-400 group-hover:text-gray-600")} />
+                  <span className={navIconWrapClass(active)}>
+                    <Icon className={navIconClass(active, accent)} />
+                  </span>
                   {!isCollapsed && (
                     <>
                       <span className="flex-1 text-sm font-medium">{item.name}</span>
@@ -264,7 +268,7 @@ export default function Sidebar() {
                 </Link>
                 {/* Sub-navigation for Know Your Rights */}
                 {isKnowYourRights && active && !isCollapsed && (
-                  <div className="mt-1 ml-4 border-l-2 border-[#1D9E75]/20 pl-3 space-y-0.5">
+                  <div className="mt-1 ml-5 border-l-2 border-gray-200 pl-3 space-y-0.5">
                     {subNav.map(sub => {
                       const SubIcon = sub.icon;
                       return (
@@ -287,20 +291,20 @@ export default function Sidebar() {
 
         {/* Help Center Card */}
         {!isCollapsed && (
-          <div className="px-4 py-4">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100">
+          <div className="px-3 py-3">
+            <div className="rounded-xl p-4 bg-green-50 border border-gray-200">
               <div className="flex items-start gap-3">
-                <div className="rounded-xl p-2 bg-white shadow-sm shrink-0">
+                <div className="rounded-lg p-2 bg-white border border-gray-200 shrink-0">
                   <HelpCircle className="h-4 w-4 text-[#1D9E75]" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-[#178F65] mb-1">Need Help?</p>
-                  <p className="text-xs text-gray-600 leading-relaxed mb-2">
+                  <p className="text-xs font-bold text-gray-900 mb-1">Need Help?</p>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-2">
                     Contact DEIU for support and guidance.
                   </p>
                   <Link
                     to="/know-your-rights?tab=faq"
-                    className="text-xs font-semibold text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1"
+                    className="text-xs font-semibold text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1 transition-colors"
                   >
                     View FAQs →
                   </Link>
@@ -312,14 +316,14 @@ export default function Sidebar() {
 
         {/* User Profile */}
         {!isCollapsed && (
-          <div className="px-5 py-4 border-t border-green-200">
+          <div className="px-4 py-4 border-t border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
+              <div className={sidebarUserAvatar()}>
                 {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-sm font-semibold text-gray-900 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
+                <p className="text-[11px] text-gray-500 font-medium mt-0.5">
                   {userRole === 'complainant' ? 'Complainant' : userRole || 'User'}
                 </p>
               </div>
@@ -327,24 +331,25 @@ export default function Sidebar() {
           </div>
         )}
         {isCollapsed && (
-          <div className="px-3 py-3 flex justify-center border-t border-green-200">
-            <div className="w-10 h-10 rounded-full bg-[#1D9E75] flex items-center justify-center text-white font-bold text-sm shadow-sm" title={alias || user?.displayName || 'User'}>
+          <div className="px-3 py-3 flex justify-center border-t border-gray-200">
+            <div className={sidebarUserAvatar()} title={alias || user?.displayName || 'User'}>
               {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="px-3 py-3 border-t border-gray-200">
           <button 
             onClick={handleLogout}
             className={cn(
-              "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600",
-              isCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5"
+              "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium",
+              "text-gray-500 hover:bg-red-50 hover:text-red-600",
+              isCollapsed ? "px-3 py-3 justify-center" : "px-3.5 py-2.5"
             )}
             title={isCollapsed ? "Sign Out" : undefined}
           >
-            <LogOut className="h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-red-600" />
+            <LogOut className="h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-red-500 transition-colors" />
             {!isCollapsed && <span>Sign Out</span>}
           </button>
         </div>
@@ -369,12 +374,14 @@ export default function Sidebar() {
             key={item.name}
             to={item.href}
             className={cn(
-              "flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-lg transition-colors relative",
-              active ? "text-[#1D9E75]" : "text-gray-400 hover:text-gray-700"
+              "flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all relative",
+              active
+                ? "text-[#1D9E75] bg-green-50"
+                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
             )}
           >
-            <Icon className="h-5 w-5 flex-shrink-0" />
-            <span className="text-[10px] font-semibold leading-tight text-center">{label}</span>
+            <Icon className={cn("h-5 w-5 flex-shrink-0", active && "text-[#1D9E75]")} />
+            <span className={cn("text-[10px] font-semibold leading-tight text-center", active && "text-gray-900")}>{label}</span>
             {item.badge !== undefined && item.badge > 0 && (
               <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
                 {item.badge}

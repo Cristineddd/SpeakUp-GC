@@ -3,6 +3,8 @@ import { Navigate, useLocation } from '../../compat/router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProfileCompletion } from '../../hooks/useProfileCompletion';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
+import { useSystemSettings } from '../../hooks/useSystemSettings';
+import MaintenanceModeScreen from '../MaintenanceModeScreen';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -24,6 +26,7 @@ const ProtectedRoute = ({
   const { currentUser, loading, isAdmin } = useAuth();
   const { isComplete: profileComplete, isLoading: profileLoading } = useProfileCompletion();
   const { role, loading: roleLoading } = useRepresentativeRole();
+  const { settings: systemSettings, loading: systemSettingsLoading } = useSystemSettings();
   const location = useLocation();
   
   // Use refs to avoid re-renders and track state properly
@@ -94,7 +97,7 @@ const ProtectedRoute = ({
   }, [profileComplete, shouldSkipProfileCheck]);
 
   // Show loading spinner while checking authentication and profile status
-  if (loading || roleLoading || (!effectiveSkipProfileCheck && profileLoading)) {
+  if (loading || roleLoading || systemSettingsLoading || (!effectiveSkipProfileCheck && profileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -126,6 +129,15 @@ const ProtectedRoute = ({
   // Check handler role requirements
   if (requireHandler && role !== 'handler') {
     return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+  }
+
+  // Block complainants during maintenance mode (admins/staff still have access)
+  if (
+    systemSettings.maintenanceMode &&
+    !hasRepresentativeAccess &&
+    !requireAdmin
+  ) {
+    return <MaintenanceModeScreen />;
   }
 
   // Allow access to the requested route - profile completion no longer required

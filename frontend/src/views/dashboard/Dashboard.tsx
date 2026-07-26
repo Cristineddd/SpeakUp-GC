@@ -23,7 +23,7 @@ import {
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { ComplaintStatus } from "../../types/complaints";
-import { collection, query, where, onSnapshot, Unsubscribe, doc, getDoc, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, Unsubscribe, doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { NotificationService } from "../../services/notificationService";
 import type { Notification as AppNotification } from "../../types/notification";
@@ -32,6 +32,7 @@ import { MessageService } from "../../services/messageService";
 import type { ChatRoom } from "../../types/message";
 import ProfileSetupModal from "../../components/ProfileSetupModal";
 import GBVChatbot from "../../components/GBVChatbot";
+import { pageStackClass } from "../../lib/sidebar-styles";
 
 // ─── Helpers ───
 const safeToDate = (dateValue: any): Date => {
@@ -126,8 +127,12 @@ export default function Dashboard() {
     let complaintsUnsub: Unsubscribe | null = null;
     let reportsData: SimpleComplaint[] = [];
     let complaintsData: SimpleComplaint[] = [];
+    let reportsReady = false;
+    let complaintsReady = false;
 
     const merge = () => {
+      if (!reportsReady || !complaintsReady) return;
+
       const map = new Map<string, SimpleComplaint>();
       const seen = new Set<string>();
       const key = (c: SimpleComplaint) => {
@@ -144,7 +149,7 @@ export default function Dashboard() {
 
     try {
       reportsUnsub = onSnapshot(
-        query(collection(db, "reports"), where("userId", "==", user.uid), orderBy("reportedAt", "desc")),
+        query(collection(db, "reports"), where("userId", "==", user.uid)),
         (snap) => {
           reportsData = snap.docs.map((d) => {
             const data = d.data();
@@ -157,14 +162,21 @@ export default function Dashboard() {
               complainantName: data.userName || data.complainantName || user?.displayName,
             };
           });
+          reportsReady = true;
+          merge();
+        },
+        (err) => {
+          console.error("Dashboard reports listener error:", err);
+          reportsData = [];
+          reportsReady = true;
           merge();
         }
       );
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); reportsReady = true; merge(); }
 
     try {
       complaintsUnsub = onSnapshot(
-        query(collection(db, "complaints"), where("complainantId", "==", user.uid), orderBy("createdAt", "desc")),
+        query(collection(db, "complaints"), where("complainantId", "==", user.uid)),
         (snap) => {
           complaintsData = snap.docs.map((d) => {
             const data = d.data();
@@ -177,10 +189,17 @@ export default function Dashboard() {
               complainantName: data.complainantName || user?.displayName,
             };
           });
+          complaintsReady = true;
+          merge();
+        },
+        (err) => {
+          console.error("Dashboard complaints listener error:", err);
+          complaintsData = [];
+          complaintsReady = true;
           merge();
         }
       );
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); complaintsReady = true; merge(); }
 
     return () => { reportsUnsub?.(); complaintsUnsub?.(); };
   }, [user?.uid]);
@@ -303,8 +322,7 @@ export default function Dashboard() {
   const todaysTip = dailyTips[getDayOfYear() % dailyTips.length];
 
   return (
-    // ─── Page background: light green tint (matches sidebar active color) ───
-    <div className="min-h-full" style={{ backgroundColor: '#F0FAF6' }}>
+    <>
       <ProfileSetupModal
         isOpen={showProfileSetup}
         onComplete={(completedAlias?: string) => {
@@ -313,7 +331,7 @@ export default function Dashboard() {
         }}
       />
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-5">
+      <div className={pageStackClass()}>
 
         {/* ─── Welcome Header with Notification Bell ─── */}
         <div className="flex items-start justify-between gap-4">
@@ -363,7 +381,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── Stats Row (Horizontal Layout) ─── */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 gap-4 lg:gap-6">
           {[
             { label: "Total Filed",  value: total,      icon: FileText },
             { label: "Ongoing Investigation",  value: inProgress, icon: Loader },
@@ -385,7 +403,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Main Grid ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* ── Recent Cases ── */}
           <div className="lg:col-span-2">
@@ -525,7 +543,7 @@ export default function Dashboard() {
           </div>
 
           {/* ── Right Column ── */}
-          <div className="space-y-4">
+          <div className="space-y-6">
 
             {isNewUser ? (
               /* ── Onboarding checklist ── */
@@ -695,6 +713,6 @@ export default function Dashboard() {
 
       {/* ── GBV Chatbot (Laya) ── */}
       <GBVChatbot />
-    </div>
+    </>
   );
 }

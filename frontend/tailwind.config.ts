@@ -23,6 +23,15 @@ export default {
 				sans: ['Sora', 'system-ui', 'sans-serif'],
 			},
 			colors: {
+				// Quiet Confidence palette
+				qc: {
+					pine: '#1B2E28',
+					cream: '#F7F5F0',
+					sage: '#3D7A5C',
+					terracotta: '#C97B4A',
+					muted: '#8A9A94',
+					sidebar: '#EDF5EF',
+				},
 				// Custom SpeakUp GC Green
 				'speakup-green': {
 					50: '#F0FDF4',

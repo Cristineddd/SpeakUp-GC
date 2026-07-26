@@ -599,34 +599,58 @@ const FormalComplaint = () => {
     return null;
   };
 
-  // Validate all complainant fields
-  const validateComplainantInfo = (): boolean => {
+  const COMPLAINANT_FIELD_LABELS: Record<string, string> = {
+    complainantName: 'Full name',
+    complainantAddress: 'Complete address',
+    complainantType: 'I am a',
+    complainantContact: 'Contact number',
+  };
+
+  /** Returns validation result without mutating state (safe for toasts). */
+  const getComplainantValidation = () => {
     if (isAnonymous) {
-      setFieldErrors({});
-      return true;
+      return { valid: true, errors: {} as typeof fieldErrors, messages: [] as string[] };
     }
 
-    const errors: {
-      complainantName?: string;
-      complainantAddress?: string;
-      complainantType?: string;
-      complainantContact?: string;
-    } = {};
-    
+    const errors: typeof fieldErrors = {};
+    const messages: string[] = [];
+
     const nameError = validateFullName(formData.complainantName);
-    if (nameError) errors.complainantName = nameError;
-    
+    if (nameError) {
+      errors.complainantName = nameError;
+      messages.push(`${COMPLAINANT_FIELD_LABELS.complainantName}: ${nameError}`);
+    }
+
     const addressError = validateAddress(formData.complainantAddress);
-    if (addressError) errors.complainantAddress = addressError;
-    
+    if (addressError) {
+      errors.complainantAddress = addressError;
+      messages.push(`${COMPLAINANT_FIELD_LABELS.complainantAddress}: ${addressError}`);
+    }
+
     const contactError = validateContactNumber(formData.complainantContact);
-    if (contactError) errors.complainantContact = contactError;
-    
+    if (contactError) {
+      errors.complainantContact = contactError;
+      messages.push(`${COMPLAINANT_FIELD_LABELS.complainantContact}: ${contactError}`);
+    }
+
     const typeError = validateComplainantType(formData.complainantType);
-    if (typeError) errors.complainantType = typeError;
-    
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    if (typeError) {
+      errors.complainantType = typeError;
+      messages.push(`${COMPLAINANT_FIELD_LABELS.complainantType}: ${typeError}`);
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors,
+      messages,
+    };
+  };
+
+  // Validate all complainant fields
+  const validateComplainantInfo = (): boolean => {
+    const result = getComplainantValidation();
+    setFieldErrors(result.errors);
+    return result.valid;
   };
 
   // Handle field blur for validation
@@ -906,9 +930,10 @@ const FormalComplaint = () => {
     switch (currentStep) {
       case 1:
         if (isAnonymous) return false;
-        if (fieldName === 'complainantName') return !formData.complainantName;
-        if (fieldName === 'complainantAddress') return !formData.complainantAddress;
-        if (fieldName === 'complainantContact') return !formData.complainantContact;
+        if (fieldName === 'complainantName') return !formData.complainantName || !!fieldErrors.complainantName;
+        if (fieldName === 'complainantAddress') return !formData.complainantAddress || !!fieldErrors.complainantAddress;
+        if (fieldName === 'complainantContact') return !formData.complainantContact || !!fieldErrors.complainantContact;
+        if (fieldName === 'complainantType') return !formData.complainantType || !!fieldErrors.complainantType;
         break;
       case 2:
         if (fieldName === 'respondentName') return !formData.respondentName;
@@ -933,8 +958,6 @@ const FormalComplaint = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        // If anonymous, the fields will be auto-filled with "Anonymous" and "Not Disclosed"
-        // So we can consider it valid. Otherwise, require actual user input
         if (isAnonymous) {
           if (lastValidationLog.current[1] !== true) {
             console.log('✓ Step 1 validation: PASS (Anonymous mode)');
@@ -942,17 +965,7 @@ const FormalComplaint = () => {
           }
           return true;
         }
-        const step1Valid = !!(formData.complainantName && formData.complainantAddress && formData.complainantContact);
-        if (lastValidationLog.current[1] !== step1Valid) {
-          console.log('🔍 Step 1 validation:', {
-            step1Valid,
-            complainantName: formData.complainantName,
-            complainantAddress: formData.complainantAddress,
-            complainantContact: formData.complainantContact
-          });
-          lastValidationLog.current[1] = step1Valid;
-        }
-        return step1Valid;
+        return getComplainantValidation().valid;
       case 2:
         const step2Valid = unknownRespondent 
           ? !!(formData.respondentName && formData.respondentAddress && formData.respondentAddress.trim().length >= 20)
@@ -1008,12 +1021,17 @@ const FormalComplaint = () => {
       let errorDescription = "";
 
       switch (currentStep) {
-        case 1:
-          errorTitle = "Complainant Information Required";
-          errorDescription = isAnonymous 
-            ? "Please check the anonymous option properly."
-            : "Please fill in your name, address, and contact number before proceeding.";
+        case 1: {
+          errorTitle = "Your information — required fields missing";
+          const complainantResult = getComplainantValidation();
+          setFieldErrors(complainantResult.errors);
+          errorDescription = complainantResult.messages.length > 0
+            ? complainantResult.messages.join(" • ")
+            : isAnonymous
+              ? "Please check the anonymous option properly."
+              : "Please fill in all required fields before proceeding.";
           break;
+        }
         case 2:
           errorTitle = "Respondent Information Required";
           if (unknownRespondent) {
@@ -1139,16 +1157,14 @@ const FormalComplaint = () => {
   // ✅ OPTIMIZED SUBMISSION FUNCTION WITH CLOUDINARY
   const handleSubmit = async () => {
     // Validate complainant information first
-    if (!validateComplainantInfo()) {
-      const errorFields = Object.keys(fieldErrors).filter(key => fieldErrors[key as keyof typeof fieldErrors]);
-      const errorMessages = errorFields.map(key => {
-        const fieldName = key.replace('complainant', '').toLowerCase();
-        return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: ${fieldErrors[key as keyof typeof fieldErrors]}`;
-      }).join('; ');
-      
+    const complainantResult = getComplainantValidation();
+    if (!complainantResult.valid) {
+      setFieldErrors(complainantResult.errors);
+      setValidationAttempted(true);
+      setCurrentStep(1);
       toast({
-        title: "Validation Error",
-        description: errorMessages || "Please fix the errors in your information before submitting.",
+        title: "Your information — required fields missing",
+        description: complainantResult.messages.join(" • ") || "Please fix the errors in your information before submitting.",
         variant: "destructive"
       });
       return;
@@ -2513,7 +2529,7 @@ const FormalComplaint = () => {
   const STEP_LABELS = ["Your information", "Respondent", "Incident details", "Supporting files", "Review"];
 
   return (
-    <div className="min-h-full pt-6">
+    <div className="min-h-full">
       {/* Page header - full width */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Formal complaint filing</h1>
@@ -2641,29 +2657,11 @@ const FormalComplaint = () => {
               <div className="flex flex-col items-end gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (validateStep(currentStep)) {
-                      setCurrentStep(prev => Math.min(prev + 1, 5));
-                    } else {
-                      toast({
-                        title: "Incomplete information",
-                        description: currentStep === 4
-                          ? "Please upload at least one file before proceeding."
-                          : "Please fill in all required fields before proceeding.",
-                        variant: "destructive"
-                      });
-                    }
-                  }}
-                  disabled={!validateStep(currentStep)}
-                  className="bg-[#1D9E75] hover:bg-[#178F65] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
+                  onClick={nextStep}
+                  className="bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors duration-150"
                 >
                   Continue
                 </button>
-                {!validateStep(currentStep) && (
-                  <p className="text-xs text-gray-400 italic">
-                    Fill in required fields to continue
-                  </p>
-                )}
               </div>
             )}
             {currentStep === 5 && (

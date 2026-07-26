@@ -1,136 +1,47 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from '../../compat/router';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
 import { Input } from '../../components/ui/input';
 import { Switch } from '../../components/ui/switch';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { AlertCircle, Bell, Shield, MapPin, Plus, Edit, Trash2, Building2, Bot } from 'lucide-react';
+import { AlertCircle, Bell, Shield, MapPin, Bot, ArrowRight } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useChatbotEnabled } from '../../hooks/useChatbotEnabled';
-import { setChatbotEnabled as setChatbotEnabledSetting } from '../../services/systemSettingsService';
-
-interface Location {
-  id: string;
-  name: string;
-  category: string;
-}
+import { useSystemSettings } from '../../hooks/useSystemSettings';
+import { setChatbotEnabled as setChatbotEnabledSetting, setMaintenanceMode as setMaintenanceModeSetting } from '../../services/systemSettingsService';
+import { changePassword, sendPasswordResetToCurrentUser } from '../../services/authPasswordService';
+import { validatePassword } from '../../utils/passwordValidation';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
-  const { chatbotEnabled, loading: chatbotSettingLoading } = useChatbotEnabled();
+  const { settings, loading: systemSettingsLoading } = useSystemSettings();
+  const { chatbotEnabled, maintenanceMode } = settings;
   const [savingChatbotToggle, setSavingChatbotToggle] = useState(false);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [formData, setFormData] = useState({ name: '', category: '' });
-
-  const categories = ['Room', 'Building', 'Department', 'Common Area', 'Other'];
+  const [savingMaintenanceToggle, setSavingMaintenanceToggle] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [sendingResetEmail, setSendingResetEmail] = useState(false);
+  const isPasswordAccount = user?.providerData?.some((p) => p.providerId === 'password') ?? false;
+  const [locationCount, setLocationCount] = useState<number | null>(null);
 
   useEffect(() => {
     const locationsQuery = query(collection(db, 'locations'), orderBy('name'));
     const unsubscribe = onSnapshot(
       locationsQuery,
-      (snapshot) => {
-        const locationsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          category: doc.data().category
-        }));
-        setLocations(locationsData);
-        setLoading(false);
-      },
+      (snapshot) => setLocationCount(snapshot.size),
       (error) => {
-        console.error('Error fetching locations:', error);
-        setLoading(false);
+        console.error('Error fetching location count:', error);
+        setLocationCount(0);
       }
     );
     return () => unsubscribe();
   }, []);
-
-  const handleSubmitLocation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.category) {
-      toast({
-        title: 'Error',
-        description: 'Please fill in all fields',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      if (editingLocation) {
-        await updateDoc(doc(db, 'locations', editingLocation.id), {
-          name: formData.name.trim(),
-          category: formData.category,
-          updatedAt: new Date()
-        });
-        toast({
-          title: 'Success',
-          description: 'Location updated successfully'
-        });
-      } else {
-        await addDoc(collection(db, 'locations'), {
-          name: formData.name.trim(),
-          category: formData.category,
-          createdAt: new Date()
-        });
-        toast({
-          title: 'Success',
-          description: 'Location added successfully'
-        });
-      }
-      setDialogOpen(false);
-      setFormData({ name: '', category: '' });
-      setEditingLocation(null);
-    } catch (error) {
-      console.error('Error saving location:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save location',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleEditLocation = (location: Location) => {
-    setEditingLocation(location);
-    setFormData({ name: location.name, category: location.category });
-    setDialogOpen(true);
-  };
-
-  const handleDeleteLocation = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) return;
-
-    try {
-      await deleteDoc(doc(db, 'locations', id));
-      toast({
-        title: 'Success',
-        description: 'Location deleted successfully'
-      });
-    } catch (error) {
-      console.error('Error deleting location:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete location',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setFormData({ name: '', category: '' });
-    setEditingLocation(null);
-  };
-
   const handleToggleChatbot = async (enabled: boolean) => {
     if (!isAdmin || !user) {
       toast({
@@ -163,6 +74,117 @@ const Settings = () => {
       });
     } finally {
       setSavingChatbotToggle(false);
+    }
+  };
+
+  const handleToggleMaintenance = async (enabled: boolean) => {
+    if (!isAdmin || !user) {
+      toast({
+        title: 'Not authorized',
+        description: 'Only admins can change this setting.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSavingMaintenanceToggle(true);
+    try {
+      await setMaintenanceModeSetting(
+        enabled,
+        user.uid,
+        user.displayName || user.email || 'Admin'
+      );
+      toast({
+        title: enabled ? 'Maintenance mode enabled' : 'Maintenance mode disabled',
+        description: enabled
+          ? 'Complainants are now blocked from accessing the system.'
+          : 'Complainants can access the system again.'
+      });
+    } catch (error) {
+      console.error('Error updating maintenance mode:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update maintenance mode. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingMaintenanceToggle(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in all password fields.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (passwordData.new !== passwordData.confirm) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'New password and confirmation must match.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const validation = validatePassword(passwordData.new);
+    if (!validation.isValid) {
+      toast({
+        title: 'Password requirements not met',
+        description: validation.feedback.join('. '),
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      await changePassword(passwordData.current, passwordData.new);
+      toast({
+        title: 'Password updated',
+        description: 'Your password has been changed successfully.'
+      });
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      let description = 'Failed to update password. Please try again.';
+      if (error.code === 'auth/wrong-password') {
+        description = 'Current password is incorrect.';
+      } else if (error.code === 'auth/weak-password') {
+        description = 'New password is too weak.';
+      } else if (error.code === 'auth/requires-recent-login') {
+        description = 'Please sign out and sign in again, then retry changing your password.';
+      } else if (error.message) {
+        description = error.message;
+      }
+      toast({ title: 'Error', description, variant: 'destructive' });
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  const handleSendResetEmail = async () => {
+    setSendingResetEmail(true);
+    try {
+      await sendPasswordResetToCurrentUser();
+      toast({
+        title: 'Reset email sent',
+        description: `A password reset link was sent to ${user?.email}.`
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send reset email.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSendingResetEmail(false);
     }
   };
 
@@ -216,19 +238,60 @@ const Settings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="current-password">Current Password</Label>
-            <Input id="current-password" type="password" />
-          </div>
-          <div>
-            <Label htmlFor="new-password">New Password</Label>
-            <Input id="new-password" type="password" />
-          </div>
-          <div>
-            <Label htmlFor="confirm-password">Confirm New Password</Label>
-            <Input id="confirm-password" type="password" />
-          </div>
-          <Button>Update Password</Button>
+          {isPasswordAccount ? (
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div>
+                <Label htmlFor="current-password">Current Password</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={passwordData.current}
+                  onChange={(e) => setPasswordData((p) => ({ ...p, current: e.target.value }))}
+                  disabled={updatingPassword}
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={passwordData.new}
+                  onChange={(e) => setPasswordData((p) => ({ ...p, new: e.target.value }))}
+                  disabled={updatingPassword}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData((p) => ({ ...p, confirm: e.target.value }))}
+                  disabled={updatingPassword}
+                  autoComplete="new-password"
+                />
+              </div>
+              <Button type="submit" disabled={updatingPassword}>
+                {updatingPassword ? 'Updating…' : 'Update Password'}
+              </Button>
+            </form>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500">
+                Your account uses Google Sign-In. To set or change a password, request a reset link below.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSendResetEmail}
+                disabled={sendingResetEmail}
+              >
+                {sendingResetEmail ? 'Sending…' : 'Send Password Reset Email'}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -249,7 +312,12 @@ const Settings = () => {
               <Label htmlFor="maintenance-mode">Maintenance Mode</Label>
               <p className="text-sm text-gray-500">Temporarily disable user access</p>
             </div>
-            <Switch id="maintenance-mode" />
+            <Switch
+              id="maintenance-mode"
+              checked={maintenanceMode}
+              disabled={systemSettingsLoading || savingMaintenanceToggle}
+              onCheckedChange={handleToggleMaintenance}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
@@ -277,7 +345,7 @@ const Settings = () => {
                 <Switch
                   id="chatbot-enabled"
                   checked={chatbotEnabled}
-                  disabled={chatbotSettingLoading || savingChatbotToggle}
+                  disabled={systemSettingsLoading || savingChatbotToggle}
                   onCheckedChange={handleToggleChatbot}
                 />
               </div>
@@ -286,7 +354,7 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Location Management */}
+      {/* Location Management — summary card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -298,99 +366,17 @@ const Settings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-500">Total locations: {locations.length}</p>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => setEditingLocation(null)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Location
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{editingLocation ? 'Edit Location' : 'Add New Location'}</DialogTitle>
-                  <DialogDescription>
-                    {editingLocation ? 'Update the location details below' : 'Add a new location to the system'}
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmitLocation}>
-                  <div className="space-y-4 py-4">
-                    <div>
-                      <Label htmlFor="name">Location Name *</Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g., Room 101, Main Building, Library"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="category">Category *</Label>
-                      <select
-                        id="category"
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
-                      >
-                        <option value="">Select category</option>
-                        {categories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
-                    <Button type="submit">{editingLocation ? 'Update' : 'Add'}</Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              {locationCount === null
+                ? 'Loading location count…'
+                : `${locationCount} location${locationCount === 1 ? '' : 's'}`}
+            </p>
+            <Button onClick={() => navigate('/admin/locations')} size="sm">
+              Manage Locations
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
           </div>
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading locations...</div>
-          ) : locations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>No locations added yet</p>
-              <p className="text-sm mt-1">Click "Add Location" to get started</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {locations.map((location) => (
-                <div
-                  key={location.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Building2 className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900">{location.name}</p>
-                      <p className="text-sm text-gray-500">{location.category}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditLocation(location)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteLocation(location.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

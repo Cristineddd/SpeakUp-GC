@@ -26,6 +26,7 @@ const AUDIT_LOGS_COLLECTION = 'systemAuditLogs';
 
 export interface SystemSettings {
   chatbotEnabled: boolean;
+  maintenanceMode: boolean;
   updatedBy?: string;
   updatedByName?: string;
   updatedAt?: Timestamp | null;
@@ -33,6 +34,7 @@ export interface SystemSettings {
 
 const DEFAULT_SETTINGS: SystemSettings = {
   chatbotEnabled: true,
+  maintenanceMode: false,
 };
 
 const settingsDocRef = () => doc(db, SYSTEM_SETTINGS_COLLECTION, GENERAL_SETTINGS_DOC);
@@ -50,6 +52,7 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     const data = snap.data();
     return {
       chatbotEnabled: data.chatbotEnabled ?? true,
+      maintenanceMode: data.maintenanceMode ?? false,
       updatedBy: data.updatedBy,
       updatedByName: data.updatedByName,
       updatedAt: data.updatedAt ?? null,
@@ -78,6 +81,7 @@ export function subscribeToSystemSettings(
       const data = snap.data();
       callback({
         chatbotEnabled: data.chatbotEnabled ?? true,
+        maintenanceMode: data.maintenanceMode ?? false,
         updatedBy: data.updatedBy,
         updatedByName: data.updatedByName,
         updatedAt: data.updatedAt ?? null,
@@ -116,6 +120,38 @@ export async function setChatbotEnabled(
   await addDoc(collection(db, AUDIT_LOGS_COLLECTION), {
     settingKey: 'chatbotEnabled',
     oldValue: previous.chatbotEnabled,
+    newValue: enabled,
+    changedBy: adminId,
+    changedByName: adminName,
+    timestamp: serverTimestamp(),
+  });
+}
+
+/**
+ * Toggle maintenance mode on/off. Admin-only (enforced by Firestore rules).
+ * When enabled, non-admin/non-staff users are blocked from protected routes.
+ */
+export async function setMaintenanceMode(
+  enabled: boolean,
+  adminId: string,
+  adminName: string
+): Promise<void> {
+  const previous = await getSystemSettings();
+
+  await setDoc(
+    settingsDocRef(),
+    {
+      maintenanceMode: enabled,
+      updatedBy: adminId,
+      updatedByName: adminName,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  await addDoc(collection(db, AUDIT_LOGS_COLLECTION), {
+    settingKey: 'maintenanceMode',
+    oldValue: previous.maintenanceMode,
     newValue: enabled,
     changedBy: adminId,
     changedByName: adminName,
