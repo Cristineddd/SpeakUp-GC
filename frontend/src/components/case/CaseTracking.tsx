@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { isDuplicateCaseText, shouldShowCaseTextField } from "../../utils/caseDetailText";
 import { 
   Clock, 
   AlertTriangle, 
@@ -33,10 +34,11 @@ import { collection, doc, getDoc, query, where, getDocs, orderBy } from 'firebas
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { CaseActivityService } from '../../services/caseActivityService';
+import { RepresentativeService } from '../../services/representativeService';
 import { CaseActivity, ActivityType } from '../../types/caseActivity';
 import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
 import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
-import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE, getComplainantHandlerLabel } from '../../utils/sensitiveCaseTypes';
+import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -76,6 +78,43 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const [realActivities, setRealActivities] = useState<CaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [timelineSortOrder, setTimelineSortOrder] = useState<'latest' | 'oldest'>('latest');
+  const [handlerDisplayName, setHandlerDisplayName] = useState<string | null>(null);
+
+  const isHandlerAssigned =
+    !!complaint?.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned';
+
+  useEffect(() => {
+    if (!complaint || !isHandlerAssigned) {
+      setHandlerDisplayName(null);
+      return;
+    }
+
+    const assignedId = complaint.assignedCODI![0];
+    const storedName = ((complaint as Complaint & { assignedToName?: string }).assignedToName || '').trim();
+
+    if (storedName) {
+      setHandlerDisplayName(storedName);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const representative = await RepresentativeService.getById(assignedId);
+        if (!cancelled) {
+          setHandlerDisplayName(representative?.displayName || null);
+        }
+      } catch (error) {
+        console.warn('Could not resolve assigned handler name:', error);
+        if (!cancelled) setHandlerDisplayName(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [complaint, isHandlerAssigned]);
 
   // Fetch real data from Firebase
   useEffect(() => {
@@ -558,6 +597,115 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     }
   };
 
+  const getTimelineEventIcon = (event: CaseTimelineEvent) => {
+    if (event.id === 'handler_assignment') return User;
+    if (event.id === 'filing') return FileText;
+    if (event.id === 'final_decision') return Gavel;
+    if (event.id.startsWith('status_')) return Bell;
+    return getStageIcon(event.stage);
+  };
+
+  const getTimelineEventStyle = (event: CaseTimelineEvent, isLatest: boolean) => {
+    if (event.isProjected) {
+      return {
+        iconBg: 'bg-gray-50',
+        iconBorder: 'border-gray-200',
+        iconText: 'text-gray-400',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-100',
+        detailsBg: 'bg-gray-50',
+        detailsBorder: 'border-gray-100',
+        label: 'Projected',
+        labelClass: 'bg-gray-100 text-gray-500',
+        titleClass: 'text-gray-400',
+        muted: true,
+      };
+    }
+
+    if (event.id === 'filing') {
+      return {
+        iconBg: 'bg-violet-500',
+        iconBorder: 'border-violet-500',
+        iconText: 'text-white',
+        cardBg: isLatest ? 'bg-violet-50/80' : 'bg-white',
+        cardBorder: isLatest ? 'border-violet-200 ring-1 ring-violet-100' : 'border-transparent',
+        detailsBg: 'bg-violet-50',
+        detailsBorder: 'border-violet-100',
+        label: 'Submission',
+        labelClass: 'bg-violet-100 text-violet-700',
+        titleClass: 'text-gray-900',
+        muted: false,
+      };
+    }
+
+    if (event.id === 'handler_assignment') {
+      return {
+        iconBg: 'bg-blue-500',
+        iconBorder: 'border-blue-500',
+        iconText: 'text-white',
+        cardBg: isLatest ? 'bg-blue-50/80' : 'bg-white',
+        cardBorder: isLatest ? 'border-blue-200 ring-1 ring-blue-100' : 'border-transparent',
+        detailsBg: 'bg-blue-50',
+        detailsBorder: 'border-blue-100',
+        label: 'Assignment',
+        labelClass: 'bg-blue-100 text-blue-700',
+        titleClass: 'text-gray-900',
+        muted: false,
+      };
+    }
+
+    if (event.id.startsWith('status_')) {
+      return {
+        iconBg: 'bg-amber-500',
+        iconBorder: 'border-amber-500',
+        iconText: 'text-white',
+        cardBg: isLatest ? 'bg-amber-50/80' : 'bg-white',
+        cardBorder: isLatest ? 'border-amber-200 ring-1 ring-amber-100' : 'border-transparent',
+        detailsBg: 'bg-amber-50',
+        detailsBorder: 'border-amber-100',
+        label: 'Status Update',
+        labelClass: 'bg-amber-100 text-amber-800',
+        titleClass: 'text-gray-900',
+        muted: false,
+      };
+    }
+
+    if (event.id === 'final_decision') {
+      const resolved = event.status === ComplaintStatus.RESOLVED;
+      return {
+        iconBg: resolved ? 'bg-emerald-600' : 'bg-red-500',
+        iconBorder: resolved ? 'border-emerald-600' : 'border-red-500',
+        iconText: 'text-white',
+        cardBg: isLatest
+          ? resolved ? 'bg-emerald-50/80' : 'bg-red-50/80'
+          : 'bg-white',
+        cardBorder: isLatest
+          ? resolved ? 'border-emerald-200 ring-1 ring-emerald-100' : 'border-red-200 ring-1 ring-red-100'
+          : 'border-transparent',
+        detailsBg: resolved ? 'bg-emerald-50' : 'bg-red-50',
+        detailsBorder: resolved ? 'border-emerald-100' : 'border-red-100',
+        label: 'Decision',
+        labelClass: resolved ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800',
+        titleClass: 'text-gray-900',
+        muted: false,
+      };
+    }
+
+    return {
+      iconBg: 'bg-[#1D9E75]',
+      iconBorder: 'border-[#1D9E75]',
+      iconText: 'text-white',
+      cardBg: isLatest ? 'bg-emerald-50/70' : 'bg-white',
+      cardBorder: isLatest ? 'border-[#1D9E75]/30 ring-1 ring-emerald-100' : 'border-transparent',
+      detailsBg: 'bg-gray-50',
+      detailsBorder: 'border-gray-100',
+      label: 'Update',
+      labelClass: 'bg-gray-100 text-gray-600',
+      titleClass: 'text-gray-900',
+      muted: !isLatest,
+    };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -616,8 +764,14 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     assignedToName?: string;
   };
   const showSeparateStatement =
-    !!c.statementOfFacts &&
-    c.statementOfFacts.trim() !== (c.description || '').trim();
+    !!c.statementOfFacts && !isDuplicateCaseText(c.statementOfFacts, c.description);
+  const showRespondentAddress = shouldShowCaseTextField(
+    c.respondentAddress,
+    c.description,
+    c.statementOfFacts
+  );
+  const showRespondentSection =
+    !!c.respondentName || showRespondentAddress;
 
   // Simplified to 3 stages
   const stageSteps = [
@@ -735,31 +889,62 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             </div>
             <div className="relative">
               {sortedTimelineEvents.map((event, index) => {
-                const Icon = getStageIcon(event.stage);
+                const isLatest =
+                  timelineSortOrder === 'latest'
+                    ? index === 0
+                    : index === sortedTimelineEvents.length - 1;
+                const style = getTimelineEventStyle(event, isLatest);
+                const Icon = getTimelineEventIcon(event);
                 const isLast = index === sortedTimelineEvents.length - 1;
+
                 return (
-                  <div key={event.id} className="relative flex items-start gap-4 pb-7">
+                  <div
+                    key={event.id}
+                    className={`relative flex items-start gap-4 pb-7 rounded-xl px-3 py-3 -mx-3 transition-all ${
+                      isLatest && !event.isProjected
+                        ? `${style.cardBg} border ${style.cardBorder} shadow-sm`
+                        : style.muted
+                          ? 'opacity-80'
+                          : ''
+                    }`}
+                  >
                     {!isLast && (
-                      <div className="absolute left-[18px] top-9 w-0.5 bottom-0 bg-gray-100" />
+                      <div className={`absolute left-[30px] top-11 w-0.5 bottom-0 ${isLatest ? 'bg-emerald-100' : 'bg-gray-100'}`} />
                     )}
-                    <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm border-2 z-10 ${
-                      event.isProjected ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-[#1D9E75] border-[#1D9E75] text-white'
-                    }`}>
+                    <div className={`relative flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center shadow-sm border-2 z-10 ${style.iconBg} ${style.iconBorder} ${style.iconText}`}>
                       <Icon className="h-4 w-4" />
+                      {isLatest && !event.isProjected && (
+                        <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+                      )}
                     </div>
-                    <div className="flex-grow min-w-0 pt-1">
-                      <div className="flex flex-wrap items-center justify-between gap-1 mb-0.5">
-                        <h4 className={`text-sm font-semibold ${event.isProjected ? 'text-gray-400' : 'text-gray-900'}`}>
-                          {event.description}
-                          {event.isProjected && <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Projected</span>}
-                        </h4>
-                        <time className="text-xs text-gray-400 flex-shrink-0">
-                          {format(event.timestamp, "MMM d, yyyy · h:mm:ss a")}
+                    <div className="flex-grow min-w-0 pt-0.5">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${style.labelClass}`}>
+                          {style.label}
+                        </span>
+                        {isLatest && !event.isProjected && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#1D9E75] text-white">
+                            Latest
+                          </span>
+                        )}
+                        <time className="text-xs text-gray-400 ml-auto flex-shrink-0">
+                          {format(event.timestamp, "MMM d, yyyy · h:mm a")}
                         </time>
                       </div>
-                      <p className="text-xs text-gray-500 mb-1">By: <span className="font-medium">{getCachedUserDisplayName(event.actor, event.actor)}</span>{event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}</p>
+                      <h4 className={`text-sm font-semibold mb-0.5 ${style.titleClass}`}>
+                        {event.description}
+                        {event.isProjected && (
+                          <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                            Projected
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-xs text-gray-500 mb-1">
+                        By: <span className="font-medium">{getCachedUserDisplayName(event.actor, event.actor)}</span>
+                        {event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}
+                      </p>
                       {event.details && (
-                        <p className="text-xs text-gray-500 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 mt-1">
+                        <p className={`text-xs text-gray-600 leading-relaxed rounded-lg px-3 py-2 mt-1 border ${style.detailsBg} ${style.detailsBorder}`}>
                           {event.details}
                         </p>
                       )}
@@ -895,11 +1080,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             {[
               { label: "Type", value: complaint.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: FileText },
               { label: "Filed", value: format(complaint.filingDate, "MMM d, yyyy"), icon: Calendar },
-              { label: "Handler", value: getComplainantHandlerLabel(
-                complaint.type,
-                !!(complaint.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned'),
-                (complaint as any).assignedToName
-              ), icon: User },
+              { label: "Handler", value: handlerDisplayName || (isHandlerAssigned ? 'Case Handler assigned' : 'Pending assignment'), icon: User },
             ].map(item => (
               <div key={item.label} className="bg-white border border-gray-200 rounded-xl p-3">
                 <p className="text-xs text-gray-400 mb-1">{item.label}</p>
@@ -984,6 +1165,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           </div>
 
           {/* Respondent */}
+          {showRespondentSection && (
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <User className="h-4 w-4 text-[#1D9E75]" />
@@ -994,15 +1176,18 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 <p className="text-xs text-gray-400 mb-0.5">Name</p>
                 <p className="text-sm font-medium text-gray-800">{complaint.respondentName || 'Not disclosed'}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Address / Description</p>
-                <p className="text-sm font-medium text-gray-800">{complaint.respondentAddress || 'Not disclosed'}</p>
-              </div>
+              {showRespondentAddress && (
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Address / Description</p>
+                  <p className="text-sm font-medium text-gray-800">{complaint.respondentAddress}</p>
+                </div>
+              )}
             </div>
             <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
               <strong>Note:</strong> Under the Safe Spaces Act (RA 11313), the respondent is notified of this complaint and the complainant's identity. Anti-retaliation provisions protect both parties.
             </div>
           </div>
+          )}
 
           {/* Personnel & Confidentiality */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
@@ -1013,11 +1198,22 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Case Handler (CODI)</p>
-                <p className="text-sm font-medium text-gray-800">
-                  {complaint.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned'
-                    ? complaint.assignedCODI[0]
-                    : <span className="text-amber-600">Not yet assigned — pending hearing notification</span>}
-                </p>
+                {isHandlerAssigned ? (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {handlerDisplayName || 'Case Handler assigned'}
+                    </p>
+                    {handlerDisplayName && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Committee on Decorum and Investigation (CODI)
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-amber-600">
+                    Not yet assigned — pending hearing notification
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-gray-400 mb-0.5">Confidentiality Level</p>

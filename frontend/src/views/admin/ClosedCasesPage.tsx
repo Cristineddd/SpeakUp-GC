@@ -26,6 +26,8 @@ import { db } from '../../firebase';
 import { format } from 'date-fns';
 import { useNavigate } from '../../compat/router';
 import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 
 interface ClosedCase {
   id: string;
@@ -44,6 +46,10 @@ interface ClosedCase {
 
 const ClosedCasesPage = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const { role, representativeData } = useRepresentativeRole();
+  const isCODI = !isAdmin && ((role as string) === 'codi' || role === 'handler');
+  const representativeId = representativeData?.id ?? null;
   const [closedCases, setClosedCases] = useState<ClosedCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,6 +67,11 @@ const ClosedCasesPage = () => {
       const cases: ClosedCase[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
+
+        if (isCODI && representativeId && data.assignedTo !== representativeId) {
+          return;
+        }
+
         cases.push({
           id: doc.id,
           title: data.title || data.description?.substring(0, 50) || 'Untitled Case',
@@ -70,7 +81,7 @@ const ClosedCasesPage = () => {
           dateFiled: data.createdAt?.toDate() || new Date(),
           dateResolved: data.dateResolved?.toDate() || data.updatedAt?.toDate() || new Date(),
           decisionSummary: data.decisionSummary || data.resolution || 'No summary available',
-          assignedRepresentative: data.assignedHandlerName || data.assignedRepresentative || 'Unassigned',
+          assignedRepresentative: data.assignedToName || data.assignedHandlerName || data.assignedRepresentative || 'Unassigned',
           closureDocument: data.closureDocument,
           complianceReport: data.complianceReport,
           status: data.status || 'closed',
@@ -87,7 +98,7 @@ const ClosedCasesPage = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isCODI, representativeId]);
 
   const filteredCases = closedCases.filter((case_) => {
     const matchesSearch = 
@@ -117,8 +128,12 @@ const ClosedCasesPage = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Archive</p>
-          <h1 className="text-xl font-bold text-gray-900">Case Archive</h1>
-          <p className="text-sm text-gray-500 mt-1">All resolved and closed cases with final decisions</p>
+          <h1 className="text-xl font-bold text-gray-900">{isCODI ? 'My Closed Cases' : 'Case Archive'}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isCODI
+              ? 'Cases you closed or were assigned to when closed'
+              : 'All resolved and closed cases with final decisions'}
+          </p>
         </div>
         <Badge variant="outline" className="px-4 py-2">
           <Archive className="h-4 w-4 mr-2" />

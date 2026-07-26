@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 
 import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 
 interface AnalyticsData {
   dailyActiveUsers: number;
@@ -74,6 +76,12 @@ const STATUS_COLORS = ['#0F6E56', '#1D9E75', '#9FE1CB', '#0F6E56', '#1D9E75', '#
 const CATEGORY_COLORS = ['#0F6E56', '#1D9E75', '#9FE1CB', '#0F6E56', '#1D9E75', '#9FE1CB'];
 
 const Analytics = () => {
+  const { isAdmin } = useAuth();
+  const { role, representativeData } = useRepresentativeRole();
+  const isCODI = !isAdmin && ((role as string) === 'codi' || role === 'handler');
+  const representativeId = representativeData?.id ?? null;
+  const codiName = representativeData?.displayName || 'You';
+
   const [data, setData] = useState<AnalyticsData>({
     dailyActiveUsers: 0,
     totalReports: 0,
@@ -235,17 +243,21 @@ const Analytics = () => {
   useEffect(() => {
     setLoading(true);
 
-    const reportsUnsubscribe = AdminReportService.subscribeToAllReports(async (reports) => {
+    const reportsUnsubscribe = AdminReportService.subscribeToAllReports(async (allReports) => {
       try {
+        const reports = isCODI && representativeId
+          ? allReports.filter((report) => report.assignedTo === representativeId)
+          : allReports;
+
         const totalReports = reports.length;
-        const resolvedReports = reports.filter((report) => report.status === 'resolved').length;
-        const dailyActiveUsers = calculateDailyActiveUsers(reports);
+        const resolvedReports = reports.filter((report) => report.status === 'resolved' || report.status === 'closed').length;
+        const dailyActiveUsers = isCODI ? 0 : calculateDailyActiveUsers(reports);
         const averageResponseTime = calculateResponseTime(reports);
         const reportsOverTime = calculateReportsOverTime(reports);
-        const userGrowth = await calculateUserGrowth();
+        const userGrowth = isCODI ? [] : await calculateUserGrowth();
         const reportsByCategory = calculateReportsByCategory(reports);
         const reportsByStatus = calculateReportsByStatus(reports);
-        const casesByRepresentative = calculateCasesByRepresentative(reports);
+        const casesByRepresentative = isCODI ? [] : calculateCasesByRepresentative(reports);
 
         setData({
           dailyActiveUsers,
@@ -268,7 +280,7 @@ const Analytics = () => {
     return () => {
       reportsUnsubscribe();
     };
-  }, []);
+  }, [isCODI, representativeId]);
 
   const resolutionPct =
     data.totalReports > 0 ? Math.round((data.resolvedReports / data.totalReports) * 100) : 0;
@@ -293,8 +305,12 @@ const Analytics = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Insights</p>
-          <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">Live metrics from reports and users. Charts cover the last seven days.</p>
+          <h1 className="text-xl font-bold text-gray-900">{isCODI ? 'My Performance' : 'Analytics'}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {isCODI
+              ? `Live metrics for cases assigned to ${codiName}.`
+              : 'Live metrics from reports and users. Charts cover the last seven days.'}
+          </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <Sparkles className="h-3.5 w-3.5" />
@@ -326,32 +342,60 @@ const Analytics = () => {
 
       {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          {
-            label: 'Active today',
-            value: data.dailyActiveUsers,
-            hint: 'Users who submitted a report today',
-            icon: Users,
-          },
-          {
-            label: 'Total reports',
-            value: data.totalReports,
-            hint: 'All-time submissions',
-            icon: FileText,
-          },
-          {
-            label: 'Resolved',
-            value: data.resolvedReports,
-            hint: data.totalReports > 0 ? `${resolutionPct}% of all reports` : 'No reports yet',
-            icon: CheckCircle2,
-          },
-          {
-            label: 'Avg. resolve time',
-            value: data.averageResponseTime > 0 ? `${data.averageResponseTime}h` : '—',
-            hint: 'Mean hours from report to resolution',
-            icon: Timer,
-          },
-        ].map((kpi) => (
+        {(isCODI
+          ? [
+              {
+                label: 'Assigned to me',
+                value: data.totalReports,
+                hint: 'All cases currently assigned to you',
+                icon: FileText,
+              },
+              {
+                label: 'In progress',
+                value: data.reportsByStatus.find((s) => s.status === 'inProgress')?.count || 0,
+                hint: 'Cases under investigation',
+                icon: Timer,
+              },
+              {
+                label: 'Resolved / Closed',
+                value: data.resolvedReports,
+                hint: data.totalReports > 0 ? `${resolutionPct}% completion rate` : 'No cases yet',
+                icon: CheckCircle2,
+              },
+              {
+                label: 'Avg. resolve time',
+                value: data.averageResponseTime > 0 ? `${data.averageResponseTime}h` : '—',
+                hint: 'Mean hours from assignment to resolution',
+                icon: BarChart3,
+              },
+            ]
+          : [
+              {
+                label: 'Active today',
+                value: data.dailyActiveUsers,
+                hint: 'Users who submitted a report today',
+                icon: Users,
+              },
+              {
+                label: 'Total reports',
+                value: data.totalReports,
+                hint: 'All-time submissions',
+                icon: FileText,
+              },
+              {
+                label: 'Resolved',
+                value: data.resolvedReports,
+                hint: data.totalReports > 0 ? `${resolutionPct}% of all reports` : 'No reports yet',
+                icon: CheckCircle2,
+              },
+              {
+                label: 'Avg. resolve time',
+                value: data.averageResponseTime > 0 ? `${data.averageResponseTime}h` : '—',
+                hint: 'Mean hours from report to resolution',
+                icon: Timer,
+              },
+            ]
+        ).map((kpi) => (
           <Card
             key={kpi.label}
             className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow"
@@ -406,6 +450,7 @@ const Analytics = () => {
           </CardContent>
         </Card>
 
+        {!isCODI && (
         <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
           <CardHeader className="space-y-1 border-b border-gray-100 bg-gradient-to-r from-white to-emerald-50/50 pb-4 pt-5">
             <CardTitle className="text-base font-semibold text-gray-900">User growth</CardTitle>
@@ -439,9 +484,8 @@ const Analytics = () => {
             )}
           </CardContent>
         </Card>
+        )}
       </div>
-
-      {/* Bar charts */}
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
           <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
@@ -533,7 +577,8 @@ const Analytics = () => {
         </Card>
       </div>
 
-      {/* Cases by Representative */}
+      {/* Cases by Representative — admin only */}
+      {!isCODI && (
       <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
         <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
           <CardTitle className="text-base font-semibold text-gray-900">Cases by Representative</CardTitle>
@@ -571,6 +616,7 @@ const Analytics = () => {
           )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };

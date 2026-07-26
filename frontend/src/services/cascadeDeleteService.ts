@@ -18,6 +18,7 @@ import {
   DocumentReference
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { MessageService } from './messageService';
 
 export interface DeleteResult {
   success: boolean;
@@ -450,7 +451,6 @@ export class CascadeDeleteService {
         { name: 'users', field: 'uid' },
         { name: 'complaints', field: 'userId' },
         { name: 'notifications', field: 'userId' },
-        { name: 'messages', field: 'senderId' },
         { name: 'representatives', field: 'userId' }
       ];
 
@@ -470,41 +470,14 @@ export class CascadeDeleteService {
         }
       }
 
-      // Clean up chat rooms
+      // Delete all chat rooms and messages tied to this user
       try {
-        const chatRoomsQuery = query(
-          collection(db, 'chatRooms'),
-          where('participantIds', 'array-contains', userId)
-        );
-        const chatRoomsSnap = await getDocs(chatRoomsQuery);
-
-        if (chatRoomsSnap.size > 0) {
-          const batch = writeBatch(db);
-          let count = 0;
-
-          chatRoomsSnap.forEach(chatRoomDoc => {
-            const data = chatRoomDoc.data();
-            const updatedParticipantIds = (data.participantIds || []).filter(
-              (id: string) => id !== userId
-            );
-
-            if (updatedParticipantIds.length === 0) {
-              batch.delete(chatRoomDoc.ref);
-            } else {
-              batch.update(chatRoomDoc.ref, {
-                participantIds: updatedParticipantIds
-              });
-            }
-            count++;
-          });
-
-          await batch.commit();
-          deletedCount += count;
-          console.log(`   ✅ Cleaned up ${count} chat rooms`);
-        }
+        const { chatRoomsDeleted, messagesDeleted } = await MessageService.deleteAllDataForUser(userId);
+        deletedCount += chatRoomsDeleted + messagesDeleted;
+        console.log(`   ✅ Deleted ${chatRoomsDeleted} chat rooms and ${messagesDeleted} messages`);
       } catch (error) {
-        console.error('   ❌ Error cleaning chat rooms:', error);
-        errors.push(`Chat rooms: ${error.message}`);
+        console.error('   ❌ Error deleting user messages/chat rooms:', error);
+        errors.push(`Messages: ${error.message}`);
       }
 
       console.log(`✅ HARD DELETE completed for user ${userId}`);

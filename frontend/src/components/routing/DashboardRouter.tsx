@@ -83,7 +83,7 @@ export default function DashboardRouter() {
     }
 
     if (role === UserRole.CODI || role === 'handler' || (role as string) === 'codi') {
-      navigate('/admin/reports', { replace: true });
+      navigate('/admin/dashboard', { replace: true });
       return;
     }
 
@@ -95,8 +95,8 @@ export default function DashboardRouter() {
       return;
     }
 
-    if (repRole === 'handler') {
-      navigate('/admin/reports', { replace: true });
+    if (repRole === 'handler' || repRole === 'codi') {
+      navigate('/admin/dashboard', { replace: true });
       return;
     }
 

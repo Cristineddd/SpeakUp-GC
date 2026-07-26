@@ -38,17 +38,27 @@ export default function Messages() {
       return;
     }
 
-    // Safety timeout — resolve loading after 6 s even if subscription is slow
     const timeout = setTimeout(() => setLoading(false), 6000);
 
-    const unsub = MessageService.subscribeToUserChatRooms(
-      currentUser.uid,
-      (rooms) => {
-        setChatRooms(rooms);
-        setLoading(false);
-        clearTimeout(timeout);
+    let unsub = () => {};
+
+    (async () => {
+      try {
+        await MessageService.cleanupOrphanedChatRoomsForParticipant(currentUser.uid);
+        await MessageService.dedupeChatRoomsForUser(currentUser.uid);
+      } catch (error) {
+        console.warn('Could not clean chat rooms:', error);
       }
-    );
+
+      unsub = MessageService.subscribeToUserChatRooms(
+        currentUser.uid,
+        (rooms) => {
+          setChatRooms(rooms);
+          setLoading(false);
+          clearTimeout(timeout);
+        }
+      );
+    })();
 
     return () => {
       unsub();

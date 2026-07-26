@@ -6,9 +6,9 @@
 import { Badge } from '../ui/badge';
 import { Card } from '../ui/card';
 import { User, Clock, ArrowRight, FileText } from 'lucide-react';
-import { ROLE_LABELS, ROLE_COLORS } from '../../types/representative';
 import type { AdminReport } from '../../services/adminReportService';
 import { format } from 'date-fns';
+import { CodiRoleBadge } from './CodiRoleBadge';
 
 interface HandlerTimelineProps {
   complaint: AdminReport;
@@ -86,9 +86,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
                     </div>
                     <div>
                       <p className="font-semibold">{entry.handlerName}</p>
-                      <Badge className={ROLE_COLORS[entry.handlerRole as any] || 'bg-gray-100 text-gray-800'}>
-                        {ROLE_LABELS[entry.handlerRole as any] || entry.handlerRole}
-                      </Badge>
+                      <CodiRoleBadge role={entry.handlerRole} />
                     </div>
                   </div>
                   

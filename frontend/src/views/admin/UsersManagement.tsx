@@ -51,6 +51,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { startOfMonth, startOfDay } from 'date-fns';
 import { RepresentativeService } from '../../services/representativeService';
+import { MessageService } from '../../services/messageService';
 import type { RepresentativeRole } from '../../types/representative';
 import { ROLE_LABELS, ROLE_COLORS } from '../../types/representative';
 import { DeleteUserModal } from '../../components/admin/DeleteUserModal';
@@ -212,6 +213,9 @@ const UsersManagement = () => {
     const uid = userToDelete.uid;
 
     try {
+      // Delete all chat rooms + messages first (includes rooms/messages for user's complaints)
+      const { chatRoomsDeleted, messagesDeleted } = await MessageService.deleteAllDataForUser(uid);
+
       const batch = writeBatch(db);
       
       // Delete representative record if exists
@@ -240,13 +244,24 @@ const UsersManagement = () => {
         batch.delete(reportDoc.ref);
       });
       
-      // Delete all complaints by this user
-      const complaintsQuery = query(
+      // Delete all complaints by this user (both userId and complainantId fields)
+      const complaintsByUserIdQuery = query(
         collection(db, 'complaints'),
         where('userId', '==', uid)
       );
-      const complaintsSnapshot = await getDocs(complaintsQuery);
-      complaintsSnapshot.docs.forEach((complaintDoc) => {
+      const complaintsByComplainantIdQuery = query(
+        collection(db, 'complaints'),
+        where('complainantId', '==', uid)
+      );
+      const [complaintsByUserIdSnap, complaintsByComplainantIdSnap] = await Promise.all([
+        getDocs(complaintsByUserIdQuery),
+        getDocs(complaintsByComplainantIdQuery),
+      ]);
+      const complaintDocsToDelete = new Map<string, typeof complaintsByUserIdSnap.docs[0]>();
+      complaintsByUserIdSnap.docs.forEach((d) => complaintDocsToDelete.set(d.id, d));
+      complaintsByComplainantIdSnap.docs.forEach((d) => complaintDocsToDelete.set(d.id, d));
+
+      complaintDocsToDelete.forEach((complaintDoc) => {
         const complaintData = complaintDoc.data();
         // Track assigned handler for active cases
         if (complaintData.assignedTo && complaintData.status !== 'resolved' && complaintData.status !== 'dismissed') {
@@ -264,16 +279,6 @@ const UsersManagement = () => {
       const notificationsSnapshot = await getDocs(notificationsQuery);
       notificationsSnapshot.docs.forEach((notifDoc) => {
         batch.delete(notifDoc.ref);
-      });
-      
-      // Delete all chat messages sent by this user
-      const messagesQuery = query(
-        collection(db, 'messages'),
-        where('senderId', '==', uid)
-      );
-      const messagesSnapshot = await getDocs(messagesQuery);
-      messagesSnapshot.docs.forEach((msgDoc) => {
-        batch.delete(msgDoc.ref);
       });
       
       // Delete all internal notes created by this user
@@ -294,16 +299,6 @@ const UsersManagement = () => {
       const activitySnapshot = await getDocs(activityQuery);
       activitySnapshot.docs.forEach((activityDoc) => {
         batch.delete(activityDoc.ref);
-      });
-      
-      // Delete chat rooms where this user is a participant
-      const chatRoomsQuery = query(
-        collection(db, 'chatRooms'),
-        where('participantIds', 'array-contains', uid)
-      );
-      const chatRoomsSnapshot = await getDocs(chatRoomsQuery);
-      chatRoomsSnapshot.docs.forEach((chatDoc) => {
-        batch.delete(chatDoc.ref);
       });
       
       // Update representative activeCases counts
@@ -329,14 +324,16 @@ const UsersManagement = () => {
       
       setUsers(users.filter(user => user.uid !== uid));
       
-      const totalDeleted = reportsSnapshot.size + complaintsSnapshot.size + 
-                          notificationsSnapshot.size + messagesSnapshot.size + 
+      const complaintsDeletedCount = complaintDocsToDelete.size;
+
+      const totalDeleted = reportsSnapshot.size + complaintsDeletedCount + 
+                          notificationsSnapshot.size + messagesDeleted + 
                           notesSnapshot.size + activitySnapshot.size + 
-                          chatRoomsSnapshot.size;
+                          chatRoomsDeleted;
       
       toast({
         title: "User Completely Deleted",
-        description: `Removed user and ${totalDeleted} associated records (${reportsSnapshot.size} reports, ${complaintsSnapshot.size} complaints, ${notificationsSnapshot.size} notifications, ${messagesSnapshot.size} messages, ${notesSnapshot.size} notes, ${activitySnapshot.size} activities, ${chatRoomsSnapshot.size} chat rooms)`,
+        description: `Removed user and ${totalDeleted} associated records (${reportsSnapshot.size} reports, ${complaintsDeletedCount} complaints, ${chatRoomsDeleted} chat rooms, ${messagesDeleted} messages)`,
       });
     } catch (error) {
       console.error('Error deleting user:', error);

@@ -1,8 +1,17 @@
-import React, { useState, useEffect, type JSX } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, type JSX } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from "../../services/notificationService";
 import { InternalNotesSection } from "../../components/admin/InternalNotesSection";
+import {
+  CaseDetailField,
+  CaseDetailGrid,
+  CaseDetailNotice,
+  CaseDetailSection,
+  CaseDetailStat,
+  CaseDetailTextBlock,
+} from '../../components/case/CaseDetailLayout';
+import { isDuplicateCaseText, shouldShowCaseTextField } from '../../utils/caseDetailText';
 import { 
   FileText, 
   Clock, 
@@ -71,7 +80,6 @@ import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { useNavigate, useLocation } from "../../compat/router";
 import { HandlerTimeline } from "../../components/admin/HandlerTimeline";
 import { ReportStatusManager } from "../../components/case/ReportStatusManager";
-import { ROLE_LABELS, ROLE_COLORS } from "../../types/representative";
 import { EscalationBadge, SLAIndicator, CompactEscalationInfo } from "../../components/admin/EscalationBadge";
 import { EscalationControls } from "../../components/admin/EscalationControls";
 import { ESCALATION_LABELS } from "../../types/escalation";
@@ -79,6 +87,14 @@ import type { EscalationLevel } from "../../types/escalation";
 import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FORMAL_COMPLAINT_CATEGORIES, getFormalComplaintCategoryLabel } from "../../constants/formalComplaintCategories";
 import { PDFViewerModal } from "../../components/common/PDFViewerModal";
+import { getDisplayCaseNumber, getInternalCaseRef } from "../../utils/caseId";
+import {
+  CASE_SEEN_EVENT,
+  countUnseenActionableCases,
+  isUnseenActionableCase,
+  markCaseSeen,
+} from "../../utils/caseQueueBadge";
+import { CodiRoleBadge } from "../../components/admin/CodiRoleBadge";
 
 // Safe data access helper
 const safeGet = (obj: any, path: string, fallback: any = 'N/A') => {
@@ -121,6 +137,55 @@ const safeToDate = (timestamp: any): Date | null => {
     return null;
   }
 };
+
+const formatReportVicinity = (v: string) => {
+  if (v === 'inside') return 'Inside College Vicinity';
+  if (v === 'outside') return 'Outside College Vicinity';
+  if (v === 'online') return 'Online / Digital Platform';
+  if (v && v !== 'N/A') return v;
+  return 'Not specified';
+};
+
+const formatReportIncidentTime = (time?: string) => {
+  if (!time || time === 'N/A') return null;
+  if (time === 'AM') return 'Morning (12:00 AM – 11:59 AM)';
+  if (time === 'PM') return 'Afternoon/Evening (12:00 PM – 11:59 PM)';
+  try {
+    return new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } catch {
+    return time;
+  }
+};
+
+const formatReportHarassmentDegree = (degree?: string) => {
+  const labels: Record<string, string> = {
+    light: 'Light',
+    severe: 'Severe',
+    grave: 'Grave',
+  };
+  return degree ? labels[degree] || degree.replace(/_/g, ' ') : null;
+};
+
+const isOnlineReportLocation = (report: AdminReport) => {
+  const location = safeGet(report, 'location', '').toLowerCase();
+  const vicinity = safeGet(report, 'locationVicinity', '').toLowerCase();
+  return location === 'online' || vicinity === 'online';
+};
+
+const formatRespondentName = (name?: string) => {
+  if (!name) return '';
+  if (name === 'Unknown/Not Disclosed' || name === 'UnknownNot Disclosed') {
+    return 'Unknown / Not Disclosed';
+  }
+  return name;
+};
+
+const isUnknownRespondent = (name?: string) =>
+  name === 'Unknown/Not Disclosed' || name === 'UnknownNot Disclosed';
 
 const safeFormat = (timestamp: any, formatStr: string, fallback: string = 'N/A'): string => {
   // Handle YYYY-MM-DD string format directly first
@@ -307,6 +372,13 @@ const AdminReportsPage = () => {
   const [highlightNoteId, setHighlightNoteId] = useState<string | null>(null);
   const [quickSummaryReport, setQuickSummaryReport] = useState<AdminReport | null>(null);
   const [quickSummaryOpen, setQuickSummaryOpen] = useState(false);
+  const [seenRevision, setSeenRevision] = useState(0);
+
+  const markReportReviewed = useCallback((reportId: string) => {
+    if (!currentUser?.uid || !reportId) return;
+    markCaseSeen(currentUser.uid, reportId);
+    setSeenRevision((value) => value + 1);
+  }, [currentUser?.uid]);
 
   // FIXED: Evidence caching to prevent repetitive processing
   const [evidenceCache] = useState(new Map<string, string[]>());
@@ -318,6 +390,45 @@ const AdminReportsPage = () => {
   // Support both 'codi' and 'handler' role values in Firestore
   const isCODI = (role as string) === 'codi' || role === 'handler';
   const isHandler = isCODI; // Alias for backward compatibility
+
+  const queueBadgeOptions = useMemo(
+    () => ({ isCODI, representativeId }),
+    [isCODI, representativeId]
+  );
+
+  useEffect(() => {
+    const onCaseSeen = () => setSeenRevision((value) => value + 1);
+    window.addEventListener(CASE_SEEN_EVENT, onCaseSeen);
+    return () => window.removeEventListener(CASE_SEEN_EVENT, onCaseSeen);
+  }, []);
+
+  const isUnseenInQueue = useCallback(
+    (report: AdminReport) => {
+      if (!currentUser?.uid) return false;
+      void seenRevision;
+      return isUnseenActionableCase(
+        report.id,
+        { status: report.status, assignedTo: report.assignedTo },
+        currentUser.uid,
+        queueBadgeOptions
+      );
+    },
+    [currentUser?.uid, queueBadgeOptions, seenRevision]
+  );
+
+  const unseenQueueCount = useMemo(() => {
+    if (!currentUser?.uid) return 0;
+    void seenRevision;
+    return countUnseenActionableCases(
+      reports.map((report) => ({
+        id: report.id,
+        status: report.status,
+        assignedTo: report.assignedTo,
+      })),
+      currentUser.uid,
+      queueBadgeOptions
+    );
+  }, [reports, currentUser?.uid, queueBadgeOptions, seenRevision]);
   
   // Debug: Log role information
   console.log('AdminReportsPage - Role Info:', { role, isAdmin, isCODI, isHandler: isCODI });
@@ -384,7 +495,7 @@ const AdminReportsPage = () => {
   // Apply filters when reports or filter values change
   useEffect(() => {
     applyFilters();
-  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter, activeTab, sortField, sortDirection]);
+  }, [reports, searchTerm, statusFilter, categoryFilter, escalationFilter, activeTab, sortField, sortDirection, location.search, representativeId]);
 
   // Auto-open report from URL query parameter (e.g., from notification)
   useEffect(() => {
@@ -415,6 +526,7 @@ const AdminReportsPage = () => {
         
         setSelectedReport(report);
         setModalOpen(true); // CRITICAL: Open the modal!
+        markReportReviewed(report.id);
         console.log('✅ Modal opened with report:', report.id);
         
         // Set highlight note ID if present
@@ -536,8 +648,25 @@ const AdminReportsPage = () => {
   };
 
   const getActivityCount = (report: AdminReport): number => {
-    // Use fetched notes count from state, or fall back to notesCount field
-    return notesCounts[report.id] || safeGet(report, 'notesCount', 0) || 0;
+    const noteCount = notesCounts[report.id] ?? report.notesCount ?? 0;
+    const statusChanges = Array.isArray(report.statusHistory) ? report.statusHistory.length : 0;
+    const handlerChanges = Array.isArray(report.handlerHistory) ? report.handlerHistory.length : 0;
+    const escalations = Array.isArray(report.escalationHistory) ? report.escalationHistory.length : 0;
+
+    let count = noteCount + statusChanges + handlerChanges + escalations;
+
+    // Fallback: if lastUpdated moved after filing but no tracked events, count at least one update
+    if (count === 0) {
+      const filedAt = safeToDate(report.reportedAt);
+      const updatedAt =
+        safeToDate((report as AdminReport & { updatedAt?: string }).lastUpdated) ||
+        safeToDate((report as AdminReport & { updatedAt?: string }).updatedAt);
+      if (filedAt && updatedAt && updatedAt.getTime() - filedAt.getTime() > 60_000) {
+        count = 1;
+      }
+    }
+
+    return count;
   };
 
   const handleSort = (field: string) => {
@@ -586,6 +715,12 @@ const AdminReportsPage = () => {
         safeGet(report, 'location', '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         safeGet(report, 'userName', '').toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+
+    // CODI "my assigned" filter from URL (?assigned=me)
+    const assignedParam = new URLSearchParams(location.search).get('assigned');
+    if (assignedParam === 'me' && representativeId) {
+      filtered = filtered.filter((report) => safeGet(report, 'assignedTo') === representativeId);
     }
 
     // Additional status filter from dropdown (only if tab is 'all')
@@ -1017,6 +1152,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           variant="outline"
           size="sm"
           onClick={() => {
+            markReportReviewed(report.id);
             setQuickSummaryReport(report);
             setQuickSummaryOpen(true);
           }}
@@ -1116,6 +1252,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         variant="outline" 
         size="sm"
         onClick={() => {
+          markReportReviewed(report.id);
           setSelectedReport(report);
           setModalOpen(true);
         }}
@@ -1167,243 +1304,237 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             <DialogTitle className="text-xl sm:text-2xl font-bold">
               {isAdmin ? "Full Report Details" : "Case Details"}
             </DialogTitle>
-            <DialogDescription className="text-sm">
-              Report ID: <span className="font-mono text-sm break-all">{safeGet(report, 'id', 'N/A')}</span>
+            <DialogDescription className="text-sm space-y-1">
+              <div>
+                Case No:{' '}
+                <span className="font-semibold text-base text-gray-900">
+                  {getDisplayCaseNumber({
+                    caseId: safeGet(report, 'caseId', ''),
+                    firestoreId: safeGet(report, 'id', ''),
+                    filedAt: safeGet(report, 'reportedAt', ''),
+                  })}
+                </span>
+              </div>
+              {getInternalCaseRef(safeGet(report, 'id', '')) && (
+                <div className="text-xs text-gray-400">
+                  Internal ref:{' '}
+                  <span className="font-mono">{getInternalCaseRef(safeGet(report, 'id', ''))}</span>
+                </div>
+              )}
             </DialogDescription>
           </DialogHeader>
           
           {selectedReport && (
             <Tabs value={modalTab} onValueChange={setModalTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
-                <TabsTrigger value="details">Case Details</TabsTrigger>
-                <TabsTrigger value="evidence">Evidence & Files</TabsTrigger>
-                <TabsTrigger value="notes">Internal Notes</TabsTrigger>
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-3 rounded-xl bg-emerald-50/60 p-1">
+                <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                  Case Details
+                </TabsTrigger>
+                <TabsTrigger value="evidence" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                  Evidence & Files
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                  Internal Notes
+                </TabsTrigger>
               </TabsList>
 
               {/* DETAILS TAB */}
               <TabsContent value="details" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3 space-y-4">
-                {/* Quick Info Cards - Responsive Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
-                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
-                  <p className="text-sm text-gray-600 font-medium mb-2">Status</p>
-                  <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-sm font-medium`}>
-                    {getStatusLabel(safeGet(selectedReport, 'status', 'pending'))}
-                  </Badge>
-                </div>
-                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
-                  <p className="text-sm text-gray-600 font-medium mb-2">Category</p>
-                  <p className="text-sm font-semibold">
+                  <CaseDetailStat label="Status">
+                    <Badge className={`${getStatusColor(safeGet(selectedReport, 'status', 'pending'))} text-sm font-medium`}>
+                      {getStatusLabel(safeGet(selectedReport, 'status', 'pending'))}
+                    </Badge>
+                  </CaseDetailStat>
+                  <CaseDetailStat label="Category">
                     {getFormalComplaintCategoryLabel(String(safeGet(selectedReport, 'category', '')))}
-                  </p>
+                  </CaseDetailStat>
+                  <CaseDetailStat label="Assigned CODI" className="col-span-2 md:col-span-1">
+                    {safeGet(selectedReport, 'assignedToName', 'Unassigned')}
+                  </CaseDetailStat>
                 </div>
-                <div className="bg-slate-50 p-3 sm:p-4 rounded-lg border">
-                  <p className="text-sm text-gray-600 font-medium mb-2">Assigned CODI</p>
-                  <p className="text-sm font-semibold">{safeGet(selectedReport, 'assignedToName', 'Unassigned')}</p>
-                </div>
-              </div>
 
-              {/* Main Content - Single Column for Better Readability */}
-              <div className="space-y-4">
-                {/* Report Info - Different views for Admin and Handler */}
-                {isAdmin ? (
-                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                    <h4 className="font-bold text-base mb-4 flex items-center gap-2 text-blue-700">
-                      <FileText className="h-5 w-5" />
-                      Case Information
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Title</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'title', 'No title')}</p>
-                      </div>
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Location</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'location', 'No location')}</p>
-                      </div>
-                      {(() => {
-                        const location = safeGet(selectedReport, 'location', '').toLowerCase();
-                        const locationVicinity = safeGet(selectedReport, 'locationVicinity', '').toLowerCase();
-                        const isOnline = location === 'online' || locationVicinity === 'online';
-                        const mapAddress = safeGet(selectedReport, 'mapAddress');
-                        return !isOnline && mapAddress && (
-                          <div className="pb-3 border-b">
-                            <p className="text-sm text-gray-600 mb-1 font-medium">Map Address</p>
-                            <p className="text-base font-semibold">{mapAddress}</p>
-                          </div>
-                        );
-                      })()}
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">
-                          {safeGet(selectedReport, 'incidentTime') ? 'Incident Date & Time' : 'Incident Date'}
-                        </p>
-                        <p className="text-base font-semibold">
-                          {(() => {
-                            const rawDate = safeGet(selectedReport, 'incidentDate');
-                            const formattedDate = safeFormat(rawDate, 'MMM dd, yyyy');
-                            
-                            // If formatting failed, try to display the raw value
-                            if (formattedDate === 'N/A' && rawDate) {
-                              console.log('Failed to format incident date:', rawDate, typeof rawDate);
-                              // Try direct formatting
-                              try {
-                                if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
-                                  const date = new Date(rawDate + 'T00:00:00');
-                                  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                                }
-                              } catch (e) {
-                                console.error('Date formatting error:', e);
-                              }
+                <CaseDetailSection title={isAdmin ? 'Case Information' : 'Report Information'} icon={FileText}>
+                  <CaseDetailGrid>
+                    <CaseDetailField
+                      label="Complaint Title"
+                      value={safeGet(selectedReport, 'title', 'No title')}
+                      fullWidth
+                    />
+                    <CaseDetailField
+                      label={isOnlineReportLocation(selectedReport) ? 'Platform' : 'Location'}
+                      value={safeGet(selectedReport, 'location', 'No location')}
+                    />
+                    {!isOnlineReportLocation(selectedReport) &&
+                      safeGet(selectedReport, 'mapAddress') &&
+                      safeGet(selectedReport, 'mapAddress') !== 'N/A' && (
+                        <CaseDetailField
+                          label="Map Address"
+                          value={safeGet(selectedReport, 'mapAddress')}
+                          fullWidth
+                        />
+                      )}
+                    <CaseDetailField
+                      label="Incident Date"
+                      value={(() => {
+                        const rawDate = safeGet(selectedReport, 'incidentDate');
+                        const formattedDate = safeFormat(rawDate, 'MMM dd, yyyy');
+                        if (formattedDate === 'N/A' && rawDate) {
+                          try {
+                            if (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+                              const date = new Date(rawDate + 'T00:00:00');
+                              return date.toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              });
                             }
-                            
+                          } catch {
                             return formattedDate;
-                          })()}
-                          {(() => {
-                            const time = safeGet(selectedReport, 'incidentTime');
-                            if (time && time.trim() !== '') {
-                              try {
-                                // Format HH:MM to 12-hour format
-                                const formattedTime = new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { 
-                                  hour: 'numeric', 
-                                  minute: '2-digit',
-                                  hour12: true 
-                                });
-                                return <span className="text-gray-600"> • {formattedTime}</span>;
-                              } catch {
-                                return null;
-                              }
-                            }
-                            return null;
-                          })()}
-                        </p>
-                      </div>
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Complainant</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'userName', 'Unknown')}</p>
-                      </div>
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Email</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'userEmail', 'N/A')}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Reported On</p>
-                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'reportedAt'), 'MMM dd, h:mm a')}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                    <h4 className="font-bold text-base mb-4 flex items-center gap-2 text-blue-700">
-                      <FileText className="h-5 w-5" />
-                      Report Information
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Title</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'title', 'No title')}</p>
-                      </div>
-                      <div className="pb-3 border-b">
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Location</p>
-                        <p className="text-base font-semibold">{safeGet(selectedReport, 'location', 'No location')}</p>
-                      </div>
-                      {(() => {
-                        const location = safeGet(selectedReport, 'location', '').toLowerCase();
-                        const locationVicinity = safeGet(selectedReport, 'locationVicinity', '').toLowerCase();
-                        const isOnline = location === 'online' || locationVicinity === 'online';
-                        const mapAddress = safeGet(selectedReport, 'mapAddress');
-                        return !isOnline && mapAddress && (
-                          <div className="pb-3 border-b">
-                            <p className="text-sm text-gray-600 mb-1 font-medium">Map Address</p>
-                            <p className="text-base font-semibold">{mapAddress}</p>
-                          </div>
-                        );
+                          }
+                        }
+                        return formattedDate;
                       })()}
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1 font-medium">Incident Date</p>
-                        <p className="text-base font-semibold">{safeFormat(safeGet(selectedReport, 'incidentDate'), 'MMM dd, yyyy')}</p>
+                    />
+                    {formatReportIncidentTime(safeGet(selectedReport, 'incidentTime', '')) && (
+                      <CaseDetailField
+                        label="Incident Time"
+                        value={formatReportIncidentTime(safeGet(selectedReport, 'incidentTime', ''))}
+                      />
+                    )}
+                    {(safeGet(selectedReport, 'type', safeGet(selectedReport, 'category', '')) === 'sexual_harassment' ||
+                      safeGet(selectedReport, 'category', '') === 'sexual_harassment') &&
+                      formatReportHarassmentDegree(safeGet(selectedReport, 'harassmentDegree', '')) && (
+                        <CaseDetailField
+                          label="Degree of Harassment"
+                          value={formatReportHarassmentDegree(safeGet(selectedReport, 'harassmentDegree', ''))}
+                        />
+                      )}
+                    {isAdmin ? (
+                      <>
+                        <CaseDetailField
+                          label="Complainant"
+                          value={safeGet(selectedReport, 'userName', 'Unknown')}
+                        />
+                        <CaseDetailField
+                          label="Email"
+                          value={safeGet(selectedReport, 'userEmail', 'N/A')}
+                        />
+                        <CaseDetailField
+                          label="Reported On"
+                          value={safeFormat(safeGet(selectedReport, 'reportedAt'), 'MMM dd, h:mm a')}
+                        />
+                      </>
+                    ) : (
+                      <div className="sm:col-span-2">
+                        <CaseDetailNotice>
+                          Contact admin for complainant details
+                        </CaseDetailNotice>
                       </div>
-                      <p className="mt-4 text-sm text-gray-500 italic bg-gray-50 p-3 rounded">Contact admin for complainant details</p>
-                    </div>
-                  </div>
-                )}
+                    )}
+                  </CaseDetailGrid>
+                </CaseDetailSection>
 
-                {/* Where It Happened - Location Details */}
+                <CaseDetailSection title="Where It Happened" icon={MapPin} variant="muted">
+                  <CaseDetailField
+                    label="Location Details"
+                    value={formatReportVicinity(safeGet(selectedReport, 'locationVicinity', ''))}
+                  />
+                </CaseDetailSection>
+
                 {(() => {
-                  const vicinity = safeGet(selectedReport, 'locationVicinity');
-                  
+                  const description = safeGet(selectedReport, 'description', '');
+                  const statementOfFacts = safeGet(selectedReport, 'statementOfFacts', '');
+                  const respondentAddress = safeGet(selectedReport, 'respondentAddress', '');
+                  const respondentName = safeGet(selectedReport, 'respondentName', '');
+                  const normalizedDescription =
+                    description && description !== 'N/A' ? description : '';
+                  const showRespondentAddress = shouldShowCaseTextField(
+                    respondentAddress,
+                    normalizedDescription,
+                    statementOfFacts
+                  );
+                  const showRespondentSection =
+                    (respondentName && respondentName !== 'N/A') || showRespondentAddress;
+                  const showSeparateStatement =
+                    !!statementOfFacts &&
+                    statementOfFacts !== 'N/A' &&
+                    !isDuplicateCaseText(statementOfFacts, normalizedDescription);
+
                   return (
-                    <div className="bg-blue-50 p-4 rounded-lg border">
-                      <h4 className="font-bold text-base mb-3 flex items-center gap-2 text-blue-700">
-                        <MapPin className="h-5 w-5" />
-                        Where It Happened
-                      </h4>
-                      <div>
-                        <p className="text-sm text-gray-700 mb-1 font-medium">Location Details:</p>
-                        <p className="text-base font-semibold text-gray-900">
-                        {vicinity === 'inside' 
-                          ? 'Inside College Vicinity' 
-                          : vicinity === 'outside' 
-                          ? 'Outside College Vicinity' 
-                          : vicinity && vicinity !== 'N/A'
-                          ? vicinity
-                          : 'Not specified'}</p>
-                      </div>
-                    </div>
+                    <>
+                      {showRespondentSection && (
+                        <CaseDetailSection title="Respondent Information" variant="respondent">
+                          <CaseDetailGrid>
+                            {respondentName && respondentName !== 'N/A' && (
+                              <CaseDetailField
+                                label="Name"
+                                value={formatRespondentName(respondentName)}
+                              />
+                            )}
+                            {showRespondentAddress && (
+                              <CaseDetailField
+                                label={
+                                  isUnknownRespondent(respondentName)
+                                    ? 'Physical Description'
+                                    : 'Address'
+                                }
+                                value={respondentAddress}
+                                fullWidth
+                              />
+                            )}
+                          </CaseDetailGrid>
+                        </CaseDetailSection>
+                      )}
+
+                      <CaseDetailSection title="What Happened">
+                        {normalizedDescription ? (
+                          <CaseDetailTextBlock>{normalizedDescription}</CaseDetailTextBlock>
+                        ) : (
+                          <p className="text-sm text-gray-500">No description provided.</p>
+                        )}
+                        {showSeparateStatement && (
+                          <div className="mt-4">
+                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                              Statement of Facts
+                            </p>
+                            <CaseDetailTextBlock>{statementOfFacts}</CaseDetailTextBlock>
+                          </div>
+                        )}
+                      </CaseDetailSection>
+                    </>
                   );
                 })()}
 
-                {/* Respondent Information */}
-                {(safeGet(selectedReport, 'respondentName') || safeGet(selectedReport, 'respondentAddress')) && (
-                  <div className="bg-orange-50 p-4 rounded-lg border-2 border-orange-200">
-                    <h4 className="font-bold text-base mb-3 text-orange-700">Respondent Information</h4>
-                    <div className="space-y-2">
-                      {safeGet(selectedReport, 'respondentName') && (
-                        <div className="text-sm">
-                          <span className="font-medium text-gray-700">Name:</span> 
-                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'respondentName')}</span>
-                        </div>
-                      )}
-                      {safeGet(selectedReport, 'respondentAddress') && (
-                        <div className="text-sm">
-                          <span className="font-medium text-gray-700">
-                            {safeGet(selectedReport, 'respondentName') === 'Unknown/Not Disclosed' 
-                              ? 'Physical Description:' 
-                              : 'Address:'}
-                          </span>
-                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'respondentAddress')}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Description */}
-                <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                  <h4 className="font-bold text-base mb-3 text-gray-700">What Happened</h4>
-                  <div className="text-sm bg-gray-50 p-3 rounded border max-h-32 overflow-y-auto leading-relaxed">
-                    {safeGet(selectedReport, 'description', 'No description provided')}
-                  </div>
-                </div>
-
-                {/* Additional Info */}
-                {(safeGet(selectedReport, 'witnesses') || safeGet(selectedReport, 'additionalInfo')) && (
-                  <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                    <h4 className="font-bold text-base mb-3 text-gray-700">Additional Information</h4>
-                    <div className="space-y-3">
+                {(safeGet(selectedReport, 'witnesses') ||
+                  shouldShowCaseTextField(
+                    safeGet(selectedReport, 'additionalInfo'),
+                    safeGet(selectedReport, 'description'),
+                    safeGet(selectedReport, 'statementOfFacts')
+                  )) && (
+                  <CaseDetailSection title="Additional Information" variant="muted">
+                    <CaseDetailGrid columns={1}>
                       {safeGet(selectedReport, 'witnesses') && (
-                        <div className="text-sm">
-                          <span className="font-medium text-gray-700">Witnesses:</span>
-                          <span className="ml-2 font-semibold text-gray-900">{safeGet(selectedReport, 'witnesses')}</span>
+                        <CaseDetailField
+                          label="Witnesses"
+                          value={safeGet(selectedReport, 'witnesses')}
+                        />
+                      )}
+                      {shouldShowCaseTextField(
+                        safeGet(selectedReport, 'additionalInfo'),
+                        safeGet(selectedReport, 'description'),
+                        safeGet(selectedReport, 'statementOfFacts')
+                      ) && (
+                        <div>
+                          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                            Notes
+                          </p>
+                          <CaseDetailTextBlock>{safeGet(selectedReport, 'additionalInfo')}</CaseDetailTextBlock>
                         </div>
                       )}
-                      {safeGet(selectedReport, 'additionalInfo') && (
-                        <div className="bg-gray-50 p-3 rounded border text-sm leading-relaxed">
-                          {safeGet(selectedReport, 'additionalInfo')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    </CaseDetailGrid>
+                  </CaseDetailSection>
                 )}
-              </div>
 
               {/* Location Map - Display if coordinates exist, are valid, AND location is not online */}
               {(() => {
@@ -1417,43 +1548,33 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 const isOnline = location === 'online' || locationVicinity === 'online';
                 
                 return hasValidCoords && !isOnline && (
-                  <div>
-                    <div className="bg-white p-4 rounded-lg border-2 border-slate-200">
-                      <h4 className="font-bold text-base mb-3 flex items-center gap-2 text-green-700">
-                        <MapPin className="h-5 w-5" />
-                        Incident Location Map
-                      </h4>
-                      <div className="rounded-lg overflow-hidden border-2 max-h-80">
-                        <LocationMapPicker
-                          onLocationSelect={() => {}} // Read-only, so no selection needed
-                          initialLat={latNum}
-                          initialLng={lngNum}
-                          centerLat={latNum}
-                          centerLng={lngNum}
-                          selectedCity=""
-                          selectedBarangay=""
-                          readOnly={true}
-                        />
-                      </div>
+                  <CaseDetailSection title="Incident Location Map" icon={MapPin}>
+                    <div className="overflow-hidden rounded-xl border border-emerald-100 max-h-80">
+                      <LocationMapPicker
+                        onLocationSelect={() => {}}
+                        initialLat={latNum}
+                        initialLng={lngNum}
+                        centerLat={latNum}
+                        centerLng={lngNum}
+                        selectedCity=""
+                        selectedBarangay=""
+                        readOnly={true}
+                      />
                     </div>
-                  </div>
+                  </CaseDetailSection>
                 );
               })()}
 
               {/* Handler Assignment Timeline */}
               {selectedReport.handlerHistory && selectedReport.handlerHistory.length > 0 && (
-                <div className="bg-slate-50 p-3 rounded-lg border">
+                <CaseDetailSection title="Assignment History" variant="muted">
                   <HandlerTimeline complaint={selectedReport} />
-                </div>
+                </CaseDetailSection>
               )}
 
-              {/* Update Status Section - Only visible to CODI assigned to this case AND not closed */}
               {isCODI && selectedReport.assignedTo === representativeId && (selectedReport.status as string) !== 'closed' && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-4 text-gray-900">
-                    CODI Member - Decision & Status Management
-                  </h4>
-                  <p className="text-xs text-gray-600 mb-3">
+                <CaseDetailSection title="CODI Decision & Status Management">
+                  <p className="mb-4 text-xs text-gray-600">
                     You are assigned to this case. You can investigate, update status, and close this case.
                   </p>
                   <ReportStatusManager
@@ -1467,7 +1588,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                     }}
                     variant="full"
                   />
-                </div>
+                </CaseDetailSection>
               )}
               </TabsContent>
 
@@ -1849,10 +1970,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             {isHandler ? 'Case Queue' : 'Reports Management'}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {isHandler 
-              ? 'View all cases and take cases to investigate'
-              : 'View and manage all incident reports submitted by users'
-            }
+            {new URLSearchParams(location.search).get('assigned') === 'me'
+              ? 'Cases currently assigned to you'
+              : isHandler
+              ? 'Shared queue — view all open cases and take unassigned ones to investigate'
+              : 'View and manage all incident reports submitted by users'}
           </p>
         </div>
         {!isHandler && (
@@ -1866,6 +1988,23 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           </Button>
         )}
       </div>
+
+      {unseenQueueCount > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <span className="relative mt-1 flex h-2.5 w-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+          </span>
+          <div>
+            <p className="font-semibold">
+              {unseenQueueCount} case{unseenQueueCount > 1 ? 's' : ''} not yet reviewed
+            </p>
+            <p className="text-xs text-red-700 mt-0.5">
+              Highlighted rows below match the red badge in the sidebar. Open a case to mark it as reviewed.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards */}
       {stats && (
@@ -2252,23 +2391,42 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 {filteredReports.map((report, index) => {
                   const reportEvidence = processEvidence(safeGet(report, 'evidence'));
                   const isEscalated = (report.escalationLevel || 0) > 0;
+                  const isUnseenQueue = isUnseenInQueue(report);
                   
                   return (
                     <TableRow
                       key={report.id}
-                      className={`border-b border-emerald-100/50 transition-colors ${
-                        isEscalated 
-                          ? 'bg-red-100 hover:bg-red-200/80 border-red-200' 
-                          : 'hover:bg-emerald-50/35'
+                      className={`border-b transition-colors ${
+                        isUnseenQueue
+                          ? 'border-l-4 border-l-red-500 bg-red-50/70 hover:bg-red-50'
+                          : isEscalated
+                          ? 'border-emerald-100/50 bg-red-100 hover:bg-red-200/80 border-red-200'
+                          : 'border-emerald-100/50 hover:bg-emerald-50/35'
                       }`}
                     >
                       <TableCell className="font-semibold text-gray-600">
-                        {index + 1}
+                        <div className="flex items-center gap-2">
+                          {isUnseenQueue && (
+                            <span
+                              className="relative flex h-2.5 w-2.5 shrink-0"
+                              title="Not yet reviewed"
+                            >
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                            </span>
+                          )}
+                          {index + 1}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
+                            {isUnseenQueue && (
+                              <Badge className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5">
+                                Not reviewed
+                              </Badge>
+                            )}
                             {/* Inline escalation badge - only show when escalated */}
                             {(report.escalationLevel || 0) > 0 && (
                               <Badge className="bg-red-100 text-red-700 border border-red-300 text-xs font-semibold px-2">
@@ -2312,9 +2470,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                                 {report.assignedToName}
                               </div>
                               {report.assignedToRole && (
-                                <Badge className={ROLE_COLORS[report.assignedToRole as any] || 'bg-gray-100 text-gray-800'}>
-                                  {ROLE_LABELS[report.assignedToRole as any] || report.assignedToRole}
-                                </Badge>
+                                <CodiRoleBadge role={report.assignedToRole} />
                               )}
                               {report.assignedAt && (
                                 <div className="text-xs text-gray-500">
@@ -2465,61 +2621,61 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             </DialogDescription>
           </DialogHeader>
           {quickSummaryReport && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 mb-1">Status</p>
+            <div className="space-y-3 py-4">
+              <div className="grid grid-cols-2 gap-3">
+                <CaseDetailStat label="Status">
                   <Badge className={`${getStatusColor(safeGet(quickSummaryReport, 'status', 'pending'))} text-sm font-medium`}>
                     {getStatusLabel(safeGet(quickSummaryReport, 'status', 'pending'))}
                   </Badge>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 mb-1">Days Open</p>
-                  <p className="text-lg font-bold">{getDaysOpen(quickSummaryReport)}d</p>
-                </div>
+                </CaseDetailStat>
+                <CaseDetailStat label="Days Open">
+                  <span className="text-lg font-bold text-gray-900">{getDaysOpen(quickSummaryReport)}d</span>
+                </CaseDetailStat>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-600 mb-1">Submitted</p>
-                <p className="text-sm font-semibold">{safeFormat(safeGet(quickSummaryReport, 'reportedAt'), 'MMM dd, yyyy')}</p>
+              <CaseDetailGrid columns={1}>
+                <CaseDetailStat label="Submitted">
+                  {safeFormat(safeGet(quickSummaryReport, 'reportedAt'), 'MMM dd, yyyy')}
+                </CaseDetailStat>
+                <CaseDetailStat label="Assigned CODI">
+                  {safeGet(quickSummaryReport, 'assignedToName') || 'Not assigned'}
+                </CaseDetailStat>
+                <CaseDetailStat label="Last Updated">
+                  {getLastUpdated(quickSummaryReport)}
+                </CaseDetailStat>
+              </CaseDetailGrid>
+
+              <div className="grid grid-cols-2 gap-3">
+                <CaseDetailStat label="Updates">
+                  <span className="text-lg font-bold text-gray-900">{getActivityCount(quickSummaryReport)}</span>
+                  <p className="mt-1 text-[10px] font-normal text-gray-500">
+                    Assignments, status changes, notes, escalations
+                  </p>
+                </CaseDetailStat>
+                <CaseDetailStat label="Follow-Ups">
+                  <span className="text-lg font-bold text-gray-900">
+                    {safeGet(quickSummaryReport, 'followUpRequested', false) ? '1' : '0'}
+                  </span>
+                </CaseDetailStat>
               </div>
 
-              <div className="bg-slate-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-600 mb-1">Assigned CODI</p>
-                <p className="text-sm font-semibold">{safeGet(quickSummaryReport, 'assignedToName') || 'Not assigned'}</p>
-              </div>
-
-              <div className="bg-slate-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-600 mb-1">Last Updated</p>
-                <p className="text-sm font-semibold">{getLastUpdated(quickSummaryReport)}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 mb-1">Updates</p>
-                  <p className="text-lg font-bold">{getActivityCount(quickSummaryReport)}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-lg border">
-                  <p className="text-xs text-gray-600 mb-1">Follow-Ups</p>
-                  <p className="text-lg font-bold">{safeGet(quickSummaryReport, 'followUpRequested', false) ? '1' : '0'}</p>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-3 rounded-lg border">
-                <p className="text-xs text-gray-600 mb-1">Escalated</p>
-                <p className="text-sm font-semibold">
-                  {(quickSummaryReport.escalationLevel || 0) > 0 ? (
-                    <span className="text-red-600">Yes ({ESCALATION_LABELS[quickSummaryReport.escalationLevel as EscalationLevel] || 'Level ' + quickSummaryReport.escalationLevel})</span>
-                  ) : (
-                    <span className="text-gray-600">No</span>
-                  )}
-                </p>
-              </div>
+              <CaseDetailStat label="Escalated">
+                {(quickSummaryReport.escalationLevel || 0) > 0 ? (
+                  <span className="text-red-600">
+                    Yes ({ESCALATION_LABELS[quickSummaryReport.escalationLevel as EscalationLevel] || 'Level ' + quickSummaryReport.escalationLevel})
+                  </span>
+                ) : (
+                  <span className="text-gray-600">No</span>
+                )}
+              </CaseDetailStat>
             </div>
           )}
           <DialogFooter>
             <Button
               onClick={() => {
+                if (quickSummaryReport) {
+                  markReportReviewed(quickSummaryReport.id);
+                }
                 setQuickSummaryOpen(false);
                 setSelectedReport(quickSummaryReport);
                 setModalOpen(true);

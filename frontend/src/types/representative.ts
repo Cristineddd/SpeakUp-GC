@@ -157,6 +157,9 @@ export interface UpdateRepresentativeData {
   };
 }
 
+export const CODI_ROLE_DESCRIPTION =
+  'Committee on Decorum and Investigation (CODI)';
+
 // Role display names
 export const ROLE_LABELS: Record<RepresentativeRole, string> = {
   admin: 'Administrator',

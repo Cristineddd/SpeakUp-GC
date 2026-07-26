@@ -39,6 +39,282 @@ export class MessageService {
   private static readonly MESSAGES_COLLECTION = 'messages';
   private static readonly CHAT_ROOMS_COLLECTION = 'chatRooms';
   private static readonly TYPING_COLLECTION = 'typingIndicators';
+  private static readonly MAX_BATCH_SIZE = 500;
+
+  /**
+   * Delete all chat rooms and messages tied to a user (complainant or participant).
+   * Call this whenever a user account is permanently removed.
+   */
+  static async deleteAllDataForUser(userId: string): Promise<{
+    chatRoomsDeleted: number;
+    messagesDeleted: number;
+  }> {
+    const chatRoomIds = new Set<string>();
+    const complaintIds = new Set<string>();
+
+    const complaintQueries = [
+      query(collection(db, 'complaints'), where('userId', '==', userId)),
+      query(collection(db, 'complaints'), where('complainantId', '==', userId)),
+    ];
+
+    for (const q of complaintQueries) {
+      const snap = await getDocs(q);
+      snap.docs.forEach((d) => complaintIds.add(d.id));
+    }
+
+    const roomQueries = [
+      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('participantIds', 'array-contains', userId)),
+      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('complainantId', '==', userId)),
+    ];
+
+    for (const q of roomQueries) {
+      const snap = await getDocs(q);
+      snap.docs.forEach((d) => chatRoomIds.add(d.id));
+    }
+
+    for (const complaintId of complaintIds) {
+      const snap = await getDocs(
+        query(collection(db, this.CHAT_ROOMS_COLLECTION), where('complaintId', '==', complaintId))
+      );
+      snap.docs.forEach((d) => chatRoomIds.add(d.id));
+    }
+
+    let messagesDeleted = 0;
+
+    const senderSnap = await getDocs(
+      query(collection(db, this.MESSAGES_COLLECTION), where('senderId', '==', userId))
+    );
+    messagesDeleted += await this.batchDeleteDocs(senderSnap.docs.map((d) => d.ref));
+
+    for (const complaintId of complaintIds) {
+      const snap = await getDocs(
+        query(collection(db, this.MESSAGES_COLLECTION), where('complaintId', '==', complaintId))
+      );
+      messagesDeleted += await this.batchDeleteDocs(snap.docs.map((d) => d.ref));
+    }
+
+    for (const chatRoomId of chatRoomIds) {
+      const snap = await getDocs(
+        query(collection(db, this.MESSAGES_COLLECTION), where('chatRoomId', '==', chatRoomId))
+      );
+      messagesDeleted += await this.batchDeleteDocs(snap.docs.map((d) => d.ref));
+    }
+
+    const chatRoomsDeleted = await this.batchDeleteDocs(
+      Array.from(chatRoomIds).map((id) => doc(db, this.CHAT_ROOMS_COLLECTION, id))
+    );
+
+    console.log(
+      `✅ MessageService: deleted ${chatRoomsDeleted} chat rooms and ${messagesDeleted} messages for user ${userId}`
+    );
+
+    return { chatRoomsDeleted, messagesDeleted };
+  }
+
+  /**
+   * Remove chat rooms whose complaint no longer exists (legacy orphan cleanup).
+   */
+  static async cleanupOrphanedChatRoomsForParticipant(userId: string): Promise<number> {
+    const snap = await getDocs(
+      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('participantIds', 'array-contains', userId))
+    );
+
+    let cleaned = 0;
+
+    for (const roomDoc of snap.docs) {
+      const data = roomDoc.data();
+      const complaintId = data.complaintId as string | undefined;
+
+      if (!complaintId) {
+        const msgSnap = await getDocs(
+          query(collection(db, this.MESSAGES_COLLECTION), where('chatRoomId', '==', roomDoc.id))
+        );
+        await this.batchDeleteDocs([
+          ...msgSnap.docs.map((d) => d.ref),
+          roomDoc.ref,
+        ]);
+        cleaned++;
+        continue;
+      }
+
+      const complaintSnap = await getDoc(doc(db, 'complaints', complaintId));
+      const complaintMissing = !complaintSnap.exists();
+      const complainantRemoved =
+        data.complainantId &&
+        !(await getDoc(doc(db, 'users', data.complainantId as string))).exists();
+
+      if (complaintMissing || complainantRemoved) {
+        const msgSnap = await getDocs(
+          query(collection(db, this.MESSAGES_COLLECTION), where('chatRoomId', '==', roomDoc.id))
+        );
+        await this.batchDeleteDocs([
+          ...msgSnap.docs.map((d) => d.ref),
+          roomDoc.ref,
+        ]);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`🧹 MessageService: cleaned ${cleaned} orphaned chat rooms for user ${userId}`);
+    }
+
+    return cleaned;
+  }
+
+  /**
+   * Merge duplicate chat rooms that share the same complaintId.
+   */
+  static async dedupeChatRoomsForUser(userId: string): Promise<number> {
+    const snap = await getDocs(
+      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('participantIds', 'array-contains', userId))
+    );
+
+    const complaintIds = new Set<string>();
+    snap.docs.forEach((roomDoc) => {
+      const complaintId = roomDoc.data().complaintId as string | undefined;
+      if (complaintId) complaintIds.add(complaintId);
+    });
+
+    let merged = 0;
+    for (const complaintId of complaintIds) {
+      merged += await this.mergeDuplicateChatRoomsForComplaint(complaintId);
+    }
+
+    if (merged > 0) {
+      console.log(`🧹 MessageService: merged ${merged} duplicate chat rooms for user ${userId}`);
+    }
+
+    return merged;
+  }
+
+  static async mergeDuplicateChatRoomsForComplaint(complaintId: string): Promise<number> {
+    const snap = await getDocs(
+      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('complaintId', '==', complaintId))
+    );
+
+    if (snap.docs.length <= 1) return 0;
+
+    const primary = this.pickPrimaryRoomDoc(snap.docs);
+    const duplicates = snap.docs.filter((roomDoc) => roomDoc.id !== primary.id);
+
+    const primaryRaw = primary.data();
+    let participantIds = [...((primaryRaw.participantIds as string[] | undefined) || [])];
+    let participants = {
+      ...((primaryRaw.participants as ChatRoom['participants'] | undefined) || {}),
+    };
+    const unreadCount = {
+      ...((primaryRaw.unreadCount as ChatRoom['unreadCount'] | undefined) || {}),
+    };
+
+    for (const dup of duplicates) {
+      const dupRaw = dup.data();
+
+      participantIds = [
+        ...new Set([
+          ...participantIds,
+          ...((dupRaw.participantIds as string[] | undefined) || []),
+        ]),
+      ];
+      participants = {
+        ...participants,
+        ...((dupRaw.participants as ChatRoom['participants'] | undefined) || {}),
+      };
+
+      for (const [uid, count] of Object.entries(
+        (dupRaw.unreadCount as ChatRoom['unreadCount'] | undefined) || {}
+      )) {
+        unreadCount[uid] = (unreadCount[uid] || 0) + (count as number);
+      }
+
+      const msgSnap = await getDocs(
+        query(collection(db, this.MESSAGES_COLLECTION), where('chatRoomId', '==', dup.id))
+      );
+
+      for (const msgDoc of msgSnap.docs) {
+        await updateDoc(msgDoc.ref, { chatRoomId: primary.id });
+      }
+
+      await deleteDoc(dup.ref);
+    }
+
+    await updateDoc(doc(db, this.CHAT_ROOMS_COLLECTION, primary.id), {
+      participantIds,
+      participants,
+      unreadCount,
+      updatedAt: Timestamp.now(),
+    });
+
+    return duplicates.length;
+  }
+
+  private static toMillis(value: unknown): number {
+    if (!value) return 0;
+    if (typeof value === 'object' && value !== null) {
+      if ('toMillis' in value && typeof (value as { toMillis: () => number }).toMillis === 'function') {
+        return (value as { toMillis: () => number }).toMillis();
+      }
+      if ('toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
+        return (value as { toDate: () => Date }).toDate().getTime();
+      }
+    }
+    const parsed = new Date(value as string | number);
+    return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  }
+
+  private static pickPrimaryRoomDoc(
+    docs: Array<{ id: string; data: () => Record<string, unknown> }>
+  ) {
+    return [...docs].sort((a, b) => {
+      const aData = a.data();
+      const bData = b.data();
+      const aHasLast = aData.lastMessage ? 1 : 0;
+      const bHasLast = bData.lastMessage ? 1 : 0;
+      if (aHasLast !== bHasLast) return bHasLast - aHasLast;
+      return this.toMillis(bData.updatedAt) - this.toMillis(aData.updatedAt);
+    })[0];
+  }
+
+  private static dedupeRoomsByComplaint(rooms: ChatRoom[]): ChatRoom[] {
+    const byComplaint = new Map<string, ChatRoom>();
+
+    for (const room of rooms) {
+      const key = room.complaintId || room.id;
+      const existing = byComplaint.get(key);
+      if (!existing) {
+        byComplaint.set(key, room);
+        continue;
+      }
+
+      const existingScore =
+        (existing.lastMessage ? 2 : 0) + this.toMillis(existing.updatedAt);
+      const roomScore = (room.lastMessage ? 2 : 0) + this.toMillis(room.updatedAt);
+
+      if (roomScore >= existingScore) {
+        byComplaint.set(key, room);
+      }
+    }
+
+    return Array.from(byComplaint.values()).sort(
+      (a, b) => this.toMillis(b.updatedAt) - this.toMillis(a.updatedAt)
+    );
+  }
+
+  private static async batchDeleteDocs(refs: ReturnType<typeof doc>[]): Promise<number> {
+    if (refs.length === 0) return 0;
+
+    let deletedCount = 0;
+    for (let i = 0; i < refs.length; i += this.MAX_BATCH_SIZE) {
+      const batch = writeBatch(db);
+      const chunk = refs.slice(i, i + this.MAX_BATCH_SIZE);
+      chunk.forEach((ref) => {
+        batch.delete(ref);
+        deletedCount++;
+      });
+      await batch.commit();
+    }
+    return deletedCount;
+  }
 
   /**
    * Get or create chat room for a complaint
@@ -58,7 +334,13 @@ export class MessageService {
       const snapshot = await getDocs(q);
 
       if (!snapshot.empty) {
-        const existingRoom = snapshot.docs[0];
+        if (snapshot.docs.length > 1) {
+          await this.mergeDuplicateChatRoomsForComplaint(complaintId);
+          const mergedRoom = await this.getChatRoomByComplaint(complaintId);
+          if (mergedRoom) return mergedRoom;
+        }
+
+        const existingRoom = this.pickPrimaryRoomDoc(snapshot.docs);
         return {
           id: existingRoom.id,
           ...existingRoom.data(),
@@ -153,10 +435,21 @@ export class MessageService {
         return null;
       }
 
-      const doc = snapshot.docs[0];
+      if (snapshot.docs.length > 1) {
+        await this.mergeDuplicateChatRoomsForComplaint(complaintId);
+        const refreshed = await getDocs(q);
+        if (refreshed.empty) return null;
+        const primary = this.pickPrimaryRoomDoc(refreshed.docs);
+        return {
+          id: primary.id,
+          ...primary.data(),
+        } as ChatRoom;
+      }
+
+      const primary = snapshot.docs[0];
       return {
-        id: doc.id,
-        ...doc.data(),
+        id: primary.id,
+        ...primary.data(),
       } as ChatRoom;
     } catch (error) {
       console.error('Error getting chat room by complaint:', error);
@@ -414,10 +707,14 @@ export class MessageService {
     );
 
     return onSnapshot(q, (snapshot) => {
-      const rooms = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as ChatRoom[];
+      const rooms = this.dedupeRoomsByComplaint(
+        snapshot.docs
+          .map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }))
+          .filter((room) => !(room as ChatRoom & { isDeleted?: boolean }).isDeleted) as ChatRoom[]
+      );
       callback(rooms);
     });
   }

@@ -16,6 +16,9 @@ import { db } from '../../firebase';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AdminReport } from '../../services/adminReportService';
+import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import { getDisplayCaseNumber } from '../../utils/caseId';
+import { formatSeverityLabel, safeToDate } from '../../utils/dateFormat';
 
 export default function CaseChat() {
   const { complaintId } = useParams<{ complaintId: string }>();
@@ -27,8 +30,8 @@ export default function CaseChat() {
   const { currentUser } = useAuth();
   const { role, isAdmin, loading: roleLoading } = useRepresentativeRole();
   
-  // Check if user is a handler
-  const isHandler = role === 'handler' || isAdmin;
+  // Check if user is a CODI member or admin
+  const isHandler = role === 'handler' || role === 'codi' || isAdmin;
 
   console.log('🔍 CaseChat Debug:', {
     complaintId,
@@ -67,10 +70,16 @@ export default function CaseChat() {
           const data = complaintSnap.data();
           console.log('✅ Complaint found:', data);
           setComplaintTitle(data.title || 'Case Chat');
+
+          const toIsoString = (value: unknown) => {
+            const date = safeToDate(value);
+            return date ? date.toISOString() : undefined;
+          };
           
           // Always convert to AdminReport format
           const complaintData = {
             id: complaintSnap.id,
+            caseId: data.caseId,
             title: data.title || '',
             description: data.description || '',
             location: data.location || data.incidentLocation || '',
@@ -78,15 +87,26 @@ export default function CaseChat() {
             severity: data.severity || 'medium',
             status: data.status || 'pending',
             userName: data.userName || data.complainantName || 'Unknown',
+            complainantName: data.complainantName || data.userName || 'Unknown',
             userEmail: data.userEmail || data.complainantEmail || '',
             userId: data.userId || data.complainantId || '',
-            incidentDate: data.incidentDate || data.createdAt,
-            reportedAt: data.reportedAt || data.createdAt,
-            lastUpdated: data.lastUpdated || data.updatedAt,
+            complainantId: data.complainantId || data.userId || '',
+            incidentDate:
+              toIsoString(data.incidentDate) ||
+              toIsoString(data.filingDate) ||
+              toIsoString(data.createdAt),
+            reportedAt:
+              toIsoString(data.reportedAt) ||
+              toIsoString(data.filingDate) ||
+              toIsoString(data.createdAt),
+            lastUpdated:
+              toIsoString(data.lastUpdated) ||
+              toIsoString(data.updatedAt) ||
+              toIsoString(data.createdAt),
             assignedTo: data.assignedTo || null,
-            assignedToName: data.assignedToName || 'Franz Panot', // Default handler name
+            assignedToName: data.assignedToName || null,
             handlerHistory: data.handlerHistory || [],
-            isAnonymous: data.isAnonymous || false,
+            isAnonymous: data.isAnonymous || data.complainantName === 'Anonymous',
           } as AdminReport;
           
           console.log('👤 Complaint parsed:', complaintData);
@@ -134,7 +154,22 @@ export default function CaseChat() {
 
   // Format status for display
   const formatStatus = (status: string) => {
-    return status?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) || 'Unknown';
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'submitted':
+        return 'Submitted';
+      case 'inprogress':
+      case 'in_progress':
+        return 'Investigating';
+      case 'resolved':
+        return 'Resolved';
+      case 'dismissed':
+        return 'Dismissed';
+      case 'closed':
+        return 'Closed';
+      default:
+        return status?.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) || 'Unknown';
+    }
   };
 
   const handleRetry = () => {
@@ -276,7 +311,17 @@ export default function CaseChat() {
               </div>
               {complaint && (
                 <p className="mt-0.5 text-[11px] leading-tight text-gray-500 sm:text-xs">
-                  <span className="break-words">{complaint.category}</span>
+                  <span className="font-mono text-gray-600">
+                    {getDisplayCaseNumber({
+                      caseId: complaint.caseId,
+                      firestoreId: complaint.id,
+                      filedAt: complaint.reportedAt,
+                    })}
+                  </span>
+                  <span className="mx-1.5 text-gray-300" aria-hidden>
+                    ·
+                  </span>
+                  <span className="break-words">{getFormalComplaintCategoryLabel(complaint.category || '')}</span>
                   {isHandler && complaint.severity && (
                     <>
                       <span className="mx-1.5 text-gray-300" aria-hidden>
@@ -291,7 +336,7 @@ export default function CaseChat() {
                               : 'font-medium text-gray-600'
                         }
                       >
-                        {complaint.severity}
+                        {formatSeverityLabel(complaint.severity)}
                       </span>
                     </>
                   )}

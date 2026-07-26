@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MessageService } from '../../services/messageService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -15,26 +15,31 @@ import {
   Loader2,
   User,
   FileText,
-  MapPin,
-  Calendar,
-  Clock,
-  Flag,
-  Mail,
   ChevronDown,
   ChevronUp,
   Flame,
-  MailX,
   Info,
-  Shield,
-  Tag,
-  FileQuestion,
   Edit2,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { FORMAL_COMPLAINT_CATEGORIES } from '../../constants/formalComplaintCategories';
+import { FORMAL_COMPLAINT_CATEGORIES, getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import { getDisplayCaseNumber } from '../../utils/caseId';
+import {
+  formatDisplayDate,
+  formatDisplayDateTime,
+  formatSeverityLabel,
+  safeToDate,
+} from '../../utils/dateFormat';
+import {
+  CaseDetailField,
+  CaseDetailGrid,
+  CaseDetailSection,
+  CaseDetailStat,
+  CaseDetailTextBlock,
+} from '../case/CaseDetailLayout';
 
 // Extended interface to include all possible properties
 interface ExtendedAdminReport {
@@ -54,6 +59,7 @@ interface ExtendedAdminReport {
   complainantEmail?: string;
   incidentLocation?: string;
   createdAt?: string;
+  caseId?: string;
   userId?: string;
   userName?: string;
   userEmail?: string;
@@ -88,6 +94,8 @@ export function CODIMemberChatInterface({
   const [loading, setLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState<{ id: string; name: string }[]>([]);
   const [showCaseDetails, setShowCaseDetails] = useState(true);
+  const [showMobileCaseDetails, setShowMobileCaseDetails] = useState(false);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(complaint.category || '');
@@ -105,11 +113,16 @@ export function CODIMemberChatInterface({
   const complainantEmail: string = getSafeProperty(complaint, 'userEmail', 'complainantEmail', '');
   const complainantId = getSafeProperty(complaint, 'userId', 'complainantId', 'unknown');
   const incidentLocation: string = getSafeProperty(complaint, 'location', 'incidentLocation', '');
-  const createdAt: string = getSafeProperty(complaint, 'reportedAt', 'createdAt', '');
-  
-  // Check for invalid dates
-  const isInvalidReportedDate = createdAt && (new Date(createdAt).toString() === 'Invalid Date' || isNaN(new Date(createdAt).getTime()));
-  const isInvalidIncidentDate = complaint.incidentDate && (new Date(complaint.incidentDate).toString() === 'Invalid Date' || isNaN(new Date(complaint.incidentDate).getTime()));
+  const reportedAtValue = complaint.reportedAt ?? complaint.createdAt;
+  const incidentDateValue = complaint.incidentDate;
+  const caseNumber = getDisplayCaseNumber({
+    caseId: complaint.caseId,
+    firestoreId: complaintId,
+    filedAt: safeToDate(reportedAtValue),
+  });
+  const categoryLabel = getFormalComplaintCategoryLabel(complaint.category || '');
+  const descriptionText = complaint.description?.trim() || 'No description provided';
+  const isLongDescription = descriptionText.length > 140;
   
   // Severity guide data
   const severityGuide: Record<string, { description: string; timeframe: string }> = {
@@ -429,7 +442,22 @@ export function CODIMemberChatInterface({
 
   // Format status for display
   const formatStatus = (status: string) => {
-    return status?.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) || 'Unknown';
+    switch (status?.toLowerCase()) {
+      case 'pending':
+      case 'submitted':
+        return 'Submitted';
+      case 'inprogress':
+      case 'in_progress':
+        return 'Investigating';
+      case 'resolved':
+        return 'Resolved';
+      case 'dismissed':
+        return 'Dismissed';
+      case 'closed':
+        return 'Closed';
+      default:
+        return status?.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) || 'Unknown';
+    }
   };
 
   if (loading) {
@@ -469,47 +497,69 @@ export function CODIMemberChatInterface({
     <div
       className={`flex h-full min-h-0 min-w-0 w-full flex-col gap-2 overflow-hidden sm:gap-3 lg:grid lg:h-full lg:grid-cols-4 lg:items-stretch lg:gap-4 lg:overflow-hidden ${className}`}
     >
-      {/* Case Details Sidebar - Hidden on mobile, visible on lg */}
-      <div className="hidden min-h-0 flex-col gap-3 overflow-y-auto overscroll-y-contain lg:col-span-1 lg:flex lg:h-full lg:max-h-full">
+      <div className="shrink-0 px-2 pt-1 lg:hidden">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setShowMobileCaseDetails((open) => !open)}
+          className="h-9 w-full justify-between border-gray-200 bg-white/90 text-gray-700"
+        >
+          <span className="flex items-center gap-2 text-xs font-medium">
+            <FileText className="h-3.5 w-3.5 text-[#1D9E75]" />
+            Case details
+          </span>
+          {showMobileCaseDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Case Details Sidebar */}
+      <div
+        className={`${showMobileCaseDetails ? 'flex' : 'hidden'} min-h-0 max-h-[42vh] flex-col gap-3 overflow-y-auto overscroll-y-contain px-2 pb-1 lg:col-span-1 lg:flex lg:h-full lg:max-h-full lg:px-0 lg:pb-0`}
+      >
         {/* Case Info Card */}
-        <Card className="shadow-sm border shrink-0">
-          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                <span className="hidden sm:inline">Case Information</span>
-                <span className="sm:hidden">Case</span>
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCaseDetails(!showCaseDetails)}
-                className="h-6 w-6 p-0 hover:bg-gray-100"
-              >
-                {showCaseDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
+        <div className="shrink-0 rounded-2xl border border-emerald-100/80 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-emerald-50 px-3 py-2.5 sm:px-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-900 sm:text-sm">
+              <FileText className="h-4 w-4 text-[#1D9E75]" />
+              <span className="hidden sm:inline">Case Information</span>
+              <span className="sm:hidden">Case</span>
             </div>
-          </CardHeader>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCaseDetails(!showCaseDetails)}
+              className="h-7 w-7 p-0 hover:bg-emerald-50"
+            >
+              {showCaseDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
           {showCaseDetails && (
-            <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
-              {/* Status Badge */}
-              <div>
+            <div className="space-y-4 px-3 py-3 sm:px-4 sm:pb-4">
+              <CaseDetailStat label="Case No.">
+                <span className="font-mono">{caseNumber}</span>
+              </CaseDetailStat>
+
+              <div className="flex flex-wrap items-center gap-2">
                 <Badge className={`${getStatusColor(complaint.status || '')} text-xs px-2 py-0.5`}>
                   {formatStatus(complaint.status || '')}
                 </Badge>
+                {complaint.severity && (
+                  <Badge variant="outline" className={`${getSeverityColor(complaint.severity)} text-xs px-2 py-0.5`}>
+                    {formatSeverityLabel(complaint.severity)}
+                  </Badge>
+                )}
               </div>
 
-              {/* Category */}
-              <div className="flex items-start gap-2">
-                <Tag className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-gray-600">Category</p>
+              <CaseDetailGrid columns={1}>
+                <div>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Category</p>
                     {!isEditingCategory && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-5 w-5 p-0 hover:bg-gray-100"
+                        className="h-6 w-6 p-0 hover:bg-emerald-50"
                         onClick={() => {
                           setIsEditingCategory(true);
                           setSelectedCategory(complaint.category || '');
@@ -520,7 +570,7 @@ export function CODIMemberChatInterface({
                     )}
                   </div>
                   {isEditingCategory ? (
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2">
                       <Select
                         value={selectedCategory}
                         onValueChange={setSelectedCategory}
@@ -539,7 +589,7 @@ export function CODIMemberChatInterface({
                       </Select>
                       <Button
                         size="sm"
-                        className="h-8 px-2"
+                        className="h-8 bg-[#1D9E75] px-2 hover:bg-[#178F65]"
                         onClick={handleUpdateCategory}
                         disabled={updatingCategory || selectedCategory === complaint.category}
                       >
@@ -559,120 +609,78 @@ export function CODIMemberChatInterface({
                       </Button>
                     </div>
                   ) : (
-                    <p className="text-sm font-medium">{complaint.category || 'Uncategorized'}</p>
+                    <p className="text-sm font-medium text-gray-900">{categoryLabel}</p>
                   )}
                 </div>
-              </div>
 
-              {/* Incident Date */}
-              <div className="flex items-start gap-2">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Incident date</p>
-                  <p className="text-sm font-medium">
-                    {isInvalidIncidentDate 
-                      ? 'Invalid Date' 
-                      : complaint.incidentDate 
-                        ? new Date(complaint.incidentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : <span className="italic text-gray-500">Not specified</span>
-                    }
+                <CaseDetailField
+                  label="Incident Date"
+                  value={formatDisplayDate(incidentDateValue)}
+                />
+                <CaseDetailField
+                  label="Location"
+                  value={
+                    incidentLocation || <span className="italic text-gray-500">Not specified</span>
+                  }
+                />
+                <CaseDetailField
+                  label="Reported"
+                  value={formatDisplayDateTime(reportedAtValue)}
+                />
+                <div>
+                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                    Description
                   </p>
+                  <CaseDetailTextBlock
+                    className={`max-h-32 ${descriptionExpanded ? '' : 'line-clamp-4'}`}
+                  >
+                    {descriptionText}
+                  </CaseDetailTextBlock>
+                  {isLongDescription && (
+                    <button
+                      type="button"
+                      onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+                      className="mt-1.5 text-xs font-medium text-[#1D9E75] hover:underline"
+                    >
+                      {descriptionExpanded ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
                 </div>
-              </div>
-
-              {/* Location */}
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Location</p>
-                  <p className="text-sm font-medium">
-                    {incidentLocation || <span className="italic text-gray-500">Not specified</span>}
-                  </p>
-                </div>
-              </div>
-
-              {/* Reported Date */}
-              <div className="flex items-start gap-2">
-                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Reported</p>
-                  <p className="text-sm font-medium">
-                    {isInvalidReportedDate
-                      ? 'Invalid Date'
-                      : createdAt
-                        ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : <span className="italic text-gray-500">Not specified</span>
-                    }
-                  </p>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="flex items-start gap-2">
-                <FileQuestion className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-600">Description</p>
-                  <p className="text-sm text-gray-700 line-clamp-3">
-                    {complaint.description || 'No description provided'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
+              </CaseDetailGrid>
+            </div>
           )}
-        </Card>
+        </div>
 
         {/* Complainant Info Card */}
-        <Card className="shadow-sm border shrink-0">
-          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-4">
-            <CardTitle className="text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2">
-              <User className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-              <span className="hidden sm:inline">Complainant</span>
-              <span className="sm:hidden">User</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4 space-y-3">
-            {/* Anonymity Warning */}
-            {isAnonymous && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 flex items-start gap-2">
-                <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-blue-900">Anonymous Complaint</p>
-                  <p className="text-xs text-blue-700 mt-0.5">
-                    This complaint was filed anonymously. Identity is protected — do not attempt to identify the complainant.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Name */}
-            <div className="flex items-start gap-2">
-              <User className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-600">Name</p>
-                <p className="text-sm font-medium">{complainantName}</p>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="flex items-start gap-2">
-              {complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@') ? (
-                <Mail className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-              ) : (
-                <MailX className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-600">Email</p>
-                <p className="text-sm font-medium">
-                  {complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@')
-                    ? complainantEmail 
-                    : <span className="italic text-gray-500">No email provided</span>
-                  }
+        <CaseDetailSection
+          title="Complainant"
+          icon={User}
+          className="shrink-0 p-3 sm:p-4"
+        >
+          {isAnonymous && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-blue-900">Anonymous Complaint</p>
+                <p className="mt-0.5 text-xs text-blue-700">
+                  This complaint was filed anonymously. Identity is protected — do not attempt to identify the complainant.
                 </p>
               </div>
             </div>
+          )}
 
-          </CardContent>
-        </Card>
+          <CaseDetailGrid columns={1}>
+            <CaseDetailField label="Name" value={complainantName} />
+            <CaseDetailField
+              label="Email"
+              value={
+                complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@')
+                  ? complainantEmail
+                  : <span className="italic text-gray-500">No email provided</span>
+              }
+            />
+          </CaseDetailGrid>
+        </CaseDetailSection>
       </div>
 
       {/* Chat Area */}
@@ -720,7 +728,7 @@ export function CODIMemberChatInterface({
                         key={message.id}
                         message={message}
                         isOwn={message.senderId === currentUser?.uid}
-                        showSenderName={false}
+                        showSenderName={message.senderId !== currentUser?.uid}
                       />
                     ))}
                   </div>

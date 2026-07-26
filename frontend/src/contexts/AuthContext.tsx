@@ -29,6 +29,7 @@ import {
 } from 'firebase/firestore';
 import { validatePassword } from '../utils/passwordValidation';
 import { isAdminEmail } from '../utils/admin/adminConfig';
+import { MessageService } from '../services/messageService';
 
 interface AuthUser extends User {
   isAdmin?: boolean;
@@ -93,17 +94,43 @@ const deleteUserData = async (userId: string, userEmail: string) => {
       deletedCount++;
     }
 
-    // Find and delete user's reports from 'complaints' collection
-    const complaintsQuery = query(
-      collection(db, 'complaints'), 
-      where('userId', '==', userId)
+    // Delete user's complaints (match both userId and complainantId fields)
+    const [complaintsByUserIdSnap, complaintsByComplainantIdSnap] = await Promise.all([
+      getDocs(query(collection(db, 'complaints'), where('userId', '==', userId))),
+      getDocs(query(collection(db, 'complaints'), where('complainantId', '==', userId))),
+    ]);
+    const complaintRefs = new Set<string>();
+    complaintsByUserIdSnap.forEach((d) => {
+      if (!complaintRefs.has(d.id)) {
+        batch.delete(d.ref);
+        complaintRefs.add(d.id);
+        deletedCount++;
+      }
+    });
+    complaintsByComplainantIdSnap.forEach((d) => {
+      if (!complaintRefs.has(d.id)) {
+        batch.delete(d.ref);
+        complaintRefs.add(d.id);
+        deletedCount++;
+      }
+    });
+
+    // Delete legacy reports collection entries
+    const reportsSnapshot = await getDocs(
+      query(collection(db, 'reports'), where('userId', '==', userId))
     );
-    
-    const complaintsSnapshot = await getDocs(complaintsQuery);
-    complaintsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
+    reportsSnapshot.forEach((d) => {
+      batch.delete(d.ref);
       deletedCount++;
     });
+
+    // Delete all messaging data tied to this user
+    try {
+      await MessageService.deleteAllDataForUser(userId);
+    } catch (messageError) {
+      console.error('❌ Error deleting user messages/chat rooms:', messageError);
+      throw messageError;
+    }
 
     // Also check and delete from 'adminReports' collection if it exists
     try {

@@ -15,6 +15,7 @@ import type { Notification, NotificationType, NotificationPriority } from '../..
 import { formatDistanceToNow, format } from 'date-fns';
 import { useNavigate, useLocation } from '../../compat/router';
 import { useToast } from '../../hooks/use-toast';
+import { cn } from '../../lib/utils';
 
 // Severity types for color coding
 type NotificationSeverity = 'important' | 'status_update' | 'general';
@@ -83,7 +84,11 @@ function getSeverityLabel(severity: NotificationSeverity): string {
 // Development flag for test notifications
 const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
-export const NotificationBell: React.FC = () => {
+interface NotificationBellProps {
+  variant?: 'default' | 'admin';
+}
+
+export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'default' }) => {
   const { currentUser } = useAuth();
   const { role, isAdmin } = useRepresentativeRole();
   const navigate = useNavigate();
@@ -97,8 +102,9 @@ export const NotificationBell: React.FC = () => {
   const [markingRead, setMarkingRead] = useState<string | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
 
+  const isAdminVariant = variant === 'admin';
   // Check if user is in admin interface
-  const isInAdminInterface = location.pathname.startsWith('/admin');
+  const isInAdminInterface = isAdminVariant || location.pathname.startsWith('/admin');
 
   // Debug mounting
   useEffect(() => {
@@ -271,20 +277,69 @@ export const NotificationBell: React.FC = () => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className="relative hover:bg-gray-100 rounded-lg h-12 w-12 bg-gray-50"
-          disabled={loading}
-          title="Notifications"
-        >
-          <Bell className="h-7 w-7 text-gray-700" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center px-1">
-              <span className="text-[10px] font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>
-            </span>
+          size={isAdminVariant ? 'default' : 'icon'}
+          className={cn(
+            'relative transition-all',
+            isAdminVariant
+              ? cn(
+                  'flex h-10 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 shadow-sm hover:border-[#1D9E75]/35 hover:bg-emerald-50/70 sm:gap-2.5 sm:px-4 [&_svg]:h-[18px] [&_svg]:w-[18px]',
+                  unreadCount > 0 && 'border-red-200 bg-red-50/60 hover:bg-red-50'
+                )
+              : cn(
+                  'flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100',
+                  isInAdminInterface &&
+                    'h-10 w-10 rounded-xl border-2 border-gray-200 bg-white shadow-sm hover:border-[#1D9E75]/40 hover:bg-emerald-50/60'
+                )
           )}
+          disabled={loading}
+          title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
+          aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
+        >
+          <span className="relative inline-flex shrink-0 items-center justify-center">
+            <Bell
+              className={cn(
+                isAdminVariant
+                  ? 'h-[18px] w-[18px] text-gray-700'
+                  : isInAdminInterface
+                    ? 'h-5 w-5 text-gray-800'
+                    : 'h-7 w-7 text-gray-700',
+                unreadCount > 0 && 'text-[#1D9E75]'
+              )}
+              strokeWidth={2.25}
+            />
+            {unreadCount > 0 && isAdminVariant && (
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500 sm:hidden" />
+            )}
+            {unreadCount > 0 && !isAdminVariant && (
+              <span
+                className={cn(
+                  'absolute flex items-center justify-center rounded-full border-2 border-white bg-red-500 font-bold text-white shadow-sm',
+                  isInAdminInterface
+                    ? '-top-1.5 -right-1.5 min-w-[20px] h-5 px-1 text-[10px]'
+                    : '-top-0.5 -right-0.5 min-w-[20px] h-5 px-1 text-[10px]'
+                )}
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </span>
+
+          {isAdminVariant && (
+            <>
+              <span className="hidden text-sm font-medium leading-none text-gray-700 sm:inline">
+                Notifications
+              </span>
+              {unreadCount > 0 && (
+                <Badge className="h-5 min-w-[20px] shrink-0 rounded-full border-0 bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white hover:bg-red-500">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
+            </>
+          )}
+
           {loading && (
-            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-              <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full" />
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/80">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1D9E75] border-t-transparent" />
             </div>
           )}
         </Button>

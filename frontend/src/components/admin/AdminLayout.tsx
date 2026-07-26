@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from '../../compat/router';
 import { 
   Users, 
@@ -6,14 +6,14 @@ import {
   Settings, 
   Layout, 
   BarChart,
-  Shield,
   LogOut,
   UserPlus,
   FileCheck,
   ChevronLeft,
   ChevronRight,
   User,
-  Archive
+  Archive,
+  MessageSquare,
 } from 'lucide-react';
 const gcLogo = '/LOGO.png';
 import { useAuth } from '../../contexts/AuthContext';
@@ -33,15 +33,33 @@ import {
 } from '../ui/alert-dialog';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { MessageService } from '../../services/messageService';
+import { AdminReportService } from '../../services/adminReportService';
+import {
+  CASE_SEEN_EVENT,
+  countUnseenActionableCases,
+} from '../../utils/caseQueueBadge';
+import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+interface NavItem {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  href: string;
+  description?: string;
+  showPendingBadge?: boolean;
+  showUnreadBadge?: boolean;
+}
+
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
-  const { user, logout, isAdmin } = useAuth();
-  const { role } = useRepresentativeRole();
+  const { user, logout, isAdmin, currentUser } = useAuth();
+  const { role, representativeData } = useRepresentativeRole();
+  const isCODI = !isAdmin && ((role as string) === 'codi' || role === 'handler');
+  const representativeId = representativeData?.id ?? null;
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -51,6 +69,28 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     return false;
   });
   const [pendingReportsCount, setPendingReportsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const queueDocsRef = useRef<QueryDocumentSnapshot<DocumentData>[]>([]);
+
+  const recalcQueueBadge = useCallback(() => {
+    if (!currentUser?.uid) {
+      setPendingReportsCount(0);
+      return;
+    }
+
+    const cases = queueDocsRef.current.map((docSnap) => ({
+      id: docSnap.id,
+      status: String(docSnap.data().status || ''),
+      assignedTo: docSnap.data().assignedTo as string | undefined,
+    }));
+
+    setPendingReportsCount(
+      countUnseenActionableCases(cases, currentUser.uid, {
+        isCODI,
+        representativeId,
+      })
+    );
+  }, [currentUser?.uid, isCODI, representativeId]);
 
   // Save collapsed state to localStorage
   useEffect(() => {
@@ -59,45 +99,106 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }, [sidebarCollapsed]);
 
-  // Real-time listener for pending reports count
+  // Clean legacy orphaned complaints once on load (updates badge counts)
   useEffect(() => {
-    const reportsQuery = query(
-      collection(db, 'reports'),
-      where('status', 'in', ['pending', 'inProgress'])
+    AdminReportService.cleanupOrphanedComplaints().catch((error) => {
+      console.warn('Could not clean orphaned complaints:', error);
+    });
+  }, []);
+
+  // Recalculate sidebar badge when a case is marked reviewed
+  useEffect(() => {
+    const handleCaseSeen = () => recalcQueueBadge();
+    window.addEventListener(CASE_SEEN_EVENT, handleCaseSeen);
+    return () => window.removeEventListener(CASE_SEEN_EVENT, handleCaseSeen);
+  }, [recalcQueueBadge]);
+
+  // Real-time listener for unseen actionable cases (scoped for CODI)
+  useEffect(() => {
+    if (!currentUser?.uid) {
+      setPendingReportsCount(0);
+      return;
+    }
+
+    const activeCasesQuery = query(
+      collection(db, 'complaints'),
+      where('status', 'in', ['pending', 'submitted', 'inProgress'])
     );
 
     const unsubscribe = onSnapshot(
-      reportsQuery,
+      activeCasesQuery,
       (snapshot) => {
-        setPendingReportsCount(snapshot.size);
+        queueDocsRef.current = snapshot.docs;
+        recalcQueueBadge();
       },
       (error) => {
-        console.error('Error fetching pending reports count:', error);
+        console.error('Error fetching active cases count:', error);
         setPendingReportsCount(0);
       }
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid, recalcQueueBadge]);
 
-  // Navigation for Handlers (Case Management Only)
-  const handlerNav = [
+  // Real-time unread messages count (CODI inbox)
+  useEffect(() => {
+    if (!isCODI || !currentUser?.uid) {
+      setUnreadMessagesCount(0);
+      return;
+    }
+
+    const unsubscribe = MessageService.subscribeToUserChatRooms(
+      currentUser.uid,
+      (rooms) => {
+        const total = rooms.reduce(
+          (sum, room) => sum + (room.unreadCount?.[currentUser.uid] || 0),
+          0
+        );
+        setUnreadMessagesCount(total);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [isCODI, currentUser?.uid]);
+
+  // Navigation for CODI members (case management only)
+  const handlerNav: NavItem[] = [
     {
-      label: 'My Cases',
-      icon: FileText,
-      href: '/admin/reports',
-      description: 'View and manage assigned cases'
+      label: 'Dashboard',
+      icon: Layout,
+      href: '/admin/dashboard',
+      description: 'Overview and priorities',
     },
     {
-      label: 'Analytics',
+      label: 'Case Queue',
+      icon: FileText,
+      href: '/admin/reports',
+      description: 'Open cases you have not reviewed yet',
+      showPendingBadge: true,
+    },
+    {
+      label: 'Messages',
+      icon: MessageSquare,
+      href: '/admin/messages',
+      description: 'Conversations with complainants',
+      showUnreadBadge: true,
+    },
+    {
+      label: 'Closed Cases',
+      icon: Archive,
+      href: '/admin/closed-cases',
+      description: 'Cases you have closed',
+    },
+    {
+      label: 'My Performance',
       icon: BarChart,
       href: '/admin/analytics',
-      description: 'View analytics and reports summary'
+      description: 'Your assigned case stats',
     },
   ];
 
   // Full navigation for Admin
-  const fullAdminNav = [
+  const fullAdminNav: NavItem[] = [
     { 
       label: 'Dashboard', 
       icon: Layout, 
@@ -120,7 +221,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       label: 'Reports', 
       icon: FileText, 
       href: '/admin/reports',
-      description: undefined
+      description: undefined,
+      showPendingBadge: true,
     },
     { 
       label: 'Analytics', 
@@ -149,11 +251,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   ];
 
   // Choose navigation based on role
-  let navigationItems = fullAdminNav;
-  
-  if (role === 'handler' && !isAdmin) {
-    navigationItems = handlerNav;
-  }
+  const navigationItems: NavItem[] = isCODI ? handlerNav : fullAdminNav;
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -217,6 +315,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                 {navigationItems.map((item) => {
                   const active = location.pathname === item.href;
+                  const badgeCount = item.showPendingBadge
+                    ? pendingReportsCount
+                    : item.showUnreadBadge
+                    ? unreadMessagesCount
+                    : 0;
+
                   return (
                     <Link
                       key={item.href}
@@ -228,28 +332,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                           ? "bg-[#1D9E75] text-white shadow-md"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                       )}
-                      title={sidebarCollapsed ? item.label : undefined}
+                      title={sidebarCollapsed ? item.label : item.description}
                     >
                       <div className="relative">
                         <item.icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white" : "text-gray-400 group-hover:text-gray-600")} />
-                        {item.label === 'Reports' && pendingReportsCount > 0 && (
-                          sidebarCollapsed ? (
-                            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                              {pendingReportsCount}
-                            </span>
-                          ) : (
-                            <span className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                              <span className="text-[10px] font-bold text-white">{pendingReportsCount}</span>
-                            </span>
-                          )
+                        {badgeCount > 0 && sidebarCollapsed && (
+                          <span className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white rounded-full ${item.showUnreadBadge ? 'bg-[#1D9E75]' : 'bg-red-500'}`}>
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </span>
                         )}
                       </div>
                       {!sidebarCollapsed && (
                         <>
                           <span className="flex-1 text-sm font-medium">{item.label}</span>
-                          {item.label === 'Reports' && pendingReportsCount > 0 && (
-                            <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-red-500 rounded-full">
-                              {pendingReportsCount}
+                          {badgeCount > 0 && (
+                            <span className={`flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white rounded-full ${item.showUnreadBadge ? 'bg-[#1D9E75]' : 'bg-red-500'}`}>
+                              {badgeCount > 99 ? '99+' : badgeCount}
                             </span>
                           )}
                         </>
@@ -269,7 +367,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{user?.displayName || 'Admin'}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">
-                        {isAdmin ? 'Administrator' : role === 'handler' ? 'Case Handler' : 'Staff'}
+                        {isAdmin ? 'Administrator' : isCODI ? 'CODI' : 'Staff'}
                       </p>
                     </div>
                   </div>
@@ -306,11 +404,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Topbar */}
-            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-50">
-              <div className="flex-1" />
-              <div className="flex items-center gap-3">
-                <NotificationBell />
-              </div>
+            <div className="sticky top-0 z-50 flex h-14 items-center justify-end border-b border-gray-200 bg-white px-4 sm:h-16 sm:px-6">
+              <NotificationBell variant="admin" />
             </div>
             <main className="flex-1 bg-gradient-to-b from-gray-50/90 to-gray-100/80 p-8">
               {children}

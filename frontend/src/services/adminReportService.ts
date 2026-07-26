@@ -17,17 +17,21 @@ import { NotificationService } from './notificationService';
 
 export interface AdminReport {
   id: string;
+  caseId?: string;
   title: string;
   description: string;
   location: string;
   category: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'pending' | 'inProgress' | 'resolved' | 'dismissed';
+  status: 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed';
   userName: string;
   userEmail: string;
   userId: string;
   incidentDate: string;
   incidentTime?: string;
+  harassmentDegree?: string;
+  type?: string;
+  statementOfFacts?: string;
   reportedAt: string;
   lastUpdated: string;
   witnesses?: string;
@@ -65,6 +69,18 @@ export interface AdminReport {
     unassignedReason?: string;
     notes?: string;
   }>;
+
+  statusHistory?: Array<{
+    status?: string;
+    previousStatus?: string;
+    updatedAt?: string;
+    updatedBy?: string;
+    updatedByName?: string;
+    notes?: string;
+  }>;
+
+  notesCount?: number;
+  followUpRequested?: boolean;
   
   // Processing timestamps
   processingStartedAt?: string | null;
@@ -277,6 +293,7 @@ export class AdminReportService {
 
     const report: AdminReport = {
       id: docId,
+      caseId: data.caseId || '',
       title: data.title || data.description?.substring(0, 50) || 'Untitled Report',
       description: data.description || '',
       location: data.location || data.incidentLocation || '',
@@ -287,6 +304,10 @@ export class AdminReportService {
       userEmail: data.userEmail || data.email || '',
       userId: data.userId || data.complainantId || '',
       incidentDate: incidentDate,
+      incidentTime: data.incidentTime || '',
+      harassmentDegree: data.harassmentDegree || '',
+      type: data.type || data.category || 'other',
+      statementOfFacts: data.statementOfFacts || '',
       reportedAt: reportedAt,
       lastUpdated: lastUpdated,
       witnesses: data.witnesses || '',
@@ -301,6 +322,9 @@ export class AdminReportService {
       assignedBy: data.assignedBy || null,
       assignedByName: data.assignedByName || null,
       handlerHistory: data.handlerHistory || [],
+      statusHistory: Array.isArray(data.statusHistory) ? data.statusHistory : [],
+      notesCount: typeof data.notesCount === 'number' ? data.notesCount : 0,
+      followUpRequested: Boolean(data.followUpRequested),
       
       // ✅ FIXED: Check for evidenceURLs field from FormalComplaint submission
       evidence: data.evidence || 
@@ -736,6 +760,50 @@ export class AdminReportService {
       
     } catch (error) {
       console.error('❌ Error during cleanup:', error);
+    }
+  }
+
+  /**
+   * Remove complaints whose complainant user no longer exists (legacy orphan cleanup).
+   */
+  static async cleanupOrphanedComplaints(): Promise<number> {
+    try {
+      const complaintsSnapshot = await getDocs(collection(db, 'complaints'));
+      const orphanedComplaints: typeof complaintsSnapshot.docs = [];
+      const orphanedComplainantIds = new Set<string>();
+
+      for (const complaintDoc of complaintsSnapshot.docs) {
+        const data = complaintDoc.data();
+        const complainantId = (data.complainantId || data.userId) as string | undefined;
+        if (!complainantId) continue;
+
+        const userSnap = await getDoc(doc(db, 'users', complainantId));
+        if (userSnap.exists()) continue;
+
+        orphanedComplaints.push(complaintDoc);
+        orphanedComplainantIds.add(complainantId);
+      }
+
+      for (const complainantId of orphanedComplainantIds) {
+        try {
+          await MessageService.deleteAllDataForUser(complainantId);
+        } catch (error) {
+          console.warn(`Could not clean messages for deleted complainant ${complainantId}:`, error);
+        }
+      }
+
+      for (const complaintDoc of orphanedComplaints) {
+        await deleteDoc(complaintDoc.ref);
+      }
+
+      if (orphanedComplaints.length > 0) {
+        console.log(`🧹 AdminReportService: cleaned ${orphanedComplaints.length} orphaned complaints`);
+      }
+
+      return orphanedComplaints.length;
+    } catch (error) {
+      console.error('❌ Error cleaning orphaned complaints:', error);
+      return 0;
     }
   }
 

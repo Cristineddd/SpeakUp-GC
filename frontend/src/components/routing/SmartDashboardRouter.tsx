@@ -6,7 +6,7 @@
  *   Role                        → Redirect target
  *   ─────────────────────────────────────────────
  *   system_admin / isAdmin      → /admin
- *   codi / handler              → /admin/reports
+ *   codi / handler              → /admin/dashboard
  *   disciplining_authority      → /admin/dean-coordinator
  *   guidance_counselor          → /admin  (admin-lite; extendable)
  *   respondent                  → DashboardRouter renders RespondentDashboard
@@ -36,8 +36,8 @@ const ROLE_PATH: Record<string, string> = {
   admin: '/admin',
   system_admin: '/admin',
   // CODI / Case Handler
-  codi: '/admin/reports',
-  handler: '/admin/reports',
+  codi: '/admin/dashboard',
+  handler: '/admin/dashboard',
   // Disciplining Authority / Dean / Coordinator
   disciplining_authority: '/admin/dean-coordinator',
   dean: '/admin/dean-coordinator',
