@@ -6,10 +6,13 @@ import { Switch } from '../../components/ui/switch';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { AlertCircle, Bell, Shield, MapPin, Plus, Edit, Trash2, Building2 } from 'lucide-react';
+import { AlertCircle, Bell, Shield, MapPin, Plus, Edit, Trash2, Building2, Bot } from 'lucide-react';
 import { useToast } from '../../hooks/use-toast';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useAuth } from '../../contexts/AuthContext';
+import { useChatbotEnabled } from '../../hooks/useChatbotEnabled';
+import { setChatbotEnabled as setChatbotEnabledSetting } from '../../services/systemSettingsService';
 
 interface Location {
   id: string;
@@ -19,6 +22,9 @@ interface Location {
 
 const Settings = () => {
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+  const { chatbotEnabled, loading: chatbotSettingLoading } = useChatbotEnabled();
+  const [savingChatbotToggle, setSavingChatbotToggle] = useState(false);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -124,6 +130,42 @@ const Settings = () => {
     setFormData({ name: '', category: '' });
     setEditingLocation(null);
   };
+
+  const handleToggleChatbot = async (enabled: boolean) => {
+    if (!isAdmin || !user) {
+      toast({
+        title: 'Not authorized',
+        description: 'Only admins can change this setting.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSavingChatbotToggle(true);
+    try {
+      await setChatbotEnabledSetting(
+        enabled,
+        user.uid,
+        user.displayName || user.email || 'Admin'
+      );
+      toast({
+        title: enabled ? 'Chatbot enabled' : 'Chatbot disabled',
+        description: enabled
+          ? 'Complainants can now use the AI chatbot assistant.'
+          : 'The AI chatbot assistant is now hidden from complainants.'
+      });
+    } catch (error) {
+      console.error('Error updating chatbot setting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update the chatbot setting. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setSavingChatbotToggle(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -217,6 +259,30 @@ const Settings = () => {
             </div>
             <Switch id="auto-archive" defaultChecked />
           </div>
+
+          {/* AI Chatbot toggle — admin-only, enforced by isAdmin + Firestore rules */}
+          {isAdmin && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-2 pr-4">
+                  <Bot className="h-4 w-4 text-qc-sage mt-0.5 flex-shrink-0" />
+                  <div>
+                    <Label htmlFor="chatbot-enabled">AI Chatbot Assistant</Label>
+                    <p className="text-sm text-gray-500">
+                      Allow complainants to use the virtual assistant (Laya) for FAQs and case status inquiries.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="chatbot-enabled"
+                  checked={chatbotEnabled}
+                  disabled={chatbotSettingLoading || savingChatbotToggle}
+                  onCheckedChange={handleToggleChatbot}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

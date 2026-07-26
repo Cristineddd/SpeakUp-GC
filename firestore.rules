@@ -226,6 +226,27 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // SYSTEM SETTINGS (e.g. chatbot enable/disable toggle)
+    match /systemSettings/{settingId} {
+      // Read: Any authenticated user (complainants need this to know if the chatbot is enabled)
+      allow read: if isAuthenticated();
+      
+      // Write: Admin only
+      allow write: if isAdmin();
+    }
+    
+    // SYSTEM AUDIT LOGS (immutable record of sensitive admin actions, e.g. settings changes)
+    match /systemAuditLogs/{logId} {
+      // Read: Admin only
+      allow read: if isAdmin();
+      
+      // Create: Admin only
+      allow create: if isAdmin();
+      
+      // Update/Delete: Never (immutable audit trail)
+      allow update, delete: if false;
+    }
+    
     // REPORTS COLLECTION (Legacy - if still in use)
     match /reports/{reportId} {
       allow read: if isAuthenticated() && 

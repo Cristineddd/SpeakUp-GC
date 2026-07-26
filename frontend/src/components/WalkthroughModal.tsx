@@ -25,7 +25,15 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login, loginWithGoogle, register, signUpWithGoogle } = useAuth();
+  const { login, loginWithGoogle, register, signUpWithGoogle, isAuthenticated, currentUser, isAdmin, isLoading } = useAuth();
+
+  // Set to true right after a login/signup call succeeds. AuthContext updates
+  // `currentUser` asynchronously (via Firebase's onAuthStateChanged listener),
+  // separately from the sign-in promise resolving — navigating immediately after
+  // that promise resolves races ahead of the context update and gets bounced back
+  // to /login by ProtectedRoute. Waiting for `currentUser`/`isAuthenticated` here
+  // (same pattern as views/auth/Login.tsx) avoids that race.
+  const [pendingRedirect, setPendingRedirect] = useState(false);
 
   // Login state
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -64,6 +72,34 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
+  // Fires once AuthContext has caught up with a successful sign-in (currentUser
+  // populated via Firebase's onAuthStateChanged listener) so ProtectedRoute won't
+  // bounce the user back to /login. Includes a safety timeout in case the context
+  // update stalls. Must stay above the `if (!isOpen)` early return below so hook
+  // order stays consistent across renders (Rules of Hooks).
+  useEffect(() => {
+    if (!pendingRedirect) return;
+
+    const finishRedirect = () => {
+      setPendingRedirect(false);
+      setIsLoginLoading(false);
+      setIsGoogleLoading(false);
+      setIsSignupGoogleLoading(false);
+      setIsSignupLoading(false);
+      localStorage.setItem("speakup_walkthrough_seen", "true");
+      onClose();
+      navigate(isAdmin ? "/admin" : "/dashboard");
+    };
+
+    if (isAuthenticated && currentUser && !isLoading) {
+      finishRedirect();
+      return;
+    }
+
+    const timeout = setTimeout(finishRedirect, 8000);
+    return () => clearTimeout(timeout);
+  }, [pendingRedirect, isAuthenticated, currentUser, isLoading, isAdmin, onClose, navigate]);
+
   if (!isOpen) return null;
 
   const handleDismiss = () => {
@@ -90,8 +126,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     try {
       await login(loginData.email, loginData.password);
       toast({ title: "Login Successful", description: "Welcome back! Redirecting..." });
-      handleDismiss();
-      navigate("/dashboard");
+      setPendingRedirect(true);
     } catch (error: any) {
       let msg = "Login failed. Please try again.";
       if (error.code === "auth/user-not-found") msg = "No account found with this email.";
@@ -100,7 +135,6 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       else if (error.code === "auth/invalid-email") msg = "Invalid email address.";
       else if (error.message) msg = error.message;
       toast({ title: "Login failed", description: msg, variant: "destructive" });
-    } finally {
       setIsLoginLoading(false);
     }
   };
@@ -110,15 +144,13 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     try {
       await loginWithGoogle();
       toast({ title: "Login Successful", description: "Welcome back! Redirecting..." });
-      handleDismiss();
-      navigate("/dashboard");
+      setPendingRedirect(true);
     } catch (error: any) {
       let msg = "Google Sign-In failed.";
       if (error.message?.includes('@gordoncollege.edu.ph')) msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
       else if (error.message?.includes("not registered")) msg = "This Google account is not registered. Please sign up first.";
       else if (error.message) msg = error.message;
       toast({ title: "Sign-In Failed", description: msg, variant: "destructive" });
-    } finally {
       setIsGoogleLoading(false);
     }
   };
@@ -173,15 +205,13 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     try {
       await signUpWithGoogle();
       toast({ title: "Account Created!", description: "Welcome to SpeakUp GC!" });
-      handleDismiss();
-      navigate("/dashboard");
+      setPendingRedirect(true);
     } catch (error: any) {
       let msg = error.message || "Failed to sign up with Google";
       if (error.message?.includes('@gordoncollege.edu.ph')) {
         msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
       }
       toast({ title: "Sign Up Failed", description: msg, variant: "destructive" });
-    } finally {
       setIsSignupGoogleLoading(false);
     }
   };
@@ -575,7 +605,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           const u = auth.currentUser;
                           if (u) {
                             await u.reload();
-                            if (u.emailVerified) { toast({ title: "Email Verified", description: "Redirecting to dashboard." }); handleDismiss(); navigate("/dashboard"); return; }
+                            if (u.emailVerified) { toast({ title: "Email Verified", description: "Redirecting to dashboard." }); setPendingRedirect(true); return; }
                             else { toast({ title: "Not Verified", description: "Email not yet verified.", variant: "destructive" }); await signOut(auth); }
                           }
                         } catch (err: any) { toast({ title: "Check Failed", description: err.message, variant: "destructive" }); }

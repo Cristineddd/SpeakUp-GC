@@ -11,6 +11,7 @@ import { Send, Loader2, Minimize2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { config } from "../config/api";
 import { logger } from "../utils/logger";
+import { useChatbotEnabled } from "../hooks/useChatbotEnabled";
 
 interface Message {
   role: "user" | "assistant";
@@ -125,6 +126,7 @@ async function callAIWithFallback(messages: Message[]): Promise<string> {
 }
 
 export default function GBVChatbot() {
+  const { chatbotEnabled } = useChatbotEnabled();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", text: "Hi! I'm **Laya**, your rights & reporting guide. Ask me anything about GBV laws, the complaint process, or your protections at Gordon College. 💚" },
@@ -174,6 +176,11 @@ export default function GBVChatbot() {
     text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
       i % 2 === 1 ? <strong key={i}>{part}</strong> : part
     );
+
+  // Admin has disabled the chatbot feature — hide the widget entirely.
+  if (!chatbotEnabled) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-5 z-50 flex flex-col items-end gap-2">

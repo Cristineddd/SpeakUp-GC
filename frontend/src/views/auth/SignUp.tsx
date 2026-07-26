@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Shield, 
   Mail, 
@@ -38,7 +38,33 @@ export default function SignUp() {
 
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { register, signUpWithGoogle } = useAuth();
+  const { register, signUpWithGoogle, isAuthenticated, currentUser, isAdmin, isLoading } = useAuth();
+
+  // Set to true right after a sign-in succeeds. AuthContext updates `currentUser`
+  // asynchronously (via Firebase's onAuthStateChanged listener), separately from
+  // the sign-in promise resolving — navigating immediately after that promise
+  // resolves races ahead of the context update and gets bounced back to /login by
+  // ProtectedRoute. Waiting for `currentUser`/`isAuthenticated` here avoids that.
+  const [pendingRedirect, setPendingRedirect] = useState(false);
+
+  useEffect(() => {
+    if (!pendingRedirect) return;
+
+    const finishRedirect = () => {
+      setPendingRedirect(false);
+      setLoading(false);
+      setIsGoogleLoading(false);
+      navigate(isAdmin ? "/admin" : "/dashboard");
+    };
+
+    if (isAuthenticated && currentUser && !isLoading) {
+      finishRedirect();
+      return;
+    }
+
+    const timeout = setTimeout(finishRedirect, 8000);
+    return () => clearTimeout(timeout);
+  }, [pendingRedirect, isAuthenticated, currentUser, isLoading, isAdmin, navigate]);
 
   const handleVerifyEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +200,7 @@ export default function SignUp() {
                       const u = auth.currentUser;
                       if (u) {
                         await u.reload();
-                        if (u.emailVerified) { toast({ title: 'Email Verified', description: 'Redirecting to dashboard.' }); navigate('/dashboard'); return; }
+                        if (u.emailVerified) { toast({ title: 'Email Verified', description: 'Redirecting to dashboard.' }); setPendingRedirect(true); return; }
                         else { toast({ title: 'Not Verified', description: 'Email not yet verified.', variant: 'destructive' }); await signOut(auth); }
                       }
                     } catch (err: any) { toast({ title: 'Check Failed', description: err.message, variant: 'destructive' }); }
@@ -242,7 +268,7 @@ export default function SignUp() {
                   try { 
                     setIsGoogleLoading(true); 
                     await signUpWithGoogle(); 
-                    navigate('/dashboard'); 
+                    setPendingRedirect(true);
                   }
                   catch (error: any) { 
                     let msg = error.message || "Failed to sign up with Google";
@@ -250,8 +276,8 @@ export default function SignUp() {
                       msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
                     }
                     toast({ title: "Sign Up Failed", description: msg, variant: "destructive" }); 
+                    setIsGoogleLoading(false);
                   }
-                  finally { setIsGoogleLoading(false); }
                 }}
                 disabled={isGoogleLoading}
                 className="w-full h-11 bg-white hover:bg-gray-100 text-[#1a1a2e] font-medium text-sm rounded-[4px] transition-colors flex items-center justify-center gap-3 disabled:opacity-50"
