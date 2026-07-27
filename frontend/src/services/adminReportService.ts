@@ -82,6 +82,8 @@ export interface AdminReport {
 
   notesCount?: number;
   followUpRequested?: boolean;
+  followUpRequestedAt?: string;
+  followUpRequestedBy?: string;
   
   // Processing timestamps
   processingStartedAt?: string | null;
@@ -332,6 +334,12 @@ export class AdminReportService {
       statusHistory: Array.isArray(data.statusHistory) ? data.statusHistory : [],
       notesCount: typeof data.notesCount === 'number' ? data.notesCount : 0,
       followUpRequested: Boolean(data.followUpRequested),
+      followUpRequestedAt: data.followUpRequestedAt
+        ? (data.followUpRequestedAt.toDate
+            ? data.followUpRequestedAt.toDate().toISOString()
+            : data.followUpRequestedAt)
+        : undefined,
+      followUpRequestedBy: data.followUpRequestedBy || undefined,
       
       // ✅ FIXED: Check for evidenceURLs field from FormalComplaint submission
       evidence: data.evidence || 
@@ -698,7 +706,8 @@ export class AdminReportService {
       
       await updateDoc(reportRef, {
         adminNotes: updatedNotes,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        followUpRequested: false,
       });
       
       console.log(`✅ AdminReportService: Note added to report ${reportId}`);
@@ -956,7 +965,8 @@ export class AdminReportService {
       await updateDoc(reportRef, {
         status: newStatus,
         stage: stage,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        followUpRequested: false,
       });
       
       console.log(`✅ Successfully updated report ${reportId} status to "${newStatus}" and stage to "${stage}" in ${collectionName}`);

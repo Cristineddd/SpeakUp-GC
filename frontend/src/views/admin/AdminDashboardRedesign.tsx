@@ -203,8 +203,7 @@ const AdminDashboardRedesign = () => {
         return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && daysSinceCreation > 7;
       }).length;
 
-      // Follow-up requests (simulated - in real system, this would be a separate field)
-      const followUpRequests = needsAttention.length;
+      const followUpRequests = reports.filter((r: any) => r.followUpRequested === true).length;
 
       setKeyMetrics({
         resolutionRate,

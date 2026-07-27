@@ -23,7 +23,8 @@ import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { CategoryBarChart } from '../charts/CategoryBarChart';
-import { TrendLineChart } from '../charts/TrendLineChart';
+import { TrendLineChart, formatTrendCategoryLabel, TREND_CHART_COLORS } from '../charts/TrendLineChart';
+import { MiniTrendSparkline } from '../charts/MiniTrendSparkline';
 import { ResolutionBarChart } from '../charts/ResolutionBarChart';
 import { HandlerPerformanceChart } from '../charts/HandlerPerformanceChart';
 import { SeverityPieChart } from '../charts/SeverityPieChart';
@@ -546,6 +547,9 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
 };
 
 // Trend Analysis View
+const COMPLIANCE_SECTION_HEADER = 'space-y-1 p-4 pb-2';
+const COMPLIANCE_SECTION_CONTENT = 'px-4 pb-4 pt-0';
+
 const TrendAnalysisView: React.FC<{
   analysis: TrendAnalysis;
   getTrendIcon: (trend: any) => JSX.Element;
@@ -555,17 +559,17 @@ const TrendAnalysisView: React.FC<{
     <>
       {/* Overall Trend */}
       <Card>
-        <CardHeader>
-          <CardTitle>Overall Trend</CardTitle>
+        <CardHeader className={COMPLIANCE_SECTION_HEADER}>
+          <CardTitle className="text-lg">Overall Trend</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+        <CardContent className={COMPLIANCE_SECTION_CONTENT}>
+          <div className="flex items-center justify-between rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-5">
             <div>
-              <div className="text-4xl font-bold mb-2">
+              <div className="mb-1 text-3xl font-bold sm:text-4xl">
                 {analysis.overallTrend.currentPeriodCount}
               </div>
               <div className="text-sm text-gray-600">Current Period Incidents</div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="mt-1 text-xs text-gray-500">
                 Previous: {analysis.overallTrend.previousPeriodCount}
               </div>
             </div>
@@ -576,7 +580,7 @@ const TrendAnalysisView: React.FC<{
                   {Math.abs(analysis.overallTrend.percentageChange).toFixed(1)}%
                 </span>
               </Badge>
-              <div className="text-sm text-gray-600 mt-2 capitalize">
+              <div className="mt-2 text-sm capitalize text-gray-600">
                 {analysis.overallTrend.direction}
               </div>
             </div>
@@ -587,37 +591,76 @@ const TrendAnalysisView: React.FC<{
       {/* Trend Line Chart */}
       {analysis.categoryTrends && Array.isArray(analysis.categoryTrends) && analysis.categoryTrends.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className={COMPLIANCE_SECTION_HEADER}>
+            <CardTitle className="flex items-center gap-2 text-lg">
               <TrendingUp className="h-5 w-5 text-purple-600" />
               Category Trends Over Time
             </CardTitle>
-            <CardDescription>Historical trend comparison across incident categories</CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
+              Historical trend comparison across incident categories
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <TrendLineChart trends={analysis.categoryTrends} />
+          <CardContent className={COMPLIANCE_SECTION_CONTENT}>
+            <TrendLineChart trends={analysis.categoryTrends} height={300} />
           </CardContent>
         </Card>
       )}
 
       {/* Category Trends */}
       <Card>
-        <CardHeader>
-          <CardTitle>Category Trends</CardTitle>
+        <CardHeader className={COMPLIANCE_SECTION_HEADER}>
+          <CardTitle className="text-lg">Category Trends</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Period-over-period change by incident category
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {analysis.categoryTrends && Array.isArray(analysis.categoryTrends) && analysis.categoryTrends.length > 0
-            ? analysis.categoryTrends.map((trend) => (
-                <div key={trend.category} className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                  <span className="font-medium capitalize">{trend.category}</span>
-                  <Badge variant="outline" className={getTrendColor(trend.trend)}>
-                    {getTrendIcon(trend.trend)}
-                    <span className="ml-1">{Math.abs(trend.percentageChange || 0).toFixed(1)}%</span>
-                  </Badge>
-                </div>
-              ))
-            : <div className="text-sm text-gray-500 p-3">No trend data available</div>
-          }
+        <CardContent className={COMPLIANCE_SECTION_CONTENT}>
+          {analysis.categoryTrends && Array.isArray(analysis.categoryTrends) && analysis.categoryTrends.length > 0 ? (
+            <div className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-100">
+              {analysis.categoryTrends.map((trend, index) => {
+                const color = TREND_CHART_COLORS[index % TREND_CHART_COLORS.length];
+                const totalCases = trend.dataPoints.reduce((sum, dp) => sum + dp.count, 0);
+
+                return (
+                  <div
+                    key={trend.category}
+                    className="flex items-center gap-3 bg-white px-3 py-2.5 transition-colors hover:bg-gray-50/80 sm:gap-4 sm:px-4 sm:py-3"
+                  >
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white"
+                      style={{ backgroundColor: color }}
+                      aria-hidden
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {formatTrendCategoryLabel(trend.category)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {totalCases} case{totalCases === 1 ? '' : 's'} in period
+                      </p>
+                    </div>
+
+                    <div className="hidden shrink-0 sm:block">
+                      <MiniTrendSparkline dataPoints={trend.dataPoints} color={color} />
+                    </div>
+
+                    <Badge
+                      variant="outline"
+                      className={`shrink-0 gap-1 tabular-nums ${getTrendColor(trend.trend)}`}
+                    >
+                      {getTrendIcon(trend.trend)}
+                      <span>{Math.abs(trend.percentageChange || 0).toFixed(1)}%</span>
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50/60 p-4 text-sm text-gray-500">
+              No trend data available
+            </div>
+          )}
         </CardContent>
       </Card>
     </>

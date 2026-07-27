@@ -73,6 +73,18 @@ service cloud.firestore {
     function isNotDeleted() {
       return !('isDeleted' in resource.data) || resource.data.isDeleted == false;
     }
+
+    function isComplainantOwner() {
+      return isOwner(resource.data.userId) || isOwner(resource.data.complainantId);
+    }
+
+    function isFollowUpRequestUpdate() {
+      return isComplainantOwner() &&
+             request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['followUpRequested', 'followUpRequestedAt', 'followUpRequestedBy']) &&
+             request.resource.data.followUpRequested == true &&
+             resource.data.followUpRequested != true;
+    }
     
     // ========================================
     // COLLECTION RULES
@@ -149,9 +161,10 @@ service cloud.firestore {
                       request.resource.data.userId == request.auth.uid &&
                       request.resource.data.isDeleted == false;
       
-      // Update: Admin or assigned staff
+      // Update: Admin, assigned staff, or complainant follow-up request
       allow update: if isAdmin() ||
-                      (isStaffMember() && isAssignedStaff());
+                      (isStaffMember() && isAssignedStaff()) ||
+                      isFollowUpRequestUpdate();
       
       // Delete: Only admins (should use soft delete via update)
       allow delete: if isAdmin();
@@ -312,7 +325,8 @@ service cloud.firestore {
                      isAssignedStaff());
       allow create: if isAuthenticated() && isActiveUser();
       allow update: if isAdmin() ||
-                      (isStaffMember() && isAssignedStaff());
+                      (isStaffMember() && isAssignedStaff()) ||
+                      isFollowUpRequestUpdate();
       allow delete: if isAdmin();
     }
     

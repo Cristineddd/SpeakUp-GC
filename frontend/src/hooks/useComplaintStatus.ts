@@ -155,6 +155,7 @@ export function useComplaintStatus() {
         status: newStatus,
         updatedAt: serverTimestamp(),
         lastUpdated: serverTimestamp(),
+        followUpRequested: false,
         ...(notes && { notes }),
         ...(assignedTo && { assignedTo, handlerId: assignedTo }),
         ...(assignedToName && { assignedToName }),

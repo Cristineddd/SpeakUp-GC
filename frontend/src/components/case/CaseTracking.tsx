@@ -12,7 +12,8 @@ import {
   Shield,
   Gavel,
   Users,
-  MapPin
+  MapPin,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -39,6 +40,9 @@ import { CaseActivity, ActivityType } from '../../types/caseActivity';
 import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
 import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
 import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
+import { evaluateFollowUpEligibility, FOLLOW_UP_STALE_DAYS } from '../../utils/followUpEligibility';
+import { requestCaseFollowUp } from '../../services/followUpService';
+import { useToast } from '../../hooks/use-toast';
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -71,12 +75,14 @@ const safeToDate = (dateValue: any): Date => {
 
 const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [timelineEvents, setTimelineEvents] = useState<CaseTimelineEvent[]>([]);
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [activities, setActivities] = useState<InvestigationActivity[]>([]);
   const [realActivities, setRealActivities] = useState<CaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followUpSubmitting, setFollowUpSubmitting] = useState(false);
   const [timelineSortOrder, setTimelineSortOrder] = useState<'latest' | 'oldest'>('latest');
   const [handlerDisplayName, setHandlerDisplayName] = useState<string | null>(null);
 
@@ -185,6 +191,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 updatedAt: safeToDate(data.updatedAt || data.lastUpdated || data.createdAt),
                 adminNotes: data.adminNotes || '', // Add handler notes
                 statusHistory: Array.isArray(data.statusHistory) ? data.statusHistory : [],
+                followUpRequested: Boolean(data.followUpRequested),
+                followUpRequestedAt: data.followUpRequestedAt ? safeToDate(data.followUpRequestedAt) : undefined,
               } as any;
               break;
             }
@@ -538,6 +546,66 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     }
   }, [timelineEvents, timelineSortOrder]);
 
+  const isComplainant = Boolean(
+    user?.uid &&
+      complaint &&
+      (complaint.complainantId === user.uid || (complaint as Complaint & { userId?: string }).userId === user.uid)
+  );
+
+  const followUpEligibility = useMemo(() => {
+    if (!complaint) {
+      return null;
+    }
+
+    const status = String((complaint as Complaint & { status?: string }).status || complaint.status);
+    const followUpRequested = Boolean((complaint as Complaint & { followUpRequested?: boolean }).followUpRequested);
+
+    return evaluateFollowUpEligibility({
+      status,
+      followUpRequested,
+      lastUpdate: complaint.updatedAt || complaint.filingDate,
+    });
+  }, [complaint]);
+
+  const handleRequestFollowUp = async () => {
+    if (!user?.uid || !complaint || !followUpEligibility?.canRequest || followUpSubmitting) {
+      return;
+    }
+
+    setFollowUpSubmitting(true);
+
+    try {
+      const result = await requestCaseFollowUp({
+        complaintId,
+        userId: user.uid,
+        userName: user.displayName || user.email || 'Complainant',
+      });
+
+      setComplaint((prev) =>
+        prev
+          ? ({
+              ...prev,
+              followUpRequested: true,
+              followUpRequestedAt: result.followUpRequestedAt,
+            } as Complaint)
+          : prev
+      );
+
+      toast({
+        title: 'Follow-up requested',
+        description: 'Your case handler has been notified to review your case.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Unable to request follow-up',
+        description: error instanceof Error ? error.message : 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setFollowUpSubmitting(false);
+    }
+  };
+
   const getStageProgress = () => {
     if (!complaint) return 0;
     
@@ -861,6 +929,69 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           <span>This complaint is filed under the <strong>Safe Spaces Act (RA 11313)</strong> and/or the <strong>Anti-Sexual Harassment Act (RA 7877)</strong>. Anti-retaliation protections apply to all parties.</span>
         </div>
       </div>
+
+      {isComplainant && followUpEligibility && !followUpEligibility.isClosed && (
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-white shadow-sm">
+                <Bell className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">Request Follow-Up</h3>
+                {followUpEligibility.alreadyRequested ? (
+                  <p className="mt-1 text-xs text-amber-800">
+                    Follow-up requested
+                    {(complaint as Complaint & { followUpRequestedAt?: Date }).followUpRequestedAt
+                      ? ` on ${format((complaint as Complaint & { followUpRequestedAt?: Date }).followUpRequestedAt!, 'MMMM d, yyyy')}`
+                      : ''}
+                    . Your case handler will review your request.
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-600">
+                    {followUpEligibility.canRequest
+                      ? `No update has been recorded for ${followUpEligibility.daysSinceUpdate} day${followUpEligibility.daysSinceUpdate === 1 ? '' : 's'}. You may ask the office to check on your case.`
+                      : followUpEligibility.reason}
+                  </p>
+                )}
+                {!followUpEligibility.alreadyRequested && !followUpEligibility.canRequest && (
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Follow-up becomes available after {FOLLOW_UP_STALE_DAYS} days without a case update.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="shrink-0 sm:text-right">
+              {followUpEligibility.alreadyRequested ? (
+                <Badge variant="outline" className="border-amber-300 bg-white text-amber-800">
+                  Follow-Up Pending
+                </Badge>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={handleRequestFollowUp}
+                  disabled={!followUpEligibility.canRequest || followUpSubmitting}
+                  className="w-full bg-amber-600 text-white hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 sm:w-auto"
+                >
+                  {followUpSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : followUpEligibility.canRequest ? (
+                    'Request Follow-Up'
+                  ) : followUpEligibility.daysRemaining > 0 ? (
+                    `Available in ${followUpEligibility.daysRemaining} day${followUpEligibility.daysRemaining === 1 ? '' : 's'}`
+                  ) : (
+                    'Not Available Yet'
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Tabs ─────────────────────────────── */}
       <Tabs defaultValue="timeline" className="w-full">
