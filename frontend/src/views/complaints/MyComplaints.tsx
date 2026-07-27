@@ -137,7 +137,8 @@ export default function MyComplaints() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get("status") || "all");
-  const { byComplaintId, messageUnread, notificationUnread } = useCaseUnreadByComplaintId();
+  const { byComplaintId, messageUnread, notificationUnread, isReady: unreadReady } =
+    useCaseUnreadByComplaintId();
 
   // ─── Fetch from Firebase (real-time) ───
   useEffect(() => {
@@ -360,13 +361,15 @@ export default function MyComplaints() {
               const unreadCount = byComplaintId[complaint.id] || 0;
               const unreadMessages = messageUnread[complaint.id] || 0;
               const unreadNotifications = notificationUnread[complaint.id] || 0;
-              const hasUpdate = unreadCount > 0;
+              const hasUpdate = unreadReady && unreadCount > 0;
+              const hasUnreadMessages = unreadReady && unreadMessages > 0;
+              const hasCaseUpdate = unreadReady && unreadNotifications > 0;
 
               return (
                 <div
                   key={complaint.id}
                   className={`bg-white rounded-xl border p-5 hover:border-[#1D9E75]/30 hover:shadow-md transition-all duration-200 ${
-                    hasUpdate ? 'border-red-200 ring-1 ring-red-100' : 'border-gray-200'
+                    hasUpdate ? 'border-amber-200' : 'border-gray-200'
                   }`}
                 >
                   {/* Top row */}
@@ -374,29 +377,14 @@ export default function MyComplaints() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2">
                         <h3 className="font-semibold text-gray-900 text-base truncate">{complaint.title}</h3>
-                        {hasUpdate && (
-                          <span
-                            className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0"
-                            title={
-                              unreadNotifications > 0 && unreadMessages > 0
-                                ? `${unreadNotifications} update(s), ${unreadMessages} unread message(s)`
-                                : unreadMessages > 0
-                                  ? `${unreadMessages} unread message(s)`
-                                  : `${unreadNotifications} new update(s)`
-                            }
-                          >
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-                          </span>
-                        )}
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1.5">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusCfg.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                           {getStatusLabel(complaint.status)}
                         </span>
-                        {hasUpdate && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+                        {hasCaseUpdate && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             New update
                           </span>
                         )}
@@ -471,7 +459,7 @@ export default function MyComplaints() {
                         >
                           <MessageSquare className="h-4 w-4" />
                           Message
-                          {unreadMessages > 0 && (
+                          {hasUnreadMessages && (
                             <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                               {unreadMessages > 9 ? '9+' : unreadMessages}
                             </span>
