@@ -37,7 +37,9 @@ import { MessageService } from '../../services/messageService';
 import { AdminReportService } from '../../services/adminReportService';
 import {
   CASE_SEEN_EVENT,
+  CASE_SEEN_HYDRATED_EVENT,
   countUnseenActionableCases,
+  hydrateSeenCases,
 } from '../../utils/caseQueueBadge';
 import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 
@@ -106,11 +108,21 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     });
   }, []);
 
+  // Load reviewed cases from Firestore so badges persist across logins
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    void hydrateSeenCases(currentUser.uid);
+  }, [currentUser?.uid]);
+
   // Recalculate sidebar badge when a case is marked reviewed
   useEffect(() => {
     const handleCaseSeen = () => recalcQueueBadge();
     window.addEventListener(CASE_SEEN_EVENT, handleCaseSeen);
-    return () => window.removeEventListener(CASE_SEEN_EVENT, handleCaseSeen);
+    window.addEventListener(CASE_SEEN_HYDRATED_EVENT, handleCaseSeen);
+    return () => {
+      window.removeEventListener(CASE_SEEN_EVENT, handleCaseSeen);
+      window.removeEventListener(CASE_SEEN_HYDRATED_EVENT, handleCaseSeen);
+    };
   }, [recalcQueueBadge]);
 
   // Real-time listener for unseen actionable cases (scoped for CODI)

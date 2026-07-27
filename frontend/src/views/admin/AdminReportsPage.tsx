@@ -90,11 +90,14 @@ import { PDFViewerModal } from "../../components/common/PDFViewerModal";
 import { getDisplayCaseNumber, getInternalCaseRef } from "../../utils/caseId";
 import {
   CASE_SEEN_EVENT,
+  CASE_SEEN_HYDRATED_EVENT,
   countUnseenActionableCases,
+  hydrateSeenCases,
   isUnseenActionableCase,
   markCaseSeen,
 } from "../../utils/caseQueueBadge";
 import { CodiRoleBadge } from "../../components/admin/CodiRoleBadge";
+import { CaseActivityTimeline } from "../../components/admin/CaseActivityTimeline";
 
 // Safe data access helper
 const safeGet = (obj: any, path: string, fallback: any = 'N/A') => {
@@ -377,8 +380,12 @@ const AdminReportsPage = () => {
   const markReportReviewed = useCallback((reportId: string) => {
     if (!currentUser?.uid || !reportId) return;
     markCaseSeen(currentUser.uid, reportId);
-    setSeenRevision((value) => value + 1);
   }, [currentUser?.uid]);
+
+  useEffect(() => {
+    if (!modalOpen || !selectedReport?.id) return;
+    markReportReviewed(selectedReport.id);
+  }, [modalOpen, selectedReport?.id, markReportReviewed]);
 
   // FIXED: Evidence caching to prevent repetitive processing
   const [evidenceCache] = useState(new Map<string, string[]>());
@@ -397,9 +404,18 @@ const AdminReportsPage = () => {
   );
 
   useEffect(() => {
+    if (!currentUser?.uid) return;
+    void hydrateSeenCases(currentUser.uid);
+  }, [currentUser?.uid]);
+
+  useEffect(() => {
     const onCaseSeen = () => setSeenRevision((value) => value + 1);
     window.addEventListener(CASE_SEEN_EVENT, onCaseSeen);
-    return () => window.removeEventListener(CASE_SEEN_EVENT, onCaseSeen);
+    window.addEventListener(CASE_SEEN_HYDRATED_EVENT, onCaseSeen);
+    return () => {
+      window.removeEventListener(CASE_SEEN_EVENT, onCaseSeen);
+      window.removeEventListener(CASE_SEEN_HYDRATED_EVENT, onCaseSeen);
+    };
   }, []);
 
   const isUnseenInQueue = useCallback(
@@ -517,7 +533,7 @@ const AdminReportsPage = () => {
         
         // Get tab parameter from URL
         const tabParam = params.get('tab');
-        if (tabParam && ['details', 'evidence', 'notes'].includes(tabParam)) {
+        if (tabParam && ['details', 'evidence', 'notes', 'activity'].includes(tabParam)) {
           setModalTab(tabParam);
           console.log('📑 Setting modal tab to:', tabParam);
         } else {
@@ -552,7 +568,7 @@ const AdminReportsPage = () => {
             
             // Set modal tab
             const tabParam = params.get('tab');
-            if (tabParam && ['details', 'evidence', 'notes'].includes(tabParam)) {
+            if (tabParam && ['details', 'evidence', 'notes', 'activity'].includes(tabParam)) {
               setModalTab(tabParam);
             } else {
               setModalTab('details');
@@ -560,6 +576,7 @@ const AdminReportsPage = () => {
             
             setSelectedReport(retryReport);
             setModalOpen(true); // CRITICAL: Open the modal!
+            markReportReviewed(retryReport.id);
             console.log('✅ Modal opened after retry:', retryReport.id);
             
             if (noteId) {
@@ -1326,7 +1343,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           
           {selectedReport && (
             <Tabs value={modalTab} onValueChange={setModalTab} className="w-full">
-              <TabsList className="mb-4 grid h-auto w-full grid-cols-3 rounded-xl bg-emerald-50/60 p-1">
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-2 sm:grid-cols-4 rounded-xl bg-emerald-50/60 p-1">
                 <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
                   Case Details
                 </TabsTrigger>
@@ -1335,6 +1352,9 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 </TabsTrigger>
                 <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
                   Internal Notes
+                </TabsTrigger>
+                <TabsTrigger value="activity" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                  Activity
                 </TabsTrigger>
               </TabsList>
 
@@ -1797,6 +1817,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                     }
                   }}
                 />
+              </TabsContent>
+
+              <TabsContent value="activity" className="overflow-y-auto max-h-[calc(90vh-220px)] sm:max-h-[calc(85vh-220px)] pr-2 sm:pr-3">
+                <CaseActivityTimeline report={selectedReport} />
               </TabsContent>
             </Tabs>
           )}

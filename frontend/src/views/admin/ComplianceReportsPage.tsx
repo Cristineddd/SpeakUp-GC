@@ -60,7 +60,7 @@ const ComplianceReportsPage: React.FC = () => {
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
-                <span>Reports include <strong>frequency analysis, trends, and performance metrics</strong></span>
+                <span>Reports include <strong>anonymous vs identified complainant breakdown</strong>, category trends, and performance metrics</span>
               </li>
               <li className="flex items-start gap-2">
                 <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
@@ -78,6 +78,7 @@ const ComplianceReportsPage: React.FC = () => {
                 <div className="font-semibold text-blue-900 mb-2">Complete Summary Reports</div>
                 <div className="text-xs text-blue-700 mb-2">Monthly • Quarterly • Annual</div>
                 <ul className="space-y-1 text-blue-800">
+                  <li>✅ Anonymous vs Identified filing analytics</li>
                   <li>✅ Frequency Analysis</li>
                   <li>✅ Trend Analysis</li>
                   <li>✅ Resolution Metrics</li>

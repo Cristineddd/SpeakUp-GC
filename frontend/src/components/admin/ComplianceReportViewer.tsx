@@ -15,6 +15,8 @@ import {
   Calendar,
   AlertCircle,
   Shield,
+  EyeOff,
+  UserCheck,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -24,6 +26,9 @@ import { CategoryBarChart } from '../charts/CategoryBarChart';
 import { TrendLineChart } from '../charts/TrendLineChart';
 import { ResolutionBarChart } from '../charts/ResolutionBarChart';
 import { HandlerPerformanceChart } from '../charts/HandlerPerformanceChart';
+import { SeverityPieChart } from '../charts/SeverityPieChart';
+import { ComplainantIdentityPieChart } from '../charts/ComplainantIdentityPieChart';
+import { IdentityByCategoryChart } from '../charts/IdentityByCategoryChart';
 import { format } from 'date-fns';
 import { ComplianceSummaryReport, FrequencyAnalysis, TrendAnalysis, ResolutionTimeAnalysis, HandlerPerformanceAnalysis } from '../../types/complianceReport';
 
@@ -83,12 +88,36 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
           <CardTitle>Summary Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <div className="p-5 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
               <div className="text-3xl font-bold text-green-900">
                 {report.summary.totalIncidents || 0}
               </div>
               <div className="text-sm text-green-600 font-medium mt-1">Total Incidents</div>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200">
+              <div className="text-3xl font-bold text-indigo-900">
+                {report.summary.anonymousIncidents ?? 0}
+              </div>
+              <div className="text-sm text-indigo-600 font-medium mt-1 flex items-center gap-1">
+                <EyeOff className="h-3.5 w-3.5" />
+                Anonymous
+              </div>
+              <div className="text-xs text-indigo-500 mt-1">
+                {(report.summary.anonymousRate ?? 0).toFixed(1)}% of filings
+              </div>
+            </div>
+            <div className="p-5 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl border border-teal-200">
+              <div className="text-3xl font-bold text-teal-900">
+                {report.summary.identifiedIncidents ?? 0}
+              </div>
+              <div className="text-sm text-teal-600 font-medium mt-1 flex items-center gap-1">
+                <UserCheck className="h-3.5 w-3.5" />
+                Identified
+              </div>
+              <div className="text-xs text-teal-500 mt-1">
+                {(report.summary.identifiedRate ?? 0).toFixed(1)}% of filings
+              </div>
             </div>
             <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl border border-emerald-200">
               <div className="text-3xl font-bold text-emerald-900">
@@ -108,11 +137,11 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
               </div>
               <div className="text-sm text-orange-600 font-medium mt-1">Pending</div>
             </div>
-            <div className="p-5 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl border border-teal-200">
-              <div className="text-3xl font-bold text-teal-900">
+            <div className="p-5 bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl border border-cyan-200">
+              <div className="text-3xl font-bold text-cyan-900">
                 {report.summary.resolutionRate?.toFixed(1) || 0}%
               </div>
-              <div className="text-sm text-teal-600 font-medium mt-1">Resolution Rate</div>
+              <div className="text-sm text-cyan-600 font-medium mt-1">Resolution Rate</div>
             </div>
           </div>
         </CardContent>
@@ -156,6 +185,7 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
             <div className="font-semibold text-green-900 mb-2">📈 Key Insights:</div>
             <ul className="space-y-1 text-sm text-green-800">
               <li>✓ {report.summary.resolvedIncidents || 0} incidents resolved ({report.summary.resolutionRate?.toFixed(1) || 0}% success rate)</li>
+              <li>✓ {report.summary.anonymousIncidents ?? 0} anonymous filings ({report.summary.anonymousRate?.toFixed(1) || 0}%) vs {report.summary.identifiedIncidents ?? 0} identified ({report.summary.identifiedRate?.toFixed(1) || 0}%)</li>
               <li>✓ {report.summary.inProgressIncidents || 0} cases currently under investigation</li>
               <li>✓ {report.summary.pendingIncidents || 0} cases awaiting review or assignment</li>
               {report.handlerPerformanceAnalysis && report.handlerPerformanceAnalysis.handlers && report.handlerPerformanceAnalysis.handlers.length > 0 && (
@@ -271,6 +301,89 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
 
   return (
     <>
+      {/* Filing Identity — Anonymous vs Identified */}
+      {analysis.byFilingIdentity && analysis.byFilingIdentity.some((item) => item.count > 0) && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <EyeOff className="h-5 w-5 text-indigo-600" />
+              Complainant Filing Identity
+            </CardTitle>
+            <CardDescription>
+              Based on filing preference captured at submission (anonymous toggle or identified complainant details)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ComplainantIdentityPieChart data={analysis.byFilingIdentity} />
+              <div className="space-y-4">
+                {analysis.byFilingIdentity.map((item) => (
+                  <div key={item.label} className="rounded-xl border p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-gray-900">{item.label}</span>
+                      <span className="text-2xl font-bold">{item.count}</span>
+                    </div>
+                    <Progress value={item.percentage} className="h-2" />
+                    <p className="text-xs text-gray-500 mt-2">{item.percentage.toFixed(1)}% of total filings</p>
+                  </div>
+                ))}
+                {analysis.byComplainantType && analysis.byComplainantType.length > 0 && (
+                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                    <p className="text-sm font-semibold text-emerald-900 mb-3">Complainant role at filing</p>
+                    <div className="space-y-2">
+                      {analysis.byComplainantType.map((row) => (
+                        <div key={row.label} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{row.label}</span>
+                          <span className="font-medium">{row.count} ({row.percentage.toFixed(1)}%)</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Identity by Category */}
+      {analysis.identityByCategory && analysis.identityByCategory.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-violet-600" />
+              Anonymous vs Identified by Category
+            </CardTitle>
+            <CardDescription>Which complaint types are filed anonymously vs with identified complainant details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <IdentityByCategoryChart data={analysis.identityByCategory} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Severity distribution */}
+      {analysis.bySeverity && analysis.bySeverity.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              Severity Distribution
+            </CardTitle>
+            <CardDescription>Breakdown of cases by severity level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SeverityPieChart
+              data={analysis.bySeverity.map((item) => ({
+                severity: item.severity.toLowerCase(),
+                count: item.count,
+                percentage: item.percentage,
+              }))}
+            />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Visual Charts */}
       {analysis.byCategory && Array.isArray(analysis.byCategory) && analysis.byCategory.length > 0 && (
         <Card className="mb-6">

@@ -17,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { AdminReport } from '../../services/adminReportService';
 import { getDisplayCaseNumber } from '../../utils/caseId';
 import { safeToDate } from '../../utils/dateFormat';
+import { markCaseSeen } from '../../utils/caseQueueBadge';
 
 export default function CaseChat() {
   const { complaintId } = useParams<{ complaintId: string }>();
@@ -124,6 +125,11 @@ export default function CaseChat() {
 
     fetchComplaint();
   }, [complaintId]);
+
+  useEffect(() => {
+    if (!complaintId || !currentUser?.uid || roleLoading || !isHandler) return;
+    markCaseSeen(currentUser.uid, complaintId);
+  }, [complaintId, currentUser?.uid, isHandler, roleLoading]);
 
   const handleRetry = () => {
     setLoading(true);

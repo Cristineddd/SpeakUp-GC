@@ -101,6 +101,24 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // CASE VIEWS (tracks which staff have reviewed/opened a case)
+    match /caseViews/{viewId} {
+      allow read: if isAuthenticated() &&
+                    (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isAuthenticated() &&
+                      isStaffMember() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      request.resource.data.keys().hasAll(['userId', 'caseId', 'viewedAt']);
+
+      allow update: if isAuthenticated() &&
+                      isStaffMember() &&
+                      resource.data.userId == request.auth.uid &&
+                      request.resource.data.userId == request.auth.uid;
+
+      allow delete: if isAdmin();
+    }
+
     // STAFF PROFILES (auth uid -> representative doc id + role, for security rules)
     match /staffProfiles/{userId} {
       allow read: if isOwner(userId) || isAdmin();

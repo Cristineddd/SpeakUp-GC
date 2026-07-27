@@ -84,6 +84,30 @@ export interface FrequencyAnalysis {
     year: number;
     count: number;
   }[];
+
+  /** Anonymous vs identified complainants (from filing data) */
+  byFilingIdentity: {
+    label: 'Anonymous' | 'Identified';
+    count: number;
+    percentage: number;
+  }[];
+
+  /** Complainant role at filing (student, faculty, staff, etc.) */
+  byComplainantType: {
+    type: string;
+    label: string;
+    count: number;
+    percentage: number;
+  }[];
+
+  /** Identity breakdown per complaint category */
+  identityByCategory: Array<{
+    category: string;
+    categoryLabel: string;
+    anonymous: number;
+    identified: number;
+    total: number;
+  }>;
 }
 
 // Trend analysis data
@@ -201,6 +225,12 @@ export interface ComplianceSummaryReport {
     dismissedIncidents: number;
     resolutionRate: number;
     averageResolutionTime: number;
+    /** Cases filed anonymously at submission */
+    anonymousIncidents: number;
+    /** Cases filed with identified complainant details */
+    identifiedIncidents: number;
+    anonymousRate: number;
+    identifiedRate: number;
   };
   
   frequencyAnalysis?: FrequencyAnalysis;

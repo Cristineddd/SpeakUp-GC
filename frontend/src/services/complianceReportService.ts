@@ -30,6 +30,13 @@ import {
 } from '../types/complianceReport';
 import { AdminReport } from './adminReportService';
 import { format, startOfDay, endOfDay, subDays, getHours, getDay, getMonth, getYear } from 'date-fns';
+import {
+  ComplianceReportRecord,
+  getCategoryLabel,
+  getComplainantTypeLabel,
+  getFilingIdentity,
+  isAnonymousComplaint,
+} from '../utils/complianceAnalytics';
 
 export class ComplianceReportService {
   /**
@@ -47,21 +54,20 @@ export class ComplianceReportService {
         reports.forEach((report) => anonymizeReportData(report));
       }
       
-      // By category
+      // By category (with human-readable labels)
       const categoryCount = reports.reduce((acc, report) => {
-        const cat = report.category || 'other';
+        const cat = report.category || report.type || 'other';
         acc[cat] = (acc[cat] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
       
       const byCategory = Object.entries(categoryCount).map(([category, count]) => {
-        // Calculate trend (compare with previous period)
         const trend = this.calculateCategoryTrend(category, startDate, endDate);
         
         return {
-          category,
+          category: getCategoryLabel(category),
           count,
-          percentage: (count / reports.length) * 100,
+          percentage: reports.length > 0 ? (count / reports.length) * 100 : 0,
           trend,
         };
       }).sort((a, b) => b.count - a.count);
@@ -74,9 +80,9 @@ export class ComplianceReportService {
       }, {} as Record<string, number>);
       
       const bySeverity = Object.entries(severityCount).map(([severity, count]) => ({
-        severity,
+        severity: severity.charAt(0).toUpperCase() + severity.slice(1),
         count,
-        percentage: (count / reports.length) * 100,
+        percentage: reports.length > 0 ? (count / reports.length) * 100 : 0,
       })).sort((a, b) => b.count - a.count);
       
       // By location
@@ -89,8 +95,62 @@ export class ComplianceReportService {
       const byLocation = Object.entries(locationCount).map(([location, count]) => ({
         location: anonymize ? 'Location ' + location.charAt(0) : location,
         count,
-        percentage: (count / reports.length) * 100,
+        percentage: reports.length > 0 ? (count / reports.length) * 100 : 0,
       })).sort((a, b) => b.count - a.count);
+
+      const anonymousCount = reports.filter((report) => isAnonymousComplaint(report as ComplianceReportRecord)).length;
+      const identifiedCount = reports.length - anonymousCount;
+
+      const byFilingIdentity = [
+        {
+          label: 'Anonymous' as const,
+          count: anonymousCount,
+          percentage: reports.length > 0 ? (anonymousCount / reports.length) * 100 : 0,
+        },
+        {
+          label: 'Identified' as const,
+          count: identifiedCount,
+          percentage: reports.length > 0 ? (identifiedCount / reports.length) * 100 : 0,
+        },
+      ];
+
+      const complainantTypeCount = reports.reduce((acc, report) => {
+        const record = report as ComplianceReportRecord;
+        const typeLabel = getComplainantTypeLabel(record.complainantType);
+        acc[typeLabel] = (acc[typeLabel] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const byComplainantType = Object.entries(complainantTypeCount)
+        .map(([label, count]) => ({
+          type: label.toLowerCase().replace(/\s+/g, '_'),
+          label,
+          count,
+          percentage: reports.length > 0 ? (count / reports.length) * 100 : 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      const categoryIdentityMap = new Map<string, { anonymous: number; identified: number }>();
+      reports.forEach((report) => {
+        const category = report.category || report.type || 'other';
+        const existing = categoryIdentityMap.get(category) || { anonymous: 0, identified: 0 };
+        if (isAnonymousComplaint(report as ComplianceReportRecord)) {
+          existing.anonymous += 1;
+        } else {
+          existing.identified += 1;
+        }
+        categoryIdentityMap.set(category, existing);
+      });
+
+      const identityByCategory = Array.from(categoryIdentityMap.entries())
+        .map(([category, counts]) => ({
+          category,
+          categoryLabel: getCategoryLabel(category),
+          anonymous: counts.anonymous,
+          identified: counts.identified,
+          total: counts.anonymous + counts.identified,
+        }))
+        .sort((a, b) => b.total - a.total);
       
       // By time of day
       const timeOfDayCount: Record<number, number> = {};
@@ -147,6 +207,9 @@ export class ComplianceReportService {
         byTimeOfDay,
         byDayOfWeek,
         byMonth,
+        byFilingIdentity,
+        byComplainantType,
+        identityByCategory,
       };
     } catch (error) {
       console.error('Error generating frequency analysis:', error);
@@ -445,24 +508,33 @@ export class ComplianceReportService {
   ): Promise<ComplianceSummaryReport> {
     try {
       const reports = await this.fetchReports(config.startDate, config.endDate);
+
+      const anonymousIncidents = reports.filter((report) =>
+        isAnonymousComplaint(report as ComplianceReportRecord)
+      ).length;
+      const identifiedIncidents = reports.length - anonymousIncidents;
       
       // Summary stats
       const summary = {
         totalIncidents: reports.length,
         resolvedIncidents: reports.filter(r => r.status === 'resolved').length,
-        pendingIncidents: reports.filter(r => r.status === 'pending').length,
+        pendingIncidents: reports.filter(r => r.status === 'pending' || r.status === 'submitted').length,
         inProgressIncidents: reports.filter(r => r.status === 'inProgress').length,
-        dismissedIncidents: reports.filter(r => r.status === 'dismissed').length,
+        dismissedIncidents: reports.filter(r => r.status === 'dismissed' || r.status === 'closed').length,
         resolutionRate: reports.length > 0
           ? (reports.filter(r => r.status === 'resolved').length / reports.length) * 100
           : 0,
-        averageResolutionTime: 0, // Will be calculated from resolution time analysis
+        averageResolutionTime: 0,
+        anonymousIncidents,
+        identifiedIncidents,
+        anonymousRate: reports.length > 0 ? (anonymousIncidents / reports.length) * 100 : 0,
+        identifiedRate: reports.length > 0 ? (identifiedIncidents / reports.length) * 100 : 0,
       };
       
       // Generate analyses based on report type
       let frequencyAnalysis, trendAnalysis, resolutionTimeAnalysis, handlerPerformanceAnalysis;
       
-      if (['frequency_analysis', 'monthly_summary', 'quarterly_summary', 'annual_summary'].includes(config.type)) {
+      if (['frequency_analysis', 'monthly_summary', 'quarterly_summary', 'annual_summary', 'category_breakdown', 'severity_analysis', 'location_analysis'].includes(config.type)) {
         frequencyAnalysis = await this.generateFrequencyAnalysis(
           config.startDate,
           config.endDate,

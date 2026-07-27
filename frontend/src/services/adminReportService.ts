@@ -124,6 +124,12 @@ export interface AdminReport {
   longitude?: number;
   mapAddress?: string;
   locationVicinity?: string; // "inside" or "outside"
+
+  // Filing identity (captured at complaint submission)
+  isAnonymous?: boolean;
+  anonymityLevel?: 'full' | 'confidential' | string;
+  complainantName?: string;
+  complainantType?: string;
 }
 
 export interface ReportStats {

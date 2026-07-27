@@ -191,6 +191,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       
       const summaryData = [
         ['Total Incidents', generatedReport.summary.totalIncidents.toString()],
+        ['Anonymous Filings', `${generatedReport.summary.anonymousIncidents ?? 0} (${(generatedReport.summary.anonymousRate ?? 0).toFixed(1)}%)`],
+        ['Identified Filings', `${generatedReport.summary.identifiedIncidents ?? 0} (${(generatedReport.summary.identifiedRate ?? 0).toFixed(1)}%)`],
         ['Resolved', generatedReport.summary.resolvedIncidents.toString()],
         ['In Progress', generatedReport.summary.inProgressIncidents.toString()],
         ['Pending', generatedReport.summary.pendingIncidents.toString()],
@@ -220,6 +222,96 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       });
       
       yPos = (doc as any).lastAutoTable.finalY + 10;
+
+      // Complainant filing identity
+      if (generatedReport.frequencyAnalysis?.byFilingIdentity?.length) {
+        if (yPos > 230) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Complainant Filing Identity', 15, yPos);
+        yPos += 6;
+
+        const identityData = generatedReport.frequencyAnalysis.byFilingIdentity.map((item) => [
+          item.label,
+          item.count.toString(),
+          `${item.percentage.toFixed(1)}%`,
+        ]);
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Filing Type', 'Count', 'Share']],
+          body: identityData,
+          theme: 'plain',
+          styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+          headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
+          alternateRowStyles: { fillColor: [250, 250, 250] },
+          margin: { left: 15, right: 15 },
+        });
+
+        yPos = (doc as any).lastAutoTable.finalY + 8;
+
+        if (generatedReport.frequencyAnalysis.byComplainantType?.length) {
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Complainant Role at Filing', 15, yPos);
+          yPos += 5;
+
+          const roleData = generatedReport.frequencyAnalysis.byComplainantType.map((row) => [
+            row.label,
+            row.count.toString(),
+            `${row.percentage.toFixed(1)}%`,
+          ]);
+
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Role', 'Count', 'Share']],
+            body: roleData,
+            theme: 'plain',
+            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+            headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+            margin: { left: 15, right: 15 },
+          });
+
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        if (generatedReport.frequencyAnalysis.identityByCategory?.length) {
+          if (yPos > 220) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Anonymous vs Identified by Category', 15, yPos);
+          yPos += 5;
+
+          const categoryIdentityData = generatedReport.frequencyAnalysis.identityByCategory.map((row) => [
+            row.categoryLabel,
+            row.anonymous.toString(),
+            row.identified.toString(),
+            row.total.toString(),
+          ]);
+
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Category', 'Anonymous', 'Identified', 'Total']],
+            body: categoryIdentityData,
+            theme: 'plain',
+            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+            headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+            margin: { left: 15, right: 15 },
+          });
+
+          yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+      }
       
       // Frequency analysis if available
       if (generatedReport.frequencyAnalysis) {
@@ -436,6 +528,10 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       csvContent += `Summary Statistics\n`;
       csvContent += `Metric,Value\n`;
       csvContent += `Total Incidents,${generatedReport.summary.totalIncidents}\n`;
+      csvContent += `Anonymous Filings,${generatedReport.summary.anonymousIncidents ?? 0}\n`;
+      csvContent += `Identified Filings,${generatedReport.summary.identifiedIncidents ?? 0}\n`;
+      csvContent += `Anonymous Rate,${(generatedReport.summary.anonymousRate ?? 0).toFixed(1)}%\n`;
+      csvContent += `Identified Rate,${(generatedReport.summary.identifiedRate ?? 0).toFixed(1)}%\n`;
       csvContent += `Resolved,${generatedReport.summary.resolvedIncidents}\n`;
       csvContent += `In Progress,${generatedReport.summary.inProgressIncidents}\n`;
       csvContent += `Pending,${generatedReport.summary.pendingIncidents}\n`;
@@ -443,10 +539,35 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       
       // Frequency analysis
       if (generatedReport.frequencyAnalysis) {
+        if (generatedReport.frequencyAnalysis.byFilingIdentity?.length) {
+          csvContent += `Filing Identity\n`;
+          csvContent += `Type,Count,Percentage\n`;
+          generatedReport.frequencyAnalysis.byFilingIdentity.forEach((item) => {
+            csvContent += `${item.label},${item.count},${item.percentage.toFixed(1)}%\n`;
+          });
+          csvContent += `\n`;
+        }
+
+        if (generatedReport.frequencyAnalysis.byComplainantType?.length) {
+          csvContent += `Complainant Role at Filing\n`;
+          csvContent += `Role,Count,Percentage\n`;
+          generatedReport.frequencyAnalysis.byComplainantType.forEach((row) => {
+            csvContent += `${row.label},${row.count},${row.percentage.toFixed(1)}%\n`;
+          });
+          csvContent += `\n`;
+        }
+
         csvContent += `Frequency Analysis - By Category\n`;
         csvContent += `Category,Count,Percentage\n`;
-        Object.entries(generatedReport.frequencyAnalysis.byCategory).forEach(([category, data]) => {
-          csvContent += `${category},${data.count},${data.percentage.toFixed(1)}%\n`;
+        const categoryRows = Array.isArray(generatedReport.frequencyAnalysis.byCategory)
+          ? generatedReport.frequencyAnalysis.byCategory
+          : Object.entries(generatedReport.frequencyAnalysis.byCategory).map(([category, data]: [string, any]) => ({
+              category,
+              count: data.count,
+              percentage: data.percentage,
+            }));
+        categoryRows.forEach((item) => {
+          csvContent += `${item.category},${item.count},${(item.percentage || 0).toFixed(1)}%\n`;
         });
         csvContent += `\n`;
       }
