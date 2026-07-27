@@ -29,6 +29,7 @@ import { HandlerPerformanceChart } from '../charts/HandlerPerformanceChart';
 import { SeverityPieChart } from '../charts/SeverityPieChart';
 import { ComplainantIdentityPieChart } from '../charts/ComplainantIdentityPieChart';
 import { IdentityByCategoryChart } from '../charts/IdentityByCategoryChart';
+import { FILING_IDENTITY_STYLES, type FilingIdentityLabel } from '../../constants/filingIdentity';
 import { format } from 'date-fns';
 import { ComplianceSummaryReport, FrequencyAnalysis, TrendAnalysis, ResolutionTimeAnalysis, HandlerPerformanceAnalysis } from '../../types/complianceReport';
 
@@ -150,7 +151,7 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
       {/* Key Analytics Dashboard */}
       <Card>
         <CardHeader>
-          <CardTitle>📊 Key Analytics & Insights</CardTitle>
+          <CardTitle>Key Analytics & Insights</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* KPI Metrics Row */}
@@ -182,14 +183,14 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
 
           {/* Key Insights */}
           <div className="mt-4 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200 space-y-2">
-            <div className="font-semibold text-green-900 mb-2">📈 Key Insights:</div>
-            <ul className="space-y-1 text-sm text-green-800">
-              <li>✓ {report.summary.resolvedIncidents || 0} incidents resolved ({report.summary.resolutionRate?.toFixed(1) || 0}% success rate)</li>
-              <li>✓ {report.summary.anonymousIncidents ?? 0} anonymous filings ({report.summary.anonymousRate?.toFixed(1) || 0}%) vs {report.summary.identifiedIncidents ?? 0} identified ({report.summary.identifiedRate?.toFixed(1) || 0}%)</li>
-              <li>✓ {report.summary.inProgressIncidents || 0} cases currently under investigation</li>
-              <li>✓ {report.summary.pendingIncidents || 0} cases awaiting review or assignment</li>
+            <div className="font-semibold text-green-900 mb-2">Key Insights</div>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-green-800">
+              <li>{report.summary.resolvedIncidents || 0} incidents resolved ({report.summary.resolutionRate?.toFixed(1) || 0}% success rate)</li>
+              <li>{report.summary.anonymousIncidents ?? 0} anonymous filings ({report.summary.anonymousRate?.toFixed(1) || 0}%) vs {report.summary.identifiedIncidents ?? 0} identified ({report.summary.identifiedRate?.toFixed(1) || 0}%)</li>
+              <li>{report.summary.inProgressIncidents || 0} cases currently under investigation</li>
+              <li>{report.summary.pendingIncidents || 0} cases awaiting review or assignment</li>
               {report.handlerPerformanceAnalysis && report.handlerPerformanceAnalysis.handlers && report.handlerPerformanceAnalysis.handlers.length > 0 && (
-                <li>✓ {report.handlerPerformanceAnalysis.handlers.length} active case handlers assigned to incidents</li>
+                <li>{report.handlerPerformanceAnalysis.handlers.length} active case handlers assigned to incidents</li>
               )}
             </ul>
           </div>
@@ -198,7 +199,7 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
           <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-200">
             <Shield className="h-4 w-4 text-green-600" />
             <span className="text-sm text-green-700">
-              {report.anonymized ? '🔒 Data anonymized' : '👤 Personal data included'} • GDPR Compliant
+              {report.anonymized ? 'Data anonymized' : 'Personal data included'} • GDPR Compliant
             </span>
           </div>
         </CardContent>
@@ -249,10 +250,10 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
             ? 'grid-cols-3'
             : 'grid-cols-4'
         }`}>
-          {report.frequencyAnalysis && <TabsTrigger value="frequency">📊 Frequency Analysis</TabsTrigger>}
-          {report.trendAnalysis && <TabsTrigger value="trends">📈 Trend Analysis</TabsTrigger>}
-          {report.resolutionTimeAnalysis && <TabsTrigger value="resolution">⏱️ Resolution Metrics</TabsTrigger>}
-          {report.handlerPerformanceAnalysis && <TabsTrigger value="handlers">👥 Staff Performance</TabsTrigger>}
+          {report.frequencyAnalysis && <TabsTrigger value="frequency">Frequency Analysis</TabsTrigger>}
+          {report.trendAnalysis && <TabsTrigger value="trends">Trend Analysis</TabsTrigger>}
+          {report.resolutionTimeAnalysis && <TabsTrigger value="resolution">Resolution Metrics</TabsTrigger>}
+          {report.handlerPerformanceAnalysis && <TabsTrigger value="handlers">Staff Performance</TabsTrigger>}
         </TabsList>
 
         {/* Frequency Analysis Tab */}
@@ -313,34 +314,75 @@ const FrequencyAnalysisView: React.FC<{ analysis: FrequencyAnalysis }> = ({ anal
               Based on filing preference captured at submission (anonymous toggle or identified complainant details)
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ComplainantIdentityPieChart data={analysis.byFilingIdentity} />
-              <div className="space-y-4">
-                {analysis.byFilingIdentity.map((item) => (
-                  <div key={item.label} className="rounded-xl border p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-gray-900">{item.label}</span>
-                      <span className="text-2xl font-bold">{item.count}</span>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {(['Anonymous', 'Identified'] as FilingIdentityLabel[]).map((label) => {
+                const item = analysis.byFilingIdentity!.find((row) => row.label === label) ?? {
+                  label,
+                  count: 0,
+                  percentage: 0,
+                };
+                const styles = FILING_IDENTITY_STYLES[label];
+
+                return (
+                  <div
+                    key={label}
+                    className={`rounded-xl border p-4 ${styles.bg} ${styles.border}`}
+                  >
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
+                        <span className={`font-semibold ${styles.text}`}>{label}</span>
+                      </div>
+                      <span className={`text-2xl font-bold ${styles.text}`}>{item.count}</span>
                     </div>
-                    <Progress value={item.percentage} className="h-2" />
-                    <p className="text-xs text-gray-500 mt-2">{item.percentage.toFixed(1)}% of total filings</p>
-                  </div>
-                ))}
-                {analysis.byComplainantType && analysis.byComplainantType.length > 0 && (
-                  <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
-                    <p className="text-sm font-semibold text-emerald-900 mb-3">Complainant role at filing</p>
-                    <div className="space-y-2">
-                      {analysis.byComplainantType.map((row) => (
-                        <div key={row.label} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{row.label}</span>
-                          <span className="font-medium">{row.count} ({row.percentage.toFixed(1)}%)</span>
-                        </div>
-                      ))}
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-white/80">
+                      <div
+                        className={`h-full rounded-full transition-all ${styles.bar}`}
+                        style={{ width: `${item.percentage}%` }}
+                      />
                     </div>
+                    <p className="mt-2 text-xs text-gray-600">
+                      {item.percentage.toFixed(1)}% of total filings
+                    </p>
                   </div>
-                )}
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,320px)_1fr] lg:items-start">
+              <div className="flex justify-center lg:justify-start">
+                <ComplainantIdentityPieChart data={analysis.byFilingIdentity} />
               </div>
+
+              {analysis.byComplainantType && analysis.byComplainantType.length > 0 && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+                  <p className="mb-3 text-sm font-semibold text-gray-900">Complainant role at filing</p>
+                  <div className="space-y-3">
+                    {analysis.byComplainantType.map((row) => (
+                      <div key={row.label}>
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{row.label}</span>
+                          <span className="font-medium text-gray-900">
+                            {row.count} ({row.percentage.toFixed(1)}%)
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                          <div
+                            className="h-full rounded-full bg-gray-500"
+                            style={{ width: `${row.percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {analysis.byFilingIdentity.some((row) => row.label === 'Anonymous' && row.count > 0) && (
+                    <p className="mt-3 text-xs text-gray-500">
+                      Anonymous filings may not include complainant role details.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

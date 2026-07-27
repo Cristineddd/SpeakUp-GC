@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -91,6 +91,36 @@ const AdminDashboardRedesign = () => {
   const [categoryDistribution, setCategoryDistribution] = useState<any[]>([]);
   const [statusDistribution, setStatusDistribution] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const liveTime = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      }).format(now),
+    [now]
+  );
+
+  const liveDate = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(now),
+    [now]
+  );
 
   useEffect(() => {
     // Fetch reports
@@ -273,13 +303,21 @@ const AdminDashboardRedesign = () => {
   return (
     <div className="w-full space-y-6 pb-10" style={{ backgroundColor: '#FAFAFA' }}>
       {/* Header */}
-      <div className="mb-6">
-        <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Admin Overview</p>
-        <div className="flex items-baseline gap-3">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Admin Overview</p>
           <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-xs text-gray-500">
-            Last updated: {new Date().toLocaleTimeString()}
+          <p className="text-sm text-gray-500 mt-1">System-wide case management and analytics overview</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm sm:min-w-[240px]">
+          <div className="flex items-center justify-end gap-2 text-gray-400 mb-1">
+            <Clock className="h-4 w-4" />
+            <span className="text-[11px] font-medium uppercase tracking-wide">Philippine Time</span>
+          </div>
+          <p className="text-right text-2xl font-semibold tabular-nums tracking-tight text-gray-900">
+            {liveTime}
           </p>
+          <p className="text-right text-sm text-gray-500 mt-1">{liveDate}</p>
         </div>
       </div>
 

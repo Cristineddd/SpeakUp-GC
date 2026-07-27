@@ -9,6 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { FILING_IDENTITY_COLORS } from '../../constants/filingIdentity';
 
 interface IdentityByCategoryRow {
   categoryLabel: string;
@@ -67,8 +68,8 @@ export const IdentityByCategoryChart: React.FC<IdentityByCategoryChartProps> = (
         <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
         <Tooltip content={<CustomTooltip />} />
         <Legend />
-        <Bar dataKey="Anonymous" stackId="identity" fill="#6366f1" radius={[0, 0, 0, 0]} />
-        <Bar dataKey="Identified" stackId="identity" fill="#1D9E75" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Anonymous" stackId="identity" fill={FILING_IDENTITY_COLORS.Anonymous} radius={[0, 0, 0, 0]} />
+        <Bar dataKey="Identified" stackId="identity" fill={FILING_IDENTITY_COLORS.Identified} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

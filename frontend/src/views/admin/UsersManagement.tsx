@@ -155,9 +155,9 @@ const UsersManagement = () => {
   useEffect(() => {
     let result = [...users];
 
-    // Filter representatives
+    // Hide staff accounts (admins / CODI) from the default user list
     if (!showRepresentatives) {
-      result = result.filter(user => !user.representativeRole);
+      result = result.filter(user => !user.isAdmin && !user.representativeRole);
     }
 
     // Apply status filter
@@ -181,15 +181,17 @@ const UsersManagement = () => {
     setFilteredUsers(result);
   }, [users, searchTerm, statusFilter, showRepresentatives]);
 
-  // Calculate stats (only regular users, no representatives)
+  const regularUsers = users.filter(user => !user.isAdmin && !user.representativeRole);
+
+  // Calculate stats (regular complainant accounts only)
   const stats = {
-    total: users.length,
-    activeToday: users.filter(user => {
+    total: regularUsers.length,
+    activeToday: regularUsers.filter(user => {
       if (!user.reportsCount || user.reportsCount === 0) return false;
       // This is a simplified check - in production you'd check actual report timestamps
       return !user.isSuspended;
     }).length,
-    newThisMonth: users.filter(user => {
+    newThisMonth: regularUsers.filter(user => {
       if (!user.createdAt) return false;
       try {
         const userDate = new Date(user.createdAt);
@@ -617,13 +619,9 @@ const UsersManagement = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span>
-            Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span> of <span className="font-semibold text-gray-900">{users.length}</span> users
+            Showing <span className="font-semibold text-gray-900">{filteredUsers.length}</span>{' '}
+            {filteredUsers.length === 1 ? 'user' : 'users'}
           </span>
-          {filteredUsers.length < users.length && (
-            <span className="text-xs text-amber-600 font-medium">
-              ({users.length - filteredUsers.length} filtered out)
-            </span>
-          )}
           <button
             onClick={() => fetchUsers()}
             className="p-1 hover:bg-gray-100 rounded transition-colors"

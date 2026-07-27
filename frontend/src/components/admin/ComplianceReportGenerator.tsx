@@ -807,13 +807,13 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           {['monthly_summary', 'quarterly_summary', 'annual_summary'].includes(reportType) ? (
             <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
               <div className="text-sm text-gray-700">
-                <strong>ℹ️ Complete Report:</strong> This report includes all available analyses (Frequency, Trends, Resolution Metrics, and Staff Performance).
+                <strong>Complete Report:</strong> This report includes all available analyses (Frequency, Trends, Resolution Metrics, and Staff Performance).
               </div>
             </div>
           ) : (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="text-sm text-blue-800">
-                <strong>ℹ️ Focused Report:</strong> This report contains detailed in-depth analysis of one specific area.
+                <strong>Focused Report:</strong> This report contains detailed in-depth analysis of one specific area.
               </div>
             </div>
           )}

@@ -71,18 +71,18 @@ const ComplianceReportsPage: React.FC = () => {
 
           {/* Report Types Comparison */}
           <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
-            <h3 className="font-semibold text-blue-900 mb-4">📊 What's Included in Each Report Type?</h3>
+            <h3 className="font-semibold text-blue-900 mb-4">What's Included in Each Report Type?</h3>
             <div className="grid md:grid-cols-2 gap-4 text-sm">
               {/* Complete Reports */}
               <div className="p-4 bg-white rounded-lg border border-blue-200">
                 <div className="font-semibold text-blue-900 mb-2">Complete Summary Reports</div>
                 <div className="text-xs text-blue-700 mb-2">Monthly • Quarterly • Annual</div>
-                <ul className="space-y-1 text-blue-800">
-                  <li>✅ Anonymous vs Identified filing analytics</li>
-                  <li>✅ Frequency Analysis</li>
-                  <li>✅ Trend Analysis</li>
-                  <li>✅ Resolution Metrics</li>
-                  <li>✅ Staff Performance</li>
+                <ul className="list-disc pl-5 space-y-1 text-blue-800">
+                  <li>Anonymous vs Identified filing analytics</li>
+                  <li>Frequency Analysis</li>
+                  <li>Trend Analysis</li>
+                  <li>Resolution Metrics</li>
+                  <li>Staff Performance</li>
                 </ul>
               </div>
 
@@ -90,11 +90,11 @@ const ComplianceReportsPage: React.FC = () => {
               <div className="p-4 bg-white rounded-lg border border-blue-200">
                 <div className="font-semibold text-blue-900 mb-2">Focused Analysis Reports</div>
                 <div className="text-xs text-blue-700 mb-2">Frequency • Trend • Resolution • Staff</div>
-                <ul className="space-y-1 text-blue-800">
-                  <li>📊 One specific analysis type</li>
-                  <li>📈 In-depth detailed data</li>
-                  <li>🎯 Targeted insights</li>
-                  <li>⚡ Quick generation</li>
+                <ul className="list-disc pl-5 space-y-1 text-blue-800">
+                  <li>One specific analysis type</li>
+                  <li>In-depth detailed data</li>
+                  <li>Targeted insights</li>
+                  <li>Quick generation</li>
                 </ul>
               </div>
             </div>

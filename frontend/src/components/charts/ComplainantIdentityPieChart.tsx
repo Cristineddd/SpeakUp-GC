@@ -1,5 +1,6 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { FILING_IDENTITY_COLORS, type FilingIdentityLabel } from '../../constants/filingIdentity';
 
 interface IdentitySlice {
   label: string;
@@ -11,23 +12,23 @@ interface ComplainantIdentityPieChartProps {
   data: IdentitySlice[];
 }
 
-const IDENTITY_COLORS: Record<string, string> = {
-  Anonymous: '#6366f1',
-  Identified: '#1D9E75',
-};
-
 export const ComplainantIdentityPieChart: React.FC<ComplainantIdentityPieChartProps> = ({ data }) => {
-  const chartData = data
-    .filter((item) => item.count > 0)
-    .map((item) => ({
-      name: item.label,
-      value: item.count,
-      percentage: item.percentage,
-    }));
+  const total = data.reduce((sum, item) => sum + item.count, 0);
 
-  if (chartData.length === 0) {
+  const chartData = (['Anonymous', 'Identified'] as FilingIdentityLabel[])
+    .map((label) => {
+      const row = data.find((item) => item.label === label);
+      return {
+        name: label,
+        value: row?.count ?? 0,
+        percentage: row?.percentage ?? 0,
+      };
+    })
+    .filter((item) => item.value > 0);
+
+  if (chartData.length === 0 || total === 0) {
     return (
-      <div className="flex h-[280px] items-center justify-center text-sm text-gray-500">
+      <div className="flex h-[260px] items-center justify-center text-sm text-gray-500">
         No filing identity data for this period
       </div>
     );
@@ -57,9 +58,9 @@ export const ComplainantIdentityPieChart: React.FC<ComplainantIdentityPieChartPr
         x={x}
         y={y}
         fill="white"
-        textAnchor={x > cx ? 'start' : 'end'}
+        textAnchor="middle"
         dominantBaseline="central"
-        fontSize={13}
+        fontSize={12}
         fontWeight="bold"
       >
         {`${(percent * 100).toFixed(0)}%`}
@@ -68,30 +69,46 @@ export const ComplainantIdentityPieChart: React.FC<ComplainantIdentityPieChartPr
   };
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          cx="50%"
-          cy="50%"
-          labelLine={false}
-          label={renderCustomLabel}
-          outerRadius={115}
-          innerRadius={52}
-          fill="#8884d8"
-          dataKey="value"
-          paddingAngle={2}
-        >
-          {chartData.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={IDENTITY_COLORS[entry.name] || '#6b7280'}
-            />
-          ))}
-        </Pie>
-        <Tooltip content={<CustomTooltip />} />
-        <Legend verticalAlign="bottom" height={36} iconType="circle" />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="relative mx-auto w-full max-w-sm">
+      <ResponsiveContainer width="100%" height={260}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={renderCustomLabel}
+            outerRadius={100}
+            innerRadius={58}
+            dataKey="value"
+            paddingAngle={chartData.length > 1 ? 3 : 0}
+          >
+            {chartData.map((entry) => (
+              <Cell
+                key={entry.name}
+                fill={FILING_IDENTITY_COLORS[entry.name as FilingIdentityLabel] || '#6b7280'}
+                stroke="#fff"
+                strokeWidth={2}
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            verticalAlign="bottom"
+            height={32}
+            iconType="circle"
+            formatter={(value: string) => (
+              <span className="text-sm text-gray-700">{value}</span>
+            )}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-8">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-900">{total}</p>
+          <p className="text-xs text-gray-500">total filings</p>
+        </div>
+      </div>
+    </div>
   );
 };
