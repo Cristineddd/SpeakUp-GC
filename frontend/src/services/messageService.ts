@@ -695,7 +695,7 @@ export class MessageService {
    */
   static subscribeToUserChatRooms(
     userId: string,
-    callback: (chatRooms: ChatRoom[]) => void,
+    callback: (chatRooms: ChatRoom[], meta?: { fromCache: boolean }) => void,
     options?: { limit?: number }
   ): Unsubscribe {
     const chatRoomsRef = collection(db, this.CHAT_ROOMS_COLLECTION);
@@ -715,7 +715,7 @@ export class MessageService {
           }))
           .filter((room) => !(room as ChatRoom & { isDeleted?: boolean }).isDeleted) as ChatRoom[]
       );
-      callback(rooms);
+      callback(rooms, { fromCache: snapshot.metadata.fromCache });
     });
   }
 

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { MessageService } from '../services/messageService';
 import { NotificationService } from '../services/notificationService';
-import type { NotificationType } from '../types/notification';
+import type { Notification, NotificationType } from '../types/notification';
 
 /** Notifications that should NOT light up the case card (e.g. own submission confirmation). */
 const CASE_CARD_EXCLUDED_NOTIFICATION_TYPES = new Set<NotificationType>([
@@ -16,6 +16,19 @@ const CASE_CARD_EXCLUDED_NOTIFICATION_TYPES = new Set<NotificationType>([
   'maintenance_scheduled',
   'account_updated',
 ]);
+
+const INITIAL_STATUS_VALUES = new Set(['pending', 'submitted']);
+
+function isActionableCaseNotification(notification: Notification): boolean {
+  if (CASE_CARD_EXCLUDED_NOTIFICATION_TYPES.has(notification.type)) return false;
+
+  if (notification.type === 'status_update') {
+    const status = String(notification.data?.status || '').toLowerCase();
+    if (INITIAL_STATUS_VALUES.has(status)) return false;
+  }
+
+  return true;
+}
 
 export function useCaseUnreadByComplaintId() {
   const { user } = useAuth();
@@ -31,7 +44,33 @@ export function useCaseUnreadByComplaintId() {
       return;
     }
 
-    const unsubMessages = MessageService.subscribeToUserChatRooms(user.uid, (rooms) => {
+    let serverSnapshots = 0;
+    const cancelReadyFallback = () => {
+      window.clearTimeout(readyFallback);
+    };
+
+    // Offline fallback: if only cached snapshots arrive, still unlock after a short wait.
+    const readyFallback = window.setTimeout(() => {
+      setListenersReady({ messages: true, notifications: true });
+    }, 2500);
+
+    const markMessagesReady = () => {
+      setListenersReady((prev) => ({ ...prev, messages: true }));
+    };
+
+    const markNotificationsReady = () => {
+      setListenersReady((prev) => ({ ...prev, notifications: true }));
+    };
+
+    const onServerSnapshot = (markReady: () => void) => {
+      markReady();
+      serverSnapshots += 1;
+      if (serverSnapshots >= 2) {
+        cancelReadyFallback();
+      }
+    };
+
+    const unsubMessages = MessageService.subscribeToUserChatRooms(user.uid, (rooms, meta) => {
       const map: Record<string, number> = {};
 
       rooms.forEach((room) => {
@@ -42,12 +81,14 @@ export function useCaseUnreadByComplaintId() {
       });
 
       setMessageUnread(map);
-      setListenersReady((prev) => ({ ...prev, messages: true }));
+      if (!meta?.fromCache) {
+        onServerSnapshot(markMessagesReady);
+      }
     });
 
     const unsubNotifications = NotificationService.subscribeToNotifications(
       user.uid,
-      (notifications) => {
+      (notifications, meta) => {
         const map: Record<string, number> = {};
 
         notifications
@@ -55,7 +96,7 @@ export function useCaseUnreadByComplaintId() {
             (notification) =>
               notification.status === 'unread' &&
               notification.complaintId &&
-              !CASE_CARD_EXCLUDED_NOTIFICATION_TYPES.has(notification.type)
+              isActionableCaseNotification(notification)
           )
           .forEach((notification) => {
             const complaintId = notification.complaintId as string;
@@ -63,12 +104,15 @@ export function useCaseUnreadByComplaintId() {
           });
 
         setNotificationUnread(map);
-        setListenersReady((prev) => ({ ...prev, notifications: true }));
+        if (!meta?.fromCache) {
+          onServerSnapshot(markNotificationsReady);
+        }
       },
       { unreadOnly: true }
     );
 
     return () => {
+      cancelReadyFallback();
       unsubMessages();
       unsubNotifications();
     };

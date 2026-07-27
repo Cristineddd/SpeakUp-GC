@@ -892,7 +892,10 @@ export class NotificationService {
    */
   static subscribeToNotifications(
     userId: string,
-    callback: (notifications: Notification[]) => void,
+    callback: (
+      notifications: Notification[],
+      meta?: { fromCache: boolean }
+    ) => void,
     options?: {
       unreadOnly?: boolean;
       limit?: number;
@@ -951,7 +954,7 @@ export class NotificationService {
           
           console.log('[NotificationService] Processed notifications:', notifications.length);
           console.log('[NotificationService] Unread count:', notifications.filter(n => n.status === 'unread').length);
-          callback(notifications);
+          callback(notifications, { fromCache: snapshot.metadata.fromCache });
         },
         (error) => {
           console.error('[NotificationService] Subscription error:', error);
