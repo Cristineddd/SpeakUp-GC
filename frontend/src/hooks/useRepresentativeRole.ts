@@ -32,6 +32,7 @@ export function useRepresentativeRole() {
         if (representative && representative.isActive) {
           setRole(representative.role);
           setRepresentativeData(representative);
+          await RepresentativeService.ensureStaffProfileForUser(currentUser.uid);
         } else {
           setRole(null);
           setRepresentativeData(null);

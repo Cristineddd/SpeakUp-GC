@@ -213,6 +213,7 @@ export function AssignCODIMemberDialog({
         assignedTo: codiMember.id,
         assignedToName: codiMember.displayName,
         assignedToRole: codiMember.role,
+        assignedToUserId: codiMember.userId,
         assignedAt: now,
         assignedBy: currentUser.uid,
         assignedByName: currentUser.email || 'Admin',

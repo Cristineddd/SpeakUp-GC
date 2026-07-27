@@ -26,16 +26,41 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
     
-    function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/representatives/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/representatives/$(request.auth.uid)).data.role == 'admin';
+    function isUserAdmin() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
-    
+
+    function hasStaffProfile() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/staffProfiles/$(request.auth.uid));
+    }
+
+    function staffProfile() {
+      return get(/databases/$(database)/documents/staffProfiles/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isUserAdmin() ||
+             (hasStaffProfile() && staffProfile().role == 'admin');
+    }
+
+    function isStaffMember() {
+      return hasStaffProfile() &&
+             staffProfile().role in ['admin', 'handler', 'codi'];
+    }
+
     function isHandler() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/representatives/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/representatives/$(request.auth.uid)).data.role in ['admin', 'handler'];
+      return isStaffMember();
+    }
+
+    function isAssignedStaff() {
+      return hasStaffProfile() && (
+        resource.data.assignedTo == staffProfile().representativeId ||
+        ('assignedToUserId' in resource.data && resource.data.assignedToUserId == request.auth.uid) ||
+        request.auth.uid == resource.data.handlerId
+      );
     }
     
     function isActiveUser() {
@@ -76,16 +101,29 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // STAFF PROFILES (auth uid -> representative doc id + role, for security rules)
+    match /staffProfiles/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow create, update: if isAdmin() ||
+        (isOwner(userId) &&
+         request.resource.data.userId == userId &&
+         request.resource.data.keys().hasAll(['representativeId', 'role']) &&
+         exists(/databases/$(database)/documents/representatives/$(request.resource.data.representativeId)) &&
+         get(/databases/$(database)/documents/representatives/$(request.resource.data.representativeId)).data.userId == userId);
+
+      allow delete: if isAdmin();
+    }
+
     // COMPLAINTS COLLECTION
     match /complaints/{complaintId} {
-      // Read: Owner, assigned handler, or admin
-      // Only show non-deleted complaints (unless admin)
-      allow read: if isAuthenticated() && 
+      // Read: Complainant, assigned staff, or any staff member (case queue)
+      allow read: if isAuthenticated() &&
                     (isNotDeleted() || isAdmin()) &&
-                    (isOwner(resource.data.userId) || 
+                    (isOwner(resource.data.userId) ||
                      isOwner(resource.data.complainantId) ||
-                     request.auth.uid == resource.data.handlerId ||
-                     isAdmin());
+                     isStaffMember() ||
+                     isAssignedStaff());
       
       // Create: Any authenticated active user
       allow create: if isAuthenticated() && 
@@ -93,9 +131,9 @@ service cloud.firestore {
                       request.resource.data.userId == request.auth.uid &&
                       request.resource.data.isDeleted == false;
       
-      // Update: Admin or assigned handler (not the complainant after submission)
-      allow update: if isAdmin() || 
-                      (isHandler() && request.auth.uid == resource.data.handlerId);
+      // Update: Admin or assigned staff
+      allow update: if isAdmin() ||
+                      (isStaffMember() && isAssignedStaff());
       
       // Delete: Only admins (should use soft delete via update)
       allow delete: if isAdmin();
@@ -249,11 +287,14 @@ service cloud.firestore {
     
     // REPORTS COLLECTION (Legacy - if still in use)
     match /reports/{reportId} {
-      allow read: if isAuthenticated() && 
-                    (isOwner(resource.data.userId) || isAdmin()) &&
-                    (isNotDeleted() || isAdmin());
+      allow read: if isAuthenticated() &&
+                    (isNotDeleted() || isAdmin()) &&
+                    (isOwner(resource.data.userId) ||
+                     isStaffMember() ||
+                     isAssignedStaff());
       allow create: if isAuthenticated() && isActiveUser();
-      allow update: if isAdmin();
+      allow update: if isAdmin() ||
+                      (isStaffMember() && isAssignedStaff());
       allow delete: if isAdmin();
     }
     

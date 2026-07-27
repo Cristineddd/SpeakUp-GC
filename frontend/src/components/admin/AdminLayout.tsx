@@ -57,7 +57,7 @@ interface NavItem {
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout, isAdmin, currentUser } = useAuth();
-  const { role, representativeData } = useRepresentativeRole();
+  const { role, representativeData, loading: roleLoading } = useRepresentativeRole();
   const isCODI = !isAdmin && ((role as string) === 'codi' || role === 'handler');
   const representativeId = representativeData?.id ?? null;
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -115,7 +115,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   // Real-time listener for unseen actionable cases (scoped for CODI)
   useEffect(() => {
-    if (!currentUser?.uid) {
+    if (!currentUser?.uid || roleLoading) {
+      if (!currentUser?.uid) setPendingReportsCount(0);
+      return;
+    }
+
+    // Staff listeners need role resolution (and staffProfile sync) except email admins
+    if (!isAdmin && !role) {
       setPendingReportsCount(0);
       return;
     }
@@ -138,7 +144,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     );
 
     return () => unsubscribe();
-  }, [currentUser?.uid, recalcQueueBadge]);
+  }, [currentUser?.uid, isAdmin, role, roleLoading, recalcQueueBadge]);
 
   // Real-time unread messages count (CODI inbox)
   useEffect(() => {

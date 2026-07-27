@@ -14,6 +14,7 @@ import {
 import { db } from '../firebase';
 import { MessageService } from './messageService';
 import { NotificationService } from './notificationService';
+import { RepresentativeService } from './representativeService';
 
 export interface AdminReport {
   id: string;
@@ -507,6 +508,15 @@ export class AdminReportService {
       
       const reportRef = doc(db, collectionName, reportId);
       
+      // Resolve auth uid for assigned staff (rules use assignedToUserId)
+      let assignedToUserId: string | undefined;
+      try {
+        const representative = await RepresentativeService.getById(adminId);
+        assignedToUserId = representative?.userId;
+      } catch {
+        // Best effort — assignedTo still set below
+      }
+
       // Prepare update data
       const updateData: any = {
         assignedTo: adminId,
@@ -514,6 +524,10 @@ export class AdminReportService {
         lastUpdated: new Date().toISOString(),
         assignedAt: new Date().toISOString()
       };
+
+      if (assignedToUserId) {
+        updateData.assignedToUserId = assignedToUserId;
+      }
       
       // Add role if provided
       if (adminRole) {

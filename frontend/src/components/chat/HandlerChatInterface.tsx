@@ -4,7 +4,6 @@ import { MessageService } from '../../services/messageService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '../../hooks/use-toast';
@@ -14,12 +13,11 @@ import {
   AlertCircle,
   Loader2,
   User,
-  FileText,
   ChevronDown,
   ChevronUp,
-  Flame,
   Info,
   Edit2,
+  PanelRight,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
@@ -30,16 +28,9 @@ import { getDisplayCaseNumber } from '../../utils/caseId';
 import {
   formatDisplayDate,
   formatDisplayDateTime,
-  formatSeverityLabel,
   safeToDate,
 } from '../../utils/dateFormat';
-import {
-  CaseDetailField,
-  CaseDetailGrid,
-  CaseDetailSection,
-  CaseDetailStat,
-  CaseDetailTextBlock,
-} from '../case/CaseDetailLayout';
+import { CaseDetailTextBlock } from '../case/CaseDetailLayout';
 
 // Extended interface to include all possible properties
 interface ExtendedAdminReport {
@@ -417,49 +408,6 @@ export function CODIMemberChatInterface({
     return groups;
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'bg-red-50 text-red-700 border-red-200';
-      case 'high': return 'bg-orange-50 text-orange-700 border-orange-200';
-      case 'medium': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'low': return 'bg-green-50 text-green-700 border-green-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-      case 'inprogress': 
-      case 'in_progress': 
-      case 'in progress': 
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'resolved': return 'bg-green-50 text-green-700 border-green-200';
-      case 'dismissed': return 'bg-gray-50 text-gray-700 border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  // Format status for display
-  const formatStatus = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'submitted':
-        return 'Submitted';
-      case 'inprogress':
-      case 'in_progress':
-        return 'Investigating';
-      case 'resolved':
-        return 'Resolved';
-      case 'dismissed':
-        return 'Dismissed';
-      case 'closed':
-        return 'Closed';
-      default:
-        return status?.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) || 'Unknown';
-    }
-  };
-
   if (loading) {
     return (
       <Card className={`${className} shadow-sm border`}>
@@ -491,75 +439,51 @@ export function CODIMemberChatInterface({
     );
   }
 
-  const messageGroups = groupMessagesByDate();
+  const complainantInitial = (complainantName || 'C').charAt(0).toUpperCase();
 
-  return (
-    <div
-      className={`flex h-full min-h-0 min-w-0 w-full flex-col gap-2 overflow-hidden sm:gap-3 lg:grid lg:h-full lg:grid-cols-4 lg:items-stretch lg:gap-4 lg:overflow-hidden ${className}`}
-    >
-      <div className="shrink-0 px-2 pt-1 lg:hidden">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setShowMobileCaseDetails((open) => !open)}
-          className="h-9 w-full justify-between border-gray-200 bg-white/90 text-gray-700"
-        >
-          <span className="flex items-center gap-2 text-xs font-medium">
-            <FileText className="h-3.5 w-3.5 text-[#1D9E75]" />
-            Case details
-          </span>
-          {showMobileCaseDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+  const renderDetailsPanel = (closePanel?: () => void) => (
+    <>
+      <div className="relative border-b bg-white px-4 pb-4 pt-5 text-center">
+        {closePanel && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={closePanel}
+            className="absolute right-2 top-2 h-8 w-8 lg:hidden"
+            aria-label="Close details"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+        <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-[#0d7a5c] to-[#1D9E75] text-2xl font-bold text-white shadow-lg ring-4 ring-white">
+          {isAnonymous ? <User className="h-8 w-8" /> : complainantInitial}
+        </div>
+        <h2 className="mt-3 text-base font-semibold text-gray-900">{complainantName}</h2>
+        <p className="mt-0.5 text-xs text-gray-500">{complaint.title || categoryLabel}</p>
+        <p className="mt-1 font-mono text-[11px] text-emerald-700">{caseNumber}</p>
       </div>
 
-      {/* Case Details Sidebar */}
-      <div
-        className={`${showMobileCaseDetails ? 'flex' : 'hidden'} min-h-0 max-h-[42vh] flex-col gap-3 overflow-y-auto overscroll-y-contain px-2 pb-1 lg:col-span-1 lg:flex lg:h-full lg:max-h-full lg:px-0 lg:pb-0`}
-      >
-        {/* Case Info Card */}
-        <div className="shrink-0 rounded-2xl border border-emerald-100/80 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-emerald-50 px-3 py-2.5 sm:px-4">
-            <div className="flex items-center gap-2 text-xs font-semibold text-gray-900 sm:text-sm">
-              <FileText className="h-4 w-4 text-[#1D9E75]" />
-              <span className="hidden sm:inline">Case Information</span>
-              <span className="sm:hidden">Case</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCaseDetails(!showCaseDetails)}
-              className="h-7 w-7 p-0 hover:bg-emerald-50"
-            >
-              {showCaseDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="border-b px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setShowCaseDetails(!showCaseDetails)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="text-sm font-semibold text-gray-900">Case information</span>
+            {showCaseDetails ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+          </button>
           {showCaseDetails && (
-            <div className="space-y-4 px-3 py-3 sm:px-4 sm:pb-4">
-              <CaseDetailStat label="Case No.">
-                <span className="font-mono">{caseNumber}</span>
-              </CaseDetailStat>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className={`${getStatusColor(complaint.status || '')} text-xs px-2 py-0.5`}>
-                  {formatStatus(complaint.status || '')}
-                </Badge>
-                {complaint.severity && (
-                  <Badge variant="outline" className={`${getSeverityColor(complaint.severity)} text-xs px-2 py-0.5`}>
-                    {formatSeverityLabel(complaint.severity)}
-                  </Badge>
-                )}
-              </div>
-
-              <CaseDetailGrid columns={1}>
-                <div>
-                  <div className="mb-1 flex items-center justify-between">
-                    <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Category</p>
+            <div className="mt-3 space-y-3">
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+                <div className="col-span-2">
+                  <div className="mb-0.5 flex items-center justify-between">
+                    <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Category</dt>
                     {!isEditingCategory && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-6 w-6 p-0 hover:bg-emerald-50"
+                        className="h-5 w-5 p-0 hover:bg-gray-100"
                         onClick={() => {
                           setIsEditingCategory(true);
                           setSelectedCategory(complaint.category || '');
@@ -570,12 +494,8 @@ export function CODIMemberChatInterface({
                     )}
                   </div>
                   {isEditingCategory ? (
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={selectedCategory}
-                        onValueChange={setSelectedCategory}
-                        disabled={updatingCategory}
-                      >
+                    <div className="flex flex-col gap-1.5">
+                      <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={updatingCategory}>
                         <SelectTrigger className="h-8 text-xs">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -587,197 +507,227 @@ export function CODIMemberChatInterface({
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button
-                        size="sm"
-                        className="h-8 bg-[#1D9E75] px-2 hover:bg-[#178F65]"
-                        onClick={handleUpdateCategory}
-                        disabled={updatingCategory || selectedCategory === complaint.category}
-                      >
-                        {updatingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2"
-                        onClick={() => {
-                          setIsEditingCategory(false);
-                          setSelectedCategory(complaint.category || '');
-                        }}
-                        disabled={updatingCategory}
-                      >
-                        Cancel
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          className="h-7 flex-1 bg-[#1D9E75] text-xs hover:bg-[#178F65]"
+                          onClick={handleUpdateCategory}
+                          disabled={updatingCategory || selectedCategory === complaint.category}
+                        >
+                          {updatingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 flex-1 text-xs"
+                          onClick={() => {
+                            setIsEditingCategory(false);
+                            setSelectedCategory(complaint.category || '');
+                          }}
+                          disabled={updatingCategory}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-sm font-medium text-gray-900">{categoryLabel}</p>
+                    <dd className="text-xs font-medium text-gray-900">{categoryLabel}</dd>
                   )}
                 </div>
-
-                <CaseDetailField
-                  label="Incident Date"
-                  value={formatDisplayDate(incidentDateValue)}
-                />
-                <CaseDetailField
-                  label="Location"
-                  value={
-                    incidentLocation || <span className="italic text-gray-500">Not specified</span>
-                  }
-                />
-                <CaseDetailField
-                  label="Reported"
-                  value={formatDisplayDateTime(reportedAtValue)}
-                />
                 <div>
-                  <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
-                    Description
-                  </p>
-                  <CaseDetailTextBlock
-                    className={`max-h-32 ${descriptionExpanded ? '' : 'line-clamp-4'}`}
-                  >
-                    {descriptionText}
-                  </CaseDetailTextBlock>
-                  {isLongDescription && (
-                    <button
-                      type="button"
-                      onClick={() => setDescriptionExpanded((expanded) => !expanded)}
-                      className="mt-1.5 text-xs font-medium text-[#1D9E75] hover:underline"
-                    >
-                      {descriptionExpanded ? 'Show less' : 'Read more'}
-                    </button>
-                  )}
+                  <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Incident</dt>
+                  <dd className="mt-0.5 text-xs font-medium text-gray-900">{formatDisplayDate(incidentDateValue)}</dd>
                 </div>
-              </CaseDetailGrid>
+                <div>
+                  <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Reported</dt>
+                  <dd className="mt-0.5 text-xs font-medium text-gray-900">{formatDisplayDateTime(reportedAtValue)}</dd>
+                </div>
+                <div className="col-span-2">
+                  <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Location</dt>
+                  <dd className="mt-0.5 text-xs font-medium text-gray-900">
+                    {incidentLocation || <span className="italic text-gray-500">Not specified</span>}
+                  </dd>
+                </div>
+              </dl>
+              <div>
+                <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-gray-400">Description</p>
+                <CaseDetailTextBlock className={`max-h-28 text-xs ${descriptionExpanded ? '' : 'line-clamp-4'}`}>
+                  {descriptionText}
+                </CaseDetailTextBlock>
+                {isLongDescription && (
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionExpanded((expanded) => !expanded)}
+                    className="mt-1 text-[11px] font-medium text-[#1D9E75] hover:underline"
+                  >
+                    {descriptionExpanded ? 'See less' : 'See more'}
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Complainant Info Card */}
-        <CaseDetailSection
-          title="Complainant"
-          icon={User}
-          className="shrink-0 p-3 sm:p-4"
-        >
+        <div className="px-4 py-3">
+          <p className="text-sm font-semibold text-gray-900">Complainant</p>
           {isAnonymous && (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 p-2.5">
-              <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-blue-900">Anonymous Complaint</p>
-                <p className="mt-0.5 text-xs text-blue-700">
-                  This complaint was filed anonymously. Identity is protected — do not attempt to identify the complainant.
-                </p>
-              </div>
+            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-blue-50 px-2.5 py-2">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
+              <p className="text-[11px] leading-snug text-blue-800">Anonymous — identity protected.</p>
             </div>
           )}
-
-          <CaseDetailGrid columns={1}>
-            <CaseDetailField label="Name" value={complainantName} />
-            <CaseDetailField
-              label="Email"
-              value={
-                complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@')
+          <dl className="mt-3 space-y-2">
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Name</dt>
+              <dd className="mt-0.5 text-xs font-medium text-gray-900">{complainantName}</dd>
+            </div>
+            <div>
+              <dt className="text-[10px] font-medium uppercase tracking-wide text-gray-400">Email</dt>
+              <dd className="mt-0.5 text-xs font-medium text-gray-900">
+                {complainantEmail && complainantEmail.length > 0 && !complainantEmail.startsWith('anonymous@')
                   ? complainantEmail
-                  : <span className="italic text-gray-500">No email provided</span>
-              }
-            />
-          </CaseDetailGrid>
-        </CaseDetailSection>
-      </div>
-
-      {/* Chat Area */}
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden lg:col-span-3">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-0 shadow-sm">
-          {onClose && (
-            <div className="flex shrink-0 justify-end border-b bg-white/95 px-2 py-1.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="h-8 w-8 p-0"
-                aria-label="Close chat"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+                  : <span className="italic text-gray-500">No email provided</span>}
+              </dd>
             </div>
-          )}
+          </dl>
+        </div>
+      </div>
+    </>
+  );
 
-          {/* Messages area */}
-          <div className="flex-1 relative min-h-0 min-w-0">
-            <div 
-              ref={messagesContainerRef}
-              onScroll={handleScroll}
-              className="absolute inset-0 flex flex-col overflow-y-auto overflow-x-hidden bg-gradient-to-b from-gray-50 to-white"
-            >
-              <div className="mx-auto flex min-h-full w-full max-w-3xl flex-1 flex-col px-4 py-4 sm:px-5">
-            {messageGroups.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-                  <MessageCircle className="h-10 w-10 text-blue-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900 mb-1">No messages yet</p>
-                <p className="text-xs text-gray-600">
-                  Start the conversation
+  const messageGroups = groupMessagesByDate();
+
+  return (
+    <div className={`flex h-full min-h-0 w-full flex-col ${className}`}>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1180px] flex-col px-2 pb-2 pt-1 sm:px-3">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.08)]">
+          {/* Main chat — Messenger center column */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-gradient-to-r from-white to-emerald-50/30 px-3 py-2.5 sm:px-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0d7a5c] to-[#1D9E75] text-sm font-bold text-white shadow-md ring-2 ring-white">
+                {isAnonymous ? <User className="h-5 w-5" /> : complainantInitial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-semibold text-gray-900">{complainantName}</p>
+                <p className="truncate text-xs text-gray-500">
+                  {complaint.title || categoryLabel}
+                  <span className="mx-1 text-gray-300">·</span>
+                  <span className="font-mono text-[11px]">{caseNumber}</span>
                 </p>
               </div>
-            ) : (
-              <div className="flex flex-1 flex-col space-y-3">
-                {messageGroups.map((group, groupIndex) => (
-                  <div key={groupIndex}>
-                    <DateSeparator date={group.date} />
-                    {group.messages.map((message) => (
-                      <MessageBubble
-                        key={message.id}
-                        message={message}
-                        isOwn={message.senderId === currentUser?.uid}
-                        showSenderName={message.senderId !== currentUser?.uid}
-                      />
-                    ))}
-                  </div>
-                ))}
-                
-                {typingUsers.length > 0 && (
-                  <TypingIndicator 
-                    userNames={typingUsers.map(u => u.name)} 
-                  />
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-              </div>
-            </div>
-
-            {/* Scroll to bottom button */}
-            {isUserScrolling && (
               <Button
-                onClick={() => {
-                  const el = messagesContainerRef.current;
-                  if (el) {
-                    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-                  }
-                  setIsUserScrolling(false);
-                }}
-                className="absolute bottom-[5.75rem] left-1/2 z-10 -translate-x-1/2 rounded-full bg-[#1D9E75] text-white shadow-lg hover:bg-emerald-700 sm:bottom-24"
-                size="sm"
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMobileCaseDetails(true)}
+                className="h-9 w-9 shrink-0 rounded-full text-gray-600 hover:bg-gray-100 lg:hidden"
+                aria-label="Case details"
               >
-                <ChevronDown className="h-4 w-4 mr-1" />
-                New Messages
+                <PanelRight className="h-5 w-5" />
               </Button>
-            )}
-          </div>
+              {onClose && (
+                <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 shrink-0 rounded-full" aria-label="Close chat">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
 
-          {/* Input area */}
-          <div className="shrink-0 border-t bg-white">
-            <div className="max-w-3xl mx-auto w-full px-4 sm:px-5 py-3">
-            <ChatInput
-              onSendMessage={handleSendMessage}
-              onTyping={handleTyping}
-              disabled={!chatRoom}
-              placeholder="Type a message..."
-            />
+            <div
+              className="relative min-h-0 flex-1"
+              style={{
+                backgroundColor: '#eef2f6',
+                backgroundImage:
+                  'radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0)',
+                backgroundSize: '20px 20px',
+              }}
+            >
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="absolute inset-0 overflow-y-auto overflow-x-hidden"
+              >
+                {messageGroups.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+                    <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200/80">
+                      <MessageCircle className="h-8 w-8 text-[#1D9E75]" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900">No messages yet</p>
+                    <p className="mt-1 max-w-xs text-xs text-gray-500">
+                      Say hi to start this case conversation.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 px-3 py-3 sm:px-4">
+                    {messageGroups.map((group, groupIndex) => (
+                      <div key={groupIndex}>
+                        <DateSeparator date={group.date} />
+                        {group.messages.map((message) => (
+                          <MessageBubble
+                            key={message.id}
+                            message={message}
+                            isOwn={message.senderId === currentUser?.uid}
+                            showSenderName={message.senderId !== currentUser?.uid}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                    {typingUsers.length > 0 && (
+                      <TypingIndicator userNames={typingUsers.map((u) => u.name)} />
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {isUserScrolling && (
+                <Button
+                  onClick={() => {
+                    const el = messagesContainerRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+                    setIsUserScrolling(false);
+                  }}
+                  className="absolute bottom-20 left-1/2 z-10 h-8 -translate-x-1/2 rounded-full bg-[#1D9E75] px-3 text-xs text-white shadow-md hover:bg-emerald-700"
+                  size="sm"
+                >
+                  <ChevronDown className="mr-1 h-3.5 w-3.5" />
+                  New messages
+                </Button>
+              )}
+            </div>
+
+            <div className="shrink-0 border-t border-slate-200/80 bg-white/95 backdrop-blur-sm">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onTyping={handleTyping}
+                disabled={!chatRoom}
+                placeholder="Aa"
+                embedded
+                messengerStyle
+              />
             </div>
           </div>
-        </Card>
+
+          {/* Right details panel — Messenger-style (desktop) */}
+          <aside className="hidden w-[300px] shrink-0 flex-col overflow-hidden border-l border-slate-200/80 bg-slate-50/40 lg:flex xl:w-[320px]">
+            {renderDetailsPanel()}
+          </aside>
+        </div>
       </div>
+
+      {/* Mobile details drawer */}
+      {showMobileCaseDetails && (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            aria-label="Close details overlay"
+            onClick={() => setShowMobileCaseDetails(false)}
+          />
+          <aside className="fixed inset-y-0 right-0 z-50 flex w-[min(100%,320px)] flex-col overflow-hidden border-l bg-white shadow-2xl lg:hidden">
+            {renderDetailsPanel(() => setShowMobileCaseDetails(false))}
+          </aside>
+        </>
+      )}
     </div>
   );
 }

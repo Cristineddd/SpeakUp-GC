@@ -44,6 +44,7 @@ export async function takeCase(params: TakeCaseParams): Promise<void> {
     assignedTo: params.handlerRepId,
     assignedToName: params.handlerName,
     assignedToRole: params.handlerRole,
+    ...(params.handlerUserId ? { assignedToUserId: params.handlerUserId } : {}),
     assignedAt: now,
     assignedBy: params.assignedByUserId,
     assignedByName: params.assignedByName,

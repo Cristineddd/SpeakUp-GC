@@ -45,7 +45,9 @@ interface ChatInputProps {
   placeholder?: string;
   allowAttachments?: boolean;
   maxAttachments?: number;
-  showQuickResponses?: boolean; // New prop for handlers
+  showQuickResponses?: boolean;
+  embedded?: boolean;
+  messengerStyle?: boolean;
 }
 
 export function ChatInput({
@@ -57,6 +59,8 @@ export function ChatInput({
   allowAttachments = true,
   maxAttachments = MESSAGE_CONSTRAINTS.MAX_ATTACHMENTS,
   showQuickResponses = false,
+  embedded = false,
+  messengerStyle = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
@@ -257,11 +261,11 @@ export function ChatInput({
   const canSend = (message.trim().length > 0 || attachments.length > 0) && !sending;
 
   return (
-    <div className="border-t bg-white/95 backdrop-blur-sm">
+    <div className={embedded ? 'bg-white' : 'border-t bg-white/95 backdrop-blur-sm'}>
       {/* Attachments preview */}
       {attachments.length > 0 && (
-        <div className="border-b bg-green-50/30 px-4 pt-3 pb-2">
-          <div className="max-w-6xl mx-auto flex flex-wrap gap-2">
+        <div className={`border-b bg-green-50/30 ${embedded ? 'px-3 pt-2 pb-2' : 'px-4 pt-3 pb-2'}`}>
+          <div className={`flex flex-wrap gap-2 ${embedded ? '' : 'mx-auto max-w-6xl'}`}>
             {attachments.map((attachment) => (
               <div
                 key={attachment.id}
@@ -305,8 +309,16 @@ export function ChatInput({
       )}
 
       {/* Input area */}
-      <div className="px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center gap-2">
+      <div className={embedded ? 'px-3 py-2' : 'px-4 py-3'}>
+        <div
+          className={`flex items-end gap-2 ${
+            messengerStyle
+              ? 'rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm'
+              : embedded
+                ? ''
+                : 'mx-auto max-w-6xl'
+          }`}
+        >
         {/* Quick response dropdown for handlers */}
         {showQuickResponses && (
           <DropdownMenu>
@@ -377,18 +389,18 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled || sending}
-            className="
-              w-full px-4 py-3 pr-12
-              border-2 border-gray-200 rounded-2xl
-              focus:outline-none focus:ring-2 focus:ring-[#1D9E75] focus:border-[#1D9E75]
+            className={`
+              w-full px-3 py-2 pr-11
+              border ${messengerStyle ? 'border-transparent bg-transparent' : 'border-gray-200'} rounded-xl
+              focus:outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75]
               resize-none
               max-h-28
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-all
-              bg-gray-50/50 hover:bg-white focus:bg-white
-            "
+              ${messengerStyle ? 'bg-transparent' : 'bg-gray-50/80 hover:bg-white focus:bg-white'} text-sm
+            `}
             rows={1}
-            style={{ minHeight: '40px' }}
+            style={{ minHeight: embedded ? '36px' : '40px' }}
           />
           
           {/* Character count */}
@@ -408,7 +420,7 @@ export function ChatInput({
           onClick={handleSend}
           disabled={!canSend || disabled}
           size="icon"
-          className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-[#1D9E75] to-emerald-600 hover:from-emerald-700 hover:to-[#1D9E75] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none rounded-xl"
+          className="h-9 w-9 flex-shrink-0 rounded-xl bg-gradient-to-br from-[#0d7a5c] to-[#1D9E75] shadow-md hover:from-[#0a6b51] hover:to-[#178F65] disabled:opacity-50 disabled:shadow-none"
         >
           {sending ? (
             <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />

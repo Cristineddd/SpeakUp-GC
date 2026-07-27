@@ -51,10 +51,10 @@ export function MessageBubble({
       return <Check className="h-3 w-3 text-emerald-200 animate-pulse" />;
     }
     if (message.status === 'read') {
-      return <CheckCheck className="h-3 w-3 text-emerald-200" />;
+      return <CheckCheck className="h-3 w-3 text-emerald-100" />;
     }
     if (message.status === 'delivered' || message.status === 'sent') {
-      return <CheckCheck className="h-3 w-3 text-emerald-200" />;
+      return <CheckCheck className="h-3 w-3 text-emerald-100/90" />;
     }
     return null;
   };
@@ -117,18 +117,18 @@ export function MessageBubble({
         {/* Message bubble with modern design */}
         <div
           className={`
-            px-[14px] py-[10px] shadow-md transition-all duration-200
+            px-3.5 py-2 transition-all duration-200
             ${getBorderRadius()}
             ${isOwn
-              ? 'bg-[#1a8f57] text-white'
-              : 'bg-white text-gray-800 border border-gray-100'
+              ? 'bg-gradient-to-br from-[#0d7a5c] to-[#1D9E75] text-white shadow-[0_2px_8px_rgba(13,122,92,0.28)]'
+              : 'bg-white text-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70'
             }
-            ${message.status === 'failed' ? 'opacity-60 border-2 border-red-300' : ''}
+            ${message.status === 'failed' ? 'opacity-60 ring-2 ring-red-300' : ''}
           `}
         >
           {/* Text content */}
           {message.content && (
-            <p className={`whitespace-pre-wrap break-words text-[16px] leading-relaxed ${isOwn ? 'text-white' : 'text-gray-800'}`}>
+            <p className={`whitespace-pre-wrap break-words text-[15px] leading-relaxed ${isOwn ? 'text-white' : 'text-slate-800'}`}>
               {message.content}
             </p>
           )}
@@ -253,7 +253,7 @@ export function MessageBubble({
         {/* Timestamp below bubble - only for last or single message */}
         {showTimestamp && (
           <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-            <span className="text-[10px] text-gray-500">
+            <span className="text-[10px] text-slate-400">
               {formatTime(message.createdAt)}
             </span>
             {isOwn && getStatusIcon()}
@@ -301,7 +301,7 @@ export function TypingIndicator({ userNames }: TypingIndicatorProps) {
   return (
     <div className="flex justify-start mb-3 animate-fadeIn">
       <div className="max-w-[88%] items-start flex flex-col">
-        <div className="px-[14px] py-[10px] rounded-[18px] rounded-bl-md bg-white border border-gray-100 shadow-md">
+        <div className="px-[14px] py-[10px] rounded-[18px] rounded-bl-md bg-white shadow-[0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/70">
           <div className="flex items-center gap-2.5">
             <div className="flex gap-1">
               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -339,17 +339,10 @@ export function DateSeparator({ date }: DateSeparatorProps) {
   };
 
   return (
-    <div className="flex items-center justify-center my-3">
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-200"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-gray-50 px-3 py-1 text-[11px] font-semibold text-gray-500 rounded-full shadow-sm border border-gray-200">
-            {formatDate(date)}
-          </span>
-        </div>
-      </div>
+    <div className="flex items-center justify-center my-2.5">
+      <span className="rounded-full border border-slate-200/70 bg-white/90 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur-sm">
+        {formatDate(date)}
+      </span>
     </div>
   );
 }

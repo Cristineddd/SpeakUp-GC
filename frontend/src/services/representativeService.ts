@@ -32,6 +32,44 @@ import type {
 
 export class RepresentativeService {
   private static readonly COLLECTION = 'representatives';
+  private static readonly STAFF_PROFILES = 'staffProfiles';
+
+  private static async syncStaffProfile(representative: {
+    id: string;
+    userId: string;
+    role: RepresentativeRole;
+    isActive?: boolean;
+  }): Promise<void> {
+    const profileRef = doc(db, this.STAFF_PROFILES, representative.userId);
+
+    if (representative.isActive === false) {
+      try {
+        await deleteDoc(profileRef);
+      } catch {
+        // Profile may not exist yet
+      }
+      return;
+    }
+
+    await setDoc(
+      profileRef,
+      {
+        userId: representative.userId,
+        representativeId: representative.id,
+        role: representative.role,
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true }
+    );
+  }
+
+  /** Ensures staffProfiles/{uid} exists so Firestore rules can authorize staff reads. */
+  static async ensureStaffProfileForUser(userId: string): Promise<void> {
+    const representative = await this.getByUserId(userId);
+    if (representative?.isActive) {
+      await this.syncStaffProfile(representative);
+    }
+  }
 
   /**
    * Auto-register current user as admin (for development/setup)
@@ -254,6 +292,13 @@ export class RepresentativeService {
         lastActive: now
       });
 
+      await this.syncStaffProfile({
+        id: docRef.id,
+        userId: data.userId,
+        role: data.role,
+        isActive: true,
+      });
+
       console.log(`✅ Representative created: ${docRef.id}`);
       return docRef.id;
     } catch (error) {
@@ -270,6 +315,9 @@ export class RepresentativeService {
       console.log(`📝 Updating representative: ${id}`);
 
       const docRef = doc(db, this.COLLECTION, id);
+      const existingSnap = await getDoc(docRef);
+      const existingData = existingSnap.exists() ? existingSnap.data() : null;
+
       const updateData: any = {
         ...data,
         updatedAt: Timestamp.now()
@@ -286,6 +334,15 @@ export class RepresentativeService {
 
       await updateDoc(docRef, updateData);
       console.log(`✅ Representative updated: ${id}`);
+
+      if (existingData?.userId) {
+        await this.syncStaffProfile({
+          id,
+          userId: existingData.userId,
+          role: (data.role ?? existingData.role) as RepresentativeRole,
+          isActive: data.isActive ?? existingData.isActive ?? true,
+        });
+      }
 
       // If displayName was updated, update it in all assigned complaints
       if (data.displayName) {
@@ -357,10 +414,21 @@ export class RepresentativeService {
   static async delete(id: string): Promise<void> {
     try {
       console.log(`🗑️ Deleting representative: ${id}`);
-      
+
       const docRef = doc(db, this.COLLECTION, id);
+      const existingSnap = await getDoc(docRef);
+      const userId = existingSnap.exists() ? existingSnap.data().userId : null;
+
       await deleteDoc(docRef);
-      
+
+      if (userId) {
+        try {
+          await deleteDoc(doc(db, this.STAFF_PROFILES, userId));
+        } catch {
+          // Best effort cleanup
+        }
+      }
+
       console.log(`✅ Representative deleted: ${id}`);
     } catch (error) {
       console.error(`❌ Error deleting representative ${id}:`, error);

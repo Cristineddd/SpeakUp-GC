@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 import { ChatInterface } from '../../components/chat/ChatInterface';
 import { CODIMemberChatInterface } from '../../components/chat/HandlerChatInterface';
 import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import { Card, CardContent } from '../../components/ui/card';
 import { ArrowLeft, Loader2, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -16,9 +15,8 @@ import { db } from '../../firebase';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { useAuth } from '../../contexts/AuthContext';
 import type { AdminReport } from '../../services/adminReportService';
-import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
 import { getDisplayCaseNumber } from '../../utils/caseId';
-import { formatSeverityLabel, safeToDate } from '../../utils/dateFormat';
+import { safeToDate } from '../../utils/dateFormat';
 
 export default function CaseChat() {
   const { complaintId } = useParams<{ complaintId: string }>();
@@ -127,51 +125,6 @@ export default function CaseChat() {
     fetchComplaint();
   }, [complaintId]);
 
-  // Get status color for badges
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'inprogress': 
-      case 'in_progress': 
-      case 'in progress': 
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'dismissed': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // Get severity color for badges
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // Format status for display
-  const formatStatus = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-      case 'submitted':
-        return 'Submitted';
-      case 'inprogress':
-      case 'in_progress':
-        return 'Investigating';
-      case 'resolved':
-        return 'Resolved';
-      case 'dismissed':
-        return 'Dismissed';
-      case 'closed':
-        return 'Closed';
-      default:
-        return status?.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) || 'Unknown';
-    }
-  };
-
   const handleRetry = () => {
     setLoading(true);
     setError(null);
@@ -262,93 +215,34 @@ export default function CaseChat() {
   // Show chat interface for all users
   // fixed inset-0: pins the shell to the layout viewport so header + bottom input stay stable across browser zoom (h-screen/100vh alone often drifts).
   return (
-    <div className="fixed inset-0 z-10 flex flex-col min-h-0 overflow-hidden bg-gradient-to-br from-green-50 via-white to-emerald-50">
-      {/* Animated dots pattern background */}
-      <div
-        className="absolute inset-0 opacity-30 animate-pulse pointer-events-none"
-        style={{ 
-          backgroundImage: "radial-gradient(circle, #1D9E75 1px, transparent 1px)", 
-          backgroundSize: "32px 32px",
-          animationDuration: "4s"
-        }}
-      />
-      {/* Green glow effects */}
-      <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-[#1D9E75]/8 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: "6s" }} />
-      <div className="absolute top-1/2 -right-40 w-[500px] h-[500px] rounded-full bg-emerald-500/6 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: "8s", animationDelay: "1s" }} />
-      {/* Case chat header — top-aligned so icon/title/meta read as one block (avoids “floating” icon vs two lines) */}
-      <div className="relative z-50 flex-shrink-0 border-b border-gray-200/70 bg-white/95 backdrop-blur-md shadow-sm">
-        <div className="mx-auto max-w-6xl px-3 py-2 sm:px-4 sm:py-2.5">
-          <div className="flex items-start gap-2.5 sm:gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate(-1)}
-              aria-label="Back"
-              className="mt-px h-9 w-9 shrink-0 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div
-              className="mt-px flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#1D9E75] to-emerald-600 shadow-sm ring-1 ring-black/5"
-              aria-hidden
-            >
-              <MessageCircle className="h-4 w-4 text-white" />
-            </div>
-            <div className="min-w-0 flex-1 pt-px">
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <h1 className="max-w-full text-[15px] font-semibold leading-snug tracking-tight text-gray-900 sm:text-base">
-                  <span className="line-clamp-2 sm:line-clamp-1 sm:truncate">
-                    {complaintTitle || 'Case Chat'}
-                  </span>
-                </h1>
-                {complaint && (
-                  <Badge
-                    className={`shrink-0 text-[10px] font-semibold ${getStatusColor(complaint.status)}`}
-                  >
-                    {formatStatus(complaint.status)}
-                  </Badge>
-                )}
-              </div>
-              {complaint && (
-                <p className="mt-0.5 text-[11px] leading-tight text-gray-500 sm:text-xs">
-                  <span className="font-mono text-gray-600">
-                    {getDisplayCaseNumber({
-                      caseId: complaint.caseId,
-                      firestoreId: complaint.id,
-                      filedAt: complaint.reportedAt,
-                    })}
-                  </span>
-                  <span className="mx-1.5 text-gray-300" aria-hidden>
-                    ·
-                  </span>
-                  <span className="break-words">{getFormalComplaintCategoryLabel(complaint.category || '')}</span>
-                  {isHandler && complaint.severity && (
-                    <>
-                      <span className="mx-1.5 text-gray-300" aria-hidden>
-                        ·
-                      </span>
-                      <span
-                        className={
-                          complaint.severity === 'critical'
-                            ? 'font-medium text-red-600'
-                            : complaint.severity === 'high'
-                              ? 'font-medium text-orange-600'
-                              : 'font-medium text-gray-600'
-                        }
-                      >
-                        {formatSeverityLabel(complaint.severity)}
-                      </span>
-                    </>
-                  )}
-                </p>
-              )}
-            </div>
+    <div className="fixed inset-0 z-10 flex min-h-0 flex-col overflow-hidden bg-slate-200/70">
+      <div className="relative shrink-0 border-b border-slate-200/80 bg-white shadow-sm">
+        <div className="mx-auto flex max-w-[1180px] items-center gap-2 px-3 py-2 sm:px-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="h-9 w-9 shrink-0 rounded-full text-gray-700 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900">Case conversation</p>
+            {complaint && (
+              <p className="truncate text-xs text-gray-500">
+                {getDisplayCaseNumber({
+                  caseId: complaint.caseId,
+                  firestoreId: complaint.id,
+                  filedAt: complaint.reportedAt,
+                })}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Chat Interface */}
-      <div className="flex-1 min-h-0">
+      <div className="relative min-h-0 flex-1">
         {isHandler ? (
           <CODIMemberChatInterface
             complaintId={complaintId}
