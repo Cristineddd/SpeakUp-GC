@@ -180,6 +180,97 @@ export class MessageService {
     );
   }
 
+  private static async getLinkedChatRoomId(complaintId: string): Promise<string | null> {
+    for (const collectionName of ['complaints', 'reports'] as const) {
+      try {
+        const snap = await getDoc(doc(db, collectionName, complaintId));
+        if (snap.exists()) {
+          const chatRoomId = snap.data().chatRoomId;
+          if (typeof chatRoomId === 'string' && chatRoomId.trim()) {
+            return chatRoomId;
+          }
+        }
+      } catch {
+        // Try the next collection
+      }
+    }
+    return null;
+  }
+
+  private static async linkChatRoomToComplaint(
+    complaintId: string,
+    chatRoomId: string
+  ): Promise<void> {
+    for (const collectionName of ['complaints', 'reports'] as const) {
+      try {
+        const ref = doc(db, collectionName, complaintId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          await updateDoc(ref, { chatRoomId });
+        }
+      } catch (error) {
+        console.warn(`Could not link chat room on ${collectionName}/${complaintId}:`, error);
+      }
+    }
+  }
+
+  private static mapChatRoomDoc(roomDoc: { id: string; data: () => Record<string, unknown> }): ChatRoom {
+    return {
+      id: roomDoc.id,
+      ...roomDoc.data(),
+    } as ChatRoom;
+  }
+
+  private static async queryChatRoomsForComplaint(
+    complaintId: string,
+    userId: string,
+    options?: { asStaff?: boolean; complainantId?: string }
+  ) {
+    const asStaff = options?.asStaff ?? false;
+
+    if (asStaff) {
+      const { RepresentativeService } = await import('./representativeService');
+      await RepresentativeService.ensureStaffProfileForUser(userId);
+    }
+
+    const linkedRoomId = await this.getLinkedChatRoomId(complaintId);
+    if (linkedRoomId) {
+      const linkedRoom = await this.getChatRoom(linkedRoomId);
+      if (linkedRoom) {
+        return [linkedRoom];
+      }
+    }
+
+    const attempts = [
+      this.buildComplaintRoomQuery(
+        complaintId,
+        asStaff && options?.complainantId ? options.complainantId : userId,
+        asStaff && !options?.complainantId
+      ),
+    ];
+
+    if (asStaff && options?.complainantId) {
+      attempts.push(this.buildComplaintRoomQuery(complaintId, options.complainantId, false));
+    }
+
+    attempts.push(
+      query(
+        collection(db, this.CHAT_ROOMS_COLLECTION),
+        where('complaintId', '==', complaintId),
+        where('participantIds', 'array-contains', userId)
+      )
+    );
+
+    for (const roomQuery of attempts) {
+      const snapshot = await getDocs(roomQuery);
+      if (!snapshot.empty) {
+        return snapshot.docs.map((roomDoc) => this.mapChatRoomDoc(roomDoc));
+      }
+    }
+
+    return [];
+  }
+
   /**
    * Merge duplicate chat rooms that share the same complaintId.
    */
@@ -350,29 +441,28 @@ export class MessageService {
     complainantName: string,
     handlerId?: string,
     handlerName?: string,
-    options?: { requestingUserId?: string; asStaff?: boolean }
+    options?: { requestingUserId?: string; asStaff?: boolean; complainantId?: string }
   ): Promise<ChatRoom> {
     try {
       const requesterId = options?.requestingUserId ?? complainantId;
       const asStaff = options?.asStaff ?? false;
 
-      // Check if chat room already exists
-      const snapshot = await getDocs(
-        this.buildComplaintRoomQuery(complaintId, requesterId, asStaff)
-      );
+      const existingRooms = await this.queryChatRoomsForComplaint(complaintId, requesterId, {
+        asStaff,
+        complainantId,
+      });
 
-      if (!snapshot.empty) {
-        if (snapshot.docs.length > 1) {
+      if (existingRooms.length > 0) {
+        if (existingRooms.length > 1) {
           await this.mergeDuplicateChatRoomsForComplaint(complaintId, requesterId, { asStaff });
-          const mergedRoom = await this.getChatRoomByComplaint(complaintId, requesterId, { asStaff });
+          const mergedRoom = await this.getChatRoomByComplaint(complaintId, requesterId, {
+            asStaff,
+            complainantId,
+          });
           if (mergedRoom) return mergedRoom;
         }
 
-        const existingRoom = this.pickPrimaryRoomDoc(snapshot.docs);
-        return {
-          id: existingRoom.id,
-          ...existingRoom.data(),
-        } as ChatRoom;
+        return existingRooms[0];
       }
 
       // Create new chat room
@@ -416,6 +506,12 @@ export class MessageService {
 
       const docRef = await addDoc(collection(db, this.CHAT_ROOMS_COLLECTION), chatRoomData);
 
+      try {
+        await this.linkChatRoomToComplaint(complaintId, docRef.id);
+      } catch (linkError) {
+        console.warn('Could not link chat room to complaint:', linkError);
+      }
+
       // Don't send automatic welcome message - let handler initiate conversation
 
       return {
@@ -456,36 +552,24 @@ export class MessageService {
   static async getChatRoomByComplaint(
     complaintId: string,
     userId: string,
-    options?: { asStaff?: boolean }
+    options?: { asStaff?: boolean; complainantId?: string }
   ): Promise<ChatRoom | null> {
     try {
       const asStaff = options?.asStaff ?? false;
-      const snapshot = await getDocs(
-        this.buildComplaintRoomQuery(complaintId, userId, asStaff)
-      );
+      const rooms = await this.queryChatRoomsForComplaint(complaintId, userId, options);
 
-      if (snapshot.empty) {
+      if (rooms.length === 0) {
         return null;
       }
 
-      if (snapshot.docs.length > 1) {
+      if (rooms.length > 1) {
         await this.mergeDuplicateChatRoomsForComplaint(complaintId, userId, { asStaff });
-        const refreshed = await getDocs(
-          this.buildComplaintRoomQuery(complaintId, userId, asStaff)
-        );
-        if (refreshed.empty) return null;
-        const primary = this.pickPrimaryRoomDoc(refreshed.docs);
-        return {
-          id: primary.id,
-          ...primary.data(),
-        } as ChatRoom;
+        const refreshed = await this.queryChatRoomsForComplaint(complaintId, userId, options);
+        if (refreshed.length === 0) return null;
+        return refreshed[0];
       }
 
-      const primary = snapshot.docs[0];
-      return {
-        id: primary.id,
-        ...primary.data(),
-      } as ChatRoom;
+      return rooms[0];
     } catch (error) {
       console.error('Error getting chat room by complaint:', error);
       throw error;

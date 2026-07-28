@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useToast } from '../ui/use-toast';
 import { CaseActivityService } from '../../services/caseActivityService';
-import { ActivityType } from '../../types/caseActivity';
+import { ActivityType, toActivityActorRole } from '../../types/caseActivity';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { FileText, Plus } from 'lucide-react';
@@ -61,7 +61,7 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
         },
         currentUser.uid,
         currentUser.displayName || currentUser.email || 'Handler',
-        role === 'admin' ? 'admin' : 'handler'
+        toActivityActorRole(role),
       );
 
       const { maybeStartInvestigation } = await import('../../services/caseAssignmentService');

@@ -85,6 +85,14 @@ service cloud.firestore {
              request.resource.data.followUpRequested == true &&
              resource.data.followUpRequested != true;
     }
+
+    function canReadChatRoom() {
+      return request.auth.uid in resource.data.participantIds ||
+             request.auth.uid == resource.data.complainantId ||
+             request.auth.uid == resource.data.handlerId ||
+             isStaffMember() ||
+             isUserAdmin();
+    }
     
     // ========================================
     // COLLECTION RULES
@@ -183,22 +191,22 @@ service cloud.firestore {
     
     // CHAT ROOMS COLLECTION
     match /chatRooms/{roomId} {
-      // Read: participants, complainant owner, or staff (case handlers)
+      // Read: participants, complainant, assigned handler, staff, or platform admin
       allow read: if isAuthenticated() && 
                     (isNotDeleted() || isAdmin()) &&
-                    (request.auth.uid in resource.data.participantIds ||
-                     request.auth.uid == resource.data.complainantId ||
-                     isStaffMember());
+                    canReadChatRoom();
       
       // Create: Any authenticated user
       allow create: if isAuthenticated() && 
                       request.auth.uid in request.resource.data.participantIds;
       
-      // Update: Participants, or staff joining an existing room
+      // Update: Participants, staff joining, or handler assignment
       allow update: if isAuthenticated() && (
                       request.auth.uid in resource.data.participantIds ||
                       (isStaffMember() &&
-                       request.auth.uid in request.resource.data.participantIds)
+                       request.auth.uid in request.resource.data.participantIds) ||
+                      (isStaffMember() &&
+                       request.auth.uid == request.resource.data.handlerId)
                     );
       
       // Delete: Only admins

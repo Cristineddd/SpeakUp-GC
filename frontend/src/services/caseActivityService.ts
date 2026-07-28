@@ -10,7 +10,7 @@ import {
   Unsubscribe 
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { CaseActivity, CreateCaseActivityInput, ActivityType, SYSTEM_ACTOR } from '../types/caseActivity';
+import { CaseActivity, CreateCaseActivityInput, ActivityType, SYSTEM_ACTOR, type ActivityActorRole } from '../types/caseActivity';
 
 export class CaseActivityService {
   private static COLLECTION = 'caseActivities';
@@ -22,7 +22,7 @@ export class CaseActivityService {
     input: CreateCaseActivityInput,
     userId: string,
     userName: string,
-    userRole: 'admin' | 'handler' | 'system',
+    userRole: ActivityActorRole,
     targetUserId?: string,
     targetUserName?: string,
     isInternal: boolean = false
@@ -153,7 +153,7 @@ export class CaseActivityService {
     notes: string | undefined,
     userId?: string,
     userName?: string,
-    userRole?: 'admin' | 'handler',
+    userRole?: 'admin' | 'handler' | 'codi',
     isSystemAction: boolean = false
   ): Promise<void> {
     try {

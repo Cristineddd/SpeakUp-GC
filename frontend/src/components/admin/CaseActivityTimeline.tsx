@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { AdminReport } from '../../services/adminReportService';
 import { CaseActivityService } from '../../services/caseActivityService';
-import { ActivityType, type CaseActivity } from '../../types/caseActivity';
+import { ActivityType, type CaseActivity, formatActivityActorRole } from '../../types/caseActivity';
 import { Badge } from '../ui/badge';
 import { safeToDate } from '../../utils/dateFormat';
 
@@ -60,6 +60,12 @@ const STATUS_LABELS: Record<string, string> = {
   closed: 'Closed',
 };
 
+const ACTIVITY_DEDUP_WINDOW_MS = 120_000;
+
+function activityNotesDedupKey(notes: string, date: Date): string {
+  return `${notes.trim().toLowerCase()}|${Math.floor(date.getTime() / ACTIVITY_DEDUP_WINDOW_MS)}`;
+}
+
 function statusLabel(status?: string): string {
   if (!status) return 'Unknown';
   return STATUS_LABELS[status] || status.replace(/_/g, ' ');
@@ -97,18 +103,36 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
     });
   }
 
+  const loggedStatusKeys = new Set(
+    activities
+      .filter((activity) => activity.activityType === ActivityType.STATUS_UPDATE)
+      .map((activity) =>
+        activityNotesDedupKey(
+          String(activity.findings || activity.metadata?.notes || ''),
+          safeToDate(activity.createdAt) || new Date()
+        )
+      )
+  );
+
   (report.statusHistory || []).forEach((history, index) => {
     const updatedAt = safeToDate(history.updatedAt);
     if (!updatedAt) return;
 
     const previous = statusLabel(history.previousStatus);
     const next = statusLabel(history.status);
+    const notes = history.notes?.trim() || '';
+
+    // Skip when the same status change was already logged in caseActivities
+    if (loggedStatusKeys.has(activityNotesDedupKey(notes, updatedAt))) {
+      return;
+    }
+
     addEntry({
       id: `status_history_${index}_${updatedAt.getTime()}`,
       timestamp: updatedAt,
       category: 'status',
       title: `Status changed: ${previous} → ${next}`,
-      description: history.notes?.trim() || undefined,
+      description: notes || undefined,
       actor: history.updatedByName || history.updatedBy || 'Staff',
     });
   });
@@ -314,8 +338,8 @@ export function CaseActivityTimeline({ report }: CaseActivityTimelineProps) {
                     )}
                     <span>
                       By <span className="font-medium text-gray-700">{entry.actor}</span>
-                      {entry.actorRole && entry.actorRole !== 'system' && (
-                        <span className="text-gray-400"> · {entry.actorRole}</span>
+                      {formatActivityActorRole(entry.actorRole) && (
+                        <span className="text-gray-400"> · {formatActivityActorRole(entry.actorRole)}</span>
                       )}
                     </span>
                   </div>

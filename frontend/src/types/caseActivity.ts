@@ -27,7 +27,7 @@ export interface CaseActivity {
   // Actor (who performed the action)
   performedBy: string;
   performedByName: string;
-  performedByRole: 'admin' | 'handler' | 'system';
+  performedByRole: 'admin' | 'handler' | 'codi' | 'system';
   // Target/assignee (who the action was performed on/for)
   targetUserId?: string;
   targetUserName?: string;
@@ -50,4 +50,20 @@ export interface CreateCaseActivityInput {
   findings?: string;
   attachments?: string[];
   metadata?: Record<string, any>;
+}
+
+export type ActivityActorRole = CaseActivity['performedByRole'];
+
+/** Map representative/staff role to stored activity actor role. */
+export function toActivityActorRole(role: string | null | undefined): ActivityActorRole {
+  if (role === 'admin') return 'admin';
+  if (role === 'codi') return 'codi';
+  return 'handler';
+}
+
+/** Human-readable label for activity actor roles in timelines. */
+export function formatActivityActorRole(role?: string): string | null {
+  if (!role || role === 'system') return null;
+  if (role === 'admin') return 'Admin';
+  return 'CODI member';
 }

@@ -13,6 +13,8 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { CaseActivityService } from '../services/caseActivityService';
+import { toActivityActorRole } from '../types/caseActivity';
+import { RepresentativeService } from '../services/representativeService';
 
 export type ReportStatus = 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed';
 
@@ -231,6 +233,9 @@ export function useReportStatus(
 
       // Log manual status change with current user as actor
       try {
+        const representative = await RepresentativeService.getByUserId(currentUser.uid);
+        const activityRole = toActivityActorRole(representative?.role);
+
         await CaseActivityService.logStatusChange(
           reportId,
           currentStatus,
@@ -238,7 +243,7 @@ export function useReportStatus(
           notes,
           currentUser.uid,
           currentUser.displayName || currentUser.email || 'Unknown User',
-          'admin',
+          activityRole === 'system' ? 'handler' : activityRole,
           false // isSystemAction = false for manual status changes
         );
         console.log('✅ Status change logged');

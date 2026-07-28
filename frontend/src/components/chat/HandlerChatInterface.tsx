@@ -163,7 +163,7 @@ export function CODIMemberChatInterface({
         const existingRoom = await MessageService.getChatRoomByComplaint(
           complaintId,
           currentUser.uid,
-          { asStaff: true }
+          { asStaff: true, complainantId }
         );
         
         if (existingRoom) {
@@ -189,7 +189,7 @@ export function CODIMemberChatInterface({
             complainantName,
             currentUser.uid,
             currentUser.displayName || currentUser.email || 'CODI Member',
-            { requestingUserId: currentUser.uid, asStaff: true }
+            { requestingUserId: currentUser.uid, asStaff: true, complainantId }
           );
         }
 
