@@ -37,6 +37,7 @@ import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/Fo
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
 import { EvidenceSubmissionModal, EvidenceData } from "../../components/modals/EvidenceSubmissionModal";
 import { generateAIResponse } from "../../services/gemini.service";
+import { sanitizePhMobileInput, validatePhMobile, isValidPhMobile } from "../../utils/phoneValidation";
 
 // ✅ SAFE CLOUDINARY CONFIG 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
@@ -569,33 +570,7 @@ const FormalComplaint = () => {
   };
 
   const validateContactNumber = (contact: string): string | null => {
-    if (!contact || contact.trim() === '') {
-      return 'Contact number is required';
-    }
-    
-    const trimmed = contact.trim();
-    
-    // Must be exactly 11 digits
-    if (trimmed.length !== 11) {
-      return 'Contact number must be exactly 11 digits';
-    }
-    
-    // Must start with "09"
-    if (!trimmed.startsWith('09')) {
-      return 'Contact number must start with 09';
-    }
-    
-    // Must be numbers only
-    if (!/^\d+$/.test(trimmed)) {
-      return 'Contact number must contain only digits';
-    }
-    
-    // Reject fake numbers (all same digit)
-    if (/^(\d)\1{10}$/.test(trimmed)) {
-      return 'Please enter a valid contact number';
-    }
-    
-    return null;
+    return validatePhMobile(contact, { required: true });
   };
 
   const validateComplainantType = (type: string): string | null => {
@@ -728,6 +703,8 @@ const FormalComplaint = () => {
       },
       (error) => {
         console.error('Error fetching locations:', error);
+        // Keep empty list — user can still use custom location input
+        setLocations([]);
       }
     );
     return () => unsubscribe();
@@ -775,13 +752,9 @@ const FormalComplaint = () => {
       }
     }
 
-    // Validate contact number to only allow numbers (unless anonymous)
+    // Validate contact number — PH mobile must start with 09 (unless anonymous)
     if (field === "complainantContact" && !isAnonymous) {
-      // Remove any non-digit characters
-      const numberOnly = value.replace(/\D/g, '');
-      // Limit to 11 digits
-      const limitedNumber = numberOnly.slice(0, 11);
-      setFormData(prev => ({ ...prev, [field]: limitedNumber }));
+      setFormData(prev => ({ ...prev, [field]: sanitizePhMobileInput(value) }));
       return;
     }
 
@@ -1707,18 +1680,18 @@ const FormalComplaint = () => {
                   value={formData.complainantContact}
                   onChange={(e) => handleInputChange("complainantContact", e.target.value)}
                   onBlur={() => handleFieldBlur('complainantContact')}
-                  placeholder="09XXXXXXXX"
+                  placeholder="09XXXXXXXXX"
                   disabled={isAnonymous}
                   maxLength={11}
                   inputMode="numeric"
                   className={`w-full text-sm pl-10 pr-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent transition-colors ${
                     isAnonymous ? "bg-gray-100 text-gray-400 border-gray-300" :
                     fieldErrors.complainantContact ? "bg-white text-gray-900 border-red-400 ring-2 ring-red-100" :
-                    formData.complainantContact && formData.complainantContact.length === 11 ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" :
+                    isValidPhMobile(formData.complainantContact) ? "border-[#1D9E75]/40 bg-[#1D9E75]/5" :
                     "bg-white text-gray-900 border-gray-300"
                   }`}
                 />
-                {formData.complainantContact && formData.complainantContact.length === 11 && !isAnonymous && !fieldErrors.complainantContact && (
+                {isValidPhMobile(formData.complainantContact) && !isAnonymous && !fieldErrors.complainantContact && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <svg className="h-4 w-4 text-[#1D9E75]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -1729,20 +1702,26 @@ const FormalComplaint = () => {
               {fieldErrors.complainantContact && !isAnonymous && (
                 <p className="text-xs text-red-500 mt-1.5">{fieldErrors.complainantContact}</p>
               )}
-              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact && formData.complainantContact.length < 11 && (
-                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact && formData.complainantContact.length >= 2 && !formData.complainantContact.startsWith("09") && (
+                <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
-                  Numbers only. {11 - formData.complainantContact.length} more digit(s) needed.
+                  Must start with <strong>09</strong> (Philippine mobile).
                 </p>
               )}
-              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact && formData.complainantContact.length === 11 && (
+              {!isAnonymous && !fieldErrors.complainantContact && formData.complainantContact.startsWith("09") && formData.complainantContact.length < 11 && (
+                <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {11 - formData.complainantContact.length} more digit(s) needed (09XXXXXXXXX).
+                </p>
+              )}
+              {!isAnonymous && !fieldErrors.complainantContact && isValidPhMobile(formData.complainantContact) && (
                 <p className="text-xs text-[#1D9E75] mt-1.5">
-                  ✓ Valid 11-digit phone number
+                  ✓ Valid PH mobile number
                 </p>
               )}
               {!isAnonymous && !fieldErrors.complainantContact && !formData.complainantContact && (
                 <p className="text-xs text-gray-500 mt-1.5">
-                  Enter 11-digit mobile number (numbers only)
+                  Must start with 09 · 11 digits total (e.g. 09171234567)
                 </p>
               )}
               {(() => {
@@ -2162,9 +2141,13 @@ const FormalComplaint = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {locations.length === 0 ? (
-                            <SelectItem value="" disabled>No locations available</SelectItem>
+                            <SelectItem value="__no_locations__" disabled>
+                              No locations available — use custom location
+                            </SelectItem>
                           ) : (
-                            locations.map((loc) => (
+                            locations
+                              .filter((loc) => loc.name && loc.name.trim() !== "")
+                              .map((loc) => (
                               <SelectItem key={loc.id} value={loc.name}>
                                 {loc.name} <span className="text-gray-400 text-xs ml-2">({loc.category})</span>
                               </SelectItem>

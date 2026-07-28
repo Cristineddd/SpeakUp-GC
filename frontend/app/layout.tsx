@@ -20,14 +20,18 @@ export const metadata: Metadata = {
       { url: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
     ],
   },
+  other: {
+    'X-UA-Compatible': 'IE=edge',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#1e40af',
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#1D9E75',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -37,6 +41,27 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
+      <head>
+        {/* Mute debug console noise on deployed builds before app bundles load */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){
+  try {
+    var h = location.hostname;
+    var isDev = h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
+    if (!isDev) {
+      var n = function(){};
+      console.log = n;
+      console.debug = n;
+      console.info = n;
+      console.warn = n;
+    }
+  } catch (e) {}
+})();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background">
         <Providers>
           {children}

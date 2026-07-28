@@ -32,6 +32,7 @@ import { recalculateAllRepresentativeCases } from "../../services/representative
 import type { Representative, RepresentativeRole, CreateRepresentativeData } from "../../types/representative";
 import { ROLE_LABELS, ROLE_COLORS } from "../../types/representative";
 import { UserPlus, User, Briefcase, Mail, Phone, Edit, Trash2, CheckCircle, XCircle, Info, BarChart3, MoreVertical, Shield, Users, RefreshCw } from 'lucide-react';
+import { sanitizePhMobileInput, validatePhMobile } from "../../utils/phoneValidation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -90,6 +91,18 @@ const RepresentativesManagement = () => {
           variant: 'destructive'
         });
         return;
+      }
+
+      if (formData.phone) {
+        const phoneError = validatePhMobile(formData.phone, { required: false });
+        if (phoneError) {
+          toast({
+            title: 'Invalid Phone Number',
+            description: phoneError,
+            variant: 'destructive'
+          });
+          return;
+        }
       }
 
       // Use email as userId if not provided
@@ -358,9 +371,12 @@ const RepresentativesManagement = () => {
                     id="phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+1 234 567 8900"
+                    onChange={(e) => setFormData({ ...formData, phone: sanitizePhMobileInput(e.target.value) })}
+                    placeholder="09XXXXXXXXX"
+                    maxLength={11}
+                    inputMode="numeric"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Must start with 09 · 11 digits</p>
                 </div>
               </div>
             </div>

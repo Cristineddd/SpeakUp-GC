@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from '../../compat/router';
 import { useToast } from '../../hooks/use-toast';
+import { sanitizePhMobileInput, validatePhMobile } from '../../utils/phoneValidation';
 
 interface UserProfileData {
   // Basic Information
@@ -138,15 +139,20 @@ const RoleBasedUserProfile = () => {
   ];
 
   const handleInputChange = (field: keyof UserProfileData, value: any) => {
+    if (field === 'contactNumber' && typeof value === 'string') {
+      setProfileData(prev => ({ ...prev, contactNumber: sanitizePhMobileInput(value) }));
+      return;
+    }
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleEmergencyContactChange = (field: string, value: string) => {
+    const next = field === 'phone' ? sanitizePhMobileInput(value) : value;
     setProfileData(prev => ({
       ...prev,
       emergencyContact: {
         ...prev.emergencyContact!,
-        [field]: value
+        [field]: next
       }
     }));
   };
@@ -175,6 +181,28 @@ const RoleBasedUserProfile = () => {
         variant: "destructive"
       });
       return false;
+    }
+
+    const phoneError = validatePhMobile(profileData.contactNumber);
+    if (phoneError) {
+      toast({
+        title: "Invalid Contact Number",
+        description: phoneError,
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (profileData.emergencyContact?.phone) {
+      const emergencyError = validatePhMobile(profileData.emergencyContact.phone, { required: false });
+      if (emergencyError) {
+        toast({
+          title: "Invalid Emergency Phone",
+          description: emergencyError,
+          variant: "destructive"
+        });
+        return false;
+      }
     }
 
     // Role-specific validation
@@ -346,10 +374,13 @@ const RoleBasedUserProfile = () => {
                       id="contactNumber"
                       value={profileData.contactNumber}
                       onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                      placeholder="+63 XXX XXX XXXX"
+                      placeholder="09XXXXXXXXX"
+                      maxLength={11}
+                      inputMode="numeric"
                       required
                       className="text-sm md:text-base"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">Must start with 09 · 11 digits</p>
                   </div>
                   
                   <div>
@@ -514,7 +545,9 @@ const RoleBasedUserProfile = () => {
                         id="emergencyPhone"
                         value={profileData.emergencyContact?.phone}
                         onChange={(e) => handleEmergencyContactChange('phone', e.target.value)}
-                        placeholder="+63 XXX XXX XXXX"
+                        placeholder="09XXXXXXXXX"
+                        maxLength={11}
+                        inputMode="numeric"
                       />
                     </div>
                   </div>

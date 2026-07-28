@@ -785,20 +785,13 @@ export class NotificationService {
       if (options?.expiresAt) notificationData.expiresAt = Timestamp.fromDate(options.expiresAt);
       if (options?.data) notificationData.data = options.data;
 
-      console.log(`🔔 [DEBUG] Creating notification in collection ${this.notificationsCollection}:`, notificationData);
-
       const notificationsRef = collection(db, this.notificationsCollection);
-      console.log(`🔔 [DEBUG] Collection reference created:`, notificationsRef);
-      
       const docRef = await addDoc(notificationsRef, notificationData);
-      console.log(`🔔 [DEBUG] Notification created with ID: ${docRef.id}`);
       
-      // Verify the document was created
       const docSnapshot = await getDoc(docRef);
       if (!docSnapshot.exists()) {
         throw new Error('Document was not created successfully');
       }
-      console.log(`🔔 [DEBUG] Verified notification creation:`, docSnapshot.data());
 
       const emailEnabled = preferences
         ? preferences.emailEnabled && preferences.emailDigest === 'immediate'
@@ -830,6 +823,16 @@ export class NotificationService {
           data: options?.data,
         } as Omit<Notification, 'id'>);
       }
+
+      // PWA push via Next API (no Firebase Blaze required)
+      await this.sendPushViaApi(userId, {
+        type,
+        title,
+        message,
+        actionUrl: options?.actionUrl,
+        notificationId: docRef.id,
+        complaintId: options?.complaintId,
+      });
 
       return docRef.id;
     } catch (error) {
@@ -1276,10 +1279,46 @@ export class NotificationService {
         console.warn('[NotificationService] Email API response:', response.status, err);
         return;
       }
-
-      console.log('[NotificationService] Email sent via Resend');
     } catch (error) {
       console.error('[NotificationService] Email send failed:', error);
+    }
+  }
+
+  /**
+   * Send FCM web push via Next.js API route (works without Firebase Blaze).
+   */
+  private static async sendPushViaApi(
+    userId: string,
+    payload: {
+      type: string;
+      title: string;
+      message: string;
+      actionUrl?: string;
+      notificationId?: string;
+      complaintId?: string;
+    }
+  ): Promise<void> {
+    try {
+      if (typeof window === 'undefined') return;
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const idToken = await currentUser.getIdToken();
+      const response = await fetch('/api/notifications/send-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ userId, ...payload }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        console.warn('[NotificationService] Push API response:', response.status, err);
+      }
+    } catch (error) {
+      console.error('[NotificationService] Push send failed:', error);
     }
   }
 

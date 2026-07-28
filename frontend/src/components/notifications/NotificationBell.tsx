@@ -106,22 +106,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
   // Check if user is in admin interface
   const isInAdminInterface = isAdminVariant || location.pathname.startsWith('/admin');
 
-  // Debug mounting
-  useEffect(() => {
-    console.log('🔔 [BELL] Component mounted');
-    return () => console.log('🔔 [BELL] Component unmounted');
-  }, []);
-
   // Single combined effect for notification setup
   useEffect(() => {
     if (!currentUser) {
-      console.log('🔔 [BELL] No current user, skipping notification setup');
       setLoading(false);
       return;
     }
 
-    console.log('🔔 [BELL] Setting up notification listener for user:', currentUser.uid);
-    console.log('🔔 [BELL] User object:', currentUser);
     
     setLoading(true);
 

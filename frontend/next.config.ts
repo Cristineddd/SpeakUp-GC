@@ -20,8 +20,15 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Allow cross-origin access for local network development
-  allowedDevOrigins: ['192.168.0.106'],
+  // Keep in sync with next.config.mjs (mjs is what Next loads when both exist)
+  allowedDevOrigins: [
+    '127.0.0.1',
+    '192.168.0.114',
+    '192.168.0.106',
+    ...(process.env.ALLOWED_DEV_ORIGINS
+      ? process.env.ALLOWED_DEV_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+      : []),
+  ],
 };
 
 export default nextConfig;

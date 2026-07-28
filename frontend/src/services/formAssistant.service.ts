@@ -59,10 +59,17 @@ export const getFormSuggestions = (
     }
 
     if (fieldName === 'complainantContact' && fieldValue.length > 0) {
-      if (!/^\d{10,11}$/.test(fieldValue)) {
+      if (!fieldValue.startsWith('09')) {
         return {
           fieldName,
-          message: 'Please enter a valid contact number (10–11 digits, without +63).',
+          message: 'Philippine mobile numbers must start with 09 (e.g. 09171234567).',
+          type: 'warning'
+        };
+      }
+      if (!/^\d{11}$/.test(fieldValue)) {
+        return {
+          fieldName,
+          message: 'Enter a full 11-digit number starting with 09.',
           type: 'warning'
         };
       }

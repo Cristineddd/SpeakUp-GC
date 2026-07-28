@@ -8,7 +8,8 @@ import {
   deleteDoc,
   getDoc,
   where,
-  writeBatch
+  writeBatch,
+  type DocumentReference,
 } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -213,137 +214,198 @@ const UsersManagement = () => {
     if (!userToDelete) return;
 
     const uid = userToDelete.uid;
+    const email = userToDelete.email;
+    const errors: string[] = [];
+    let chatRoomsDeleted = 0;
+    let messagesDeleted = 0;
+
+    const safeQueryDelete = async (
+      label: string,
+      run: () => Promise<void>
+    ) => {
+      try {
+        await run();
+      } catch (err: any) {
+        console.error(`Error deleting ${label}:`, err);
+        errors.push(`${label}: ${err?.message || err?.code || "failed"}`);
+      }
+    };
+
+    const commitDeletes = async (refs: DocumentReference[]) => {
+      const unique = Array.from(new Map(refs.map((r) => [r.path, r])).values());
+      for (let i = 0; i < unique.length; i += 400) {
+        const batch = writeBatch(db);
+        unique.slice(i, i + 400).forEach((ref) => batch.delete(ref));
+        await batch.commit();
+      }
+      return unique.length;
+    };
 
     try {
-      // Delete all chat rooms + messages first (includes rooms/messages for user's complaints)
-      const { chatRoomsDeleted, messagesDeleted } = await MessageService.deleteAllDataForUser(uid);
+      // Chat rooms + messages first
+      await safeQueryDelete("chat/messages", async () => {
+        const result = await MessageService.deleteAllDataForUser(uid);
+        chatRoomsDeleted = result.chatRoomsDeleted;
+        messagesDeleted = result.messagesDeleted;
+      });
 
-      const batch = writeBatch(db);
-      
-      // Delete representative record if exists
-      const representative = await RepresentativeService.getByUserId(uid);
-      if (representative) {
-        await RepresentativeService.delete(representative.id);
+      // Representative + staff profile
+      await safeQueryDelete("representative", async () => {
+        const representative = await RepresentativeService.getByUserId(uid);
+        if (representative) {
+          await RepresentativeService.delete(representative.id);
+        }
+      });
+
+      await safeQueryDelete("staffProfiles", async () => {
+        await deleteDoc(doc(db, "staffProfiles", uid));
+      });
+
+      await safeQueryDelete("notificationPreferences", async () => {
+        await deleteDoc(doc(db, "notificationPreferences", uid));
+      });
+
+      await safeQueryDelete("fcmTokens", async () => {
+        const snap = await getDocs(query(collection(db, "fcmTokens"), where("userId", "==", uid)));
+        await commitDeletes(snap.docs.map((d) => d.ref));
+      });
+
+      if (email) {
+        await safeQueryDelete("registeredUsers", async () => {
+          await deleteDoc(doc(db, "registeredUsers", email));
+        });
       }
-      
-      // Delete all reports by this user
-      const reportsQuery = query(
-        collection(db, 'reports'),
-        where('userId', '==', uid)
-      );
-      const reportsSnapshot = await getDocs(reportsQuery);
-      
-      // Track which representatives need their case counts updated
+
+      const refsToDelete: DocumentReference[] = [];
       const representativesToUpdate = new Map<string, number>();
-      
-      reportsSnapshot.docs.forEach((reportDoc) => {
-        const reportData = reportDoc.data();
-        // Track assigned handler for active cases
-        if (reportData.assignedTo && reportData.status !== 'resolved' && reportData.status !== 'dismissed') {
-          const currentCount = representativesToUpdate.get(reportData.assignedTo) || 0;
-          representativesToUpdate.set(reportData.assignedTo, currentCount + 1);
-        }
-        batch.delete(reportDoc.ref);
-      });
-      
-      // Delete all complaints by this user (both userId and complainantId fields)
-      const complaintsByUserIdQuery = query(
-        collection(db, 'complaints'),
-        where('userId', '==', uid)
-      );
-      const complaintsByComplainantIdQuery = query(
-        collection(db, 'complaints'),
-        where('complainantId', '==', uid)
-      );
-      const [complaintsByUserIdSnap, complaintsByComplainantIdSnap] = await Promise.all([
-        getDocs(complaintsByUserIdQuery),
-        getDocs(complaintsByComplainantIdQuery),
-      ]);
-      const complaintDocsToDelete = new Map<string, typeof complaintsByUserIdSnap.docs[0]>();
-      complaintsByUserIdSnap.docs.forEach((d) => complaintDocsToDelete.set(d.id, d));
-      complaintsByComplainantIdSnap.docs.forEach((d) => complaintDocsToDelete.set(d.id, d));
 
-      complaintDocsToDelete.forEach((complaintDoc) => {
-        const complaintData = complaintDoc.data();
-        // Track assigned handler for active cases
-        if (complaintData.assignedTo && complaintData.status !== 'resolved' && complaintData.status !== 'dismissed') {
-          const currentCount = representativesToUpdate.get(complaintData.assignedTo) || 0;
-          representativesToUpdate.set(complaintData.assignedTo, currentCount + 1);
-        }
-        batch.delete(complaintDoc.ref);
-      });
-      
-      // Delete all notifications for this user
-      const notificationsQuery = query(
-        collection(db, 'notifications'),
-        where('userId', '==', uid)
-      );
-      const notificationsSnapshot = await getDocs(notificationsQuery);
-      notificationsSnapshot.docs.forEach((notifDoc) => {
-        batch.delete(notifDoc.ref);
-      });
-      
-      // Delete all internal notes created by this user
-      const notesQuery = query(
-        collection(db, 'internalNotes'),
-        where('createdBy', '==', uid)
-      );
-      const notesSnapshot = await getDocs(notesQuery);
-      notesSnapshot.docs.forEach((noteDoc) => {
-        batch.delete(noteDoc.ref);
-      });
-      
-      // Delete all activity logs for this user
-      const activityQuery = query(
-        collection(db, 'activities'),
-        where('userId', '==', uid)
-      );
-      const activitySnapshot = await getDocs(activityQuery);
-      activitySnapshot.docs.forEach((activityDoc) => {
-        batch.delete(activityDoc.ref);
-      });
-      
-      // Update representative activeCases counts
-      for (const [repId, casesToSubtract] of representativesToUpdate.entries()) {
-        const repRef = doc(db, 'representatives', repId);
-        const repSnap = await getDoc(repRef);
-        if (repSnap.exists()) {
-          const repData = repSnap.data();
-          const newActiveCases = Math.max(0, (repData.activeCases || 0) - casesToSubtract);
-          batch.update(repRef, {
-            activeCases: newActiveCases,
-            updatedAt: new Date()
+      const collectQuery = async (
+        label: string,
+        q: ReturnType<typeof query>,
+        onDoc?: (data: Record<string, any>) => void
+      ) => {
+        await safeQueryDelete(label, async () => {
+          const snap = await getDocs(q);
+          snap.docs.forEach((d) => {
+            onDoc?.(d.data());
+            refsToDelete.push(d.ref);
           });
-        }
-      }
-      
-      // Delete user document
-      const userRef = doc(db, 'users', uid);
-      batch.delete(userRef);
-      
-      // Commit all deletions
-      await batch.commit();
-      
-      setUsers(users.filter(user => user.uid !== uid));
-      
-      const complaintsDeletedCount = complaintDocsToDelete.size;
+        });
+      };
 
-      const totalDeleted = reportsSnapshot.size + complaintsDeletedCount + 
-                          notificationsSnapshot.size + messagesDeleted + 
-                          notesSnapshot.size + activitySnapshot.size + 
-                          chatRoomsDeleted;
-      
-      toast({
-        title: "User Completely Deleted",
-        description: `Removed user and ${totalDeleted} associated records (${reportsSnapshot.size} reports, ${complaintsDeletedCount} complaints, ${chatRoomsDeleted} chat rooms, ${messagesDeleted} messages)`,
+      await collectQuery(
+        "reports",
+        query(collection(db, "reports"), where("userId", "==", uid)),
+        (data) => {
+          if (data.assignedTo && data.status !== "resolved" && data.status !== "dismissed") {
+            representativesToUpdate.set(
+              data.assignedTo,
+              (representativesToUpdate.get(data.assignedTo) || 0) + 1
+            );
+          }
+        }
+      );
+
+      await collectQuery(
+        "complaints(userId)",
+        query(collection(db, "complaints"), where("userId", "==", uid)),
+        (data) => {
+          if (data.assignedTo && data.status !== "resolved" && data.status !== "dismissed") {
+            representativesToUpdate.set(
+              data.assignedTo,
+              (representativesToUpdate.get(data.assignedTo) || 0) + 1
+            );
+          }
+        }
+      );
+
+      await collectQuery(
+        "complaints(complainantId)",
+        query(collection(db, "complaints"), where("complainantId", "==", uid)),
+        (data) => {
+          if (data.assignedTo && data.status !== "resolved" && data.status !== "dismissed") {
+            representativesToUpdate.set(
+              data.assignedTo,
+              (representativesToUpdate.get(data.assignedTo) || 0) + 1
+            );
+          }
+        }
+      );
+
+      await collectQuery(
+        "notifications",
+        query(collection(db, "notifications"), where("userId", "==", uid))
+      );
+
+      await collectQuery(
+        "internalNotes",
+        query(collection(db, "internalNotes"), where("createdBy", "==", uid))
+      );
+
+      await collectQuery(
+        "activities",
+        query(collection(db, "activities"), where("userId", "==", uid))
+      );
+
+      await collectQuery(
+        "caseActivities",
+        query(collection(db, "caseActivities"), where("userId", "==", uid))
+      );
+
+      // Always delete the user document itself
+      refsToDelete.push(doc(db, "users", uid));
+
+      let deletedDocs = 0;
+      await safeQueryDelete("batch commit", async () => {
+        deletedDocs = await commitDeletes(refsToDelete);
       });
-    } catch (error) {
-      console.error('Error deleting user:', error);
+
+      // Update handler active case counts (best-effort)
+      for (const [repId, casesToSubtract] of representativesToUpdate.entries()) {
+        await safeQueryDelete(`rep:${repId}`, async () => {
+          const repRef = doc(db, "representatives", repId);
+          const repSnap = await getDoc(repRef);
+          if (!repSnap.exists()) return;
+          const repData = repSnap.data();
+          await updateDoc(repRef, {
+            activeCases: Math.max(0, (repData.activeCases || 0) - casesToSubtract),
+            updatedAt: new Date(),
+          });
+        });
+      }
+
+      // Verify user doc is gone — if not, surface failure
+      const stillThere = await getDoc(doc(db, "users", uid));
+      if (stillThere.exists()) {
+        throw new Error(
+          errors[0] ||
+            "User document still exists. Check that your account has isAdmin: true or an admin staffProfile, then redeploy Firestore rules."
+        );
+      }
+
+      setUsers((prev) => prev.filter((user) => user.uid !== uid));
+      setDeleteModalOpen(false);
+      setUserToDelete(null);
+
       toast({
-        title: "Error",
-        description: "Failed to delete user",
+        title: "User deleted",
+        description:
+          errors.length > 0
+            ? `Removed user (${deletedDocs} docs, ${chatRoomsDeleted} chats, ${messagesDeleted} messages). Some related data skipped: ${errors.slice(0, 2).join("; ")}`
+            : `Removed user and related data (${deletedDocs} docs, ${chatRoomsDeleted} chat rooms, ${messagesDeleted} messages).`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error deleting user",
+        description:
+          error?.message ||
+          errors[0] ||
+          "Failed to delete user. Confirm Firestore rules are deployed and you are logged in as admin.",
         variant: "destructive",
       });
+      // Re-throw so DeleteUserModal keeps open on hard failure
+      throw error;
     }
   };
 
@@ -878,7 +940,11 @@ const UsersManagement = () => {
         <DeleteUserModal
           open={deleteModalOpen}
           onOpenChange={setDeleteModalOpen}
-          username={userToDelete.alias || userToDelete.displayName}
+          alias={
+            userToDelete.alias && userToDelete.alias !== 'N/A'
+              ? userToDelete.alias
+              : userToDelete.displayName || userToDelete.uid
+          }
           reportCount={userToDelete.reportsCount || 0}
           onConfirmDelete={deleteUser}
         />

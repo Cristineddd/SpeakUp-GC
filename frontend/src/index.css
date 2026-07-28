@@ -429,3 +429,9 @@
     .card-hover:hover                    { transform: none !important; }
   }
 }
+
+/* Cross-browser modal height: vh fallback, then dvh where supported */
+.speakup-modal-shell {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+}

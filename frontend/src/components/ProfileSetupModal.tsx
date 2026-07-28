@@ -15,10 +15,11 @@
  * to Firestore users/{uid} and closes the modal.
  */
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { doc, updateDoc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useAuth } from "../contexts/AuthContext";
-import { Shield, Bell, User, CheckCircle2, ArrowRight, Bot, Loader2 } from "lucide-react";
+import { Shield, Bell, User, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 
@@ -144,13 +145,13 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto">
+  const modal = (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg max-h-[calc(100dvh-2rem)] flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg flex flex-col bg-white rounded-3xl shadow-2xl overflow-hidden speakup-modal-shell">
 
         {/* Header */}
         <div className="shrink-0 bg-gradient-to-r from-[#1D9E75] to-[#178F65] px-6 pt-6 pb-8">
@@ -189,8 +190,8 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
           {/* AI Bubble */}
           <div className="px-6 -mt-4 pt-1 pb-2">
             <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex gap-3">
-            <div className="shrink-0 w-8 h-8 rounded-xl bg-[#E8F5EE] border border-[#1D9E75]/20 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-[#1D9E75]" />
+            <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden border border-[#1D9E75]/20 bg-[#E8F5EE]">
+              <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-[#1D9E75] mb-1">Laya · SpeakUp GC Guide</p>
@@ -386,4 +387,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return modal;
+  return createPortal(modal, document.body);
 }

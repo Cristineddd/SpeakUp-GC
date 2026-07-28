@@ -16,7 +16,7 @@ import { Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 interface DeleteUserModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  username: string;
+  alias: string;
   reportCount: number;
   onConfirmDelete: () => void | Promise<void>;
 }
@@ -24,7 +24,7 @@ interface DeleteUserModalProps {
 export function DeleteUserModal({
   open,
   onOpenChange,
-  username,
+  alias,
   reportCount,
   onConfirmDelete
 }: DeleteUserModalProps) {
@@ -38,7 +38,7 @@ export function DeleteUserModal({
     }
   }, [open]);
 
-  const isMatch = inputValue === username;
+  const isMatch = inputValue === alias;
   const showHint = inputValue.length > 0;
 
   const handleDelete = async () => {
@@ -86,7 +86,7 @@ export function DeleteUserModal({
           <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-sm text-red-800">
-              Deleting <span className="font-semibold">{username}</span> will permanently remove their account and all{' '}
+              Deleting <span className="font-semibold break-all">{alias}</span> will permanently remove their account and all{' '}
               <span className="font-semibold">{reportCount}</span> associated report{reportCount !== 1 ? 's' : ''}. 
               This cannot be recovered.
             </AlertDescription>
@@ -94,13 +94,13 @@ export function DeleteUserModal({
 
           {/* Confirmation input */}
           <div className="space-y-2">
-            <Label htmlFor="confirm-username" className="text-sm font-medium text-gray-700">
-              Type <span className="font-mono font-semibold text-gray-900">{username}</span> to confirm
+            <Label htmlFor="confirm-alias" className="text-sm font-medium text-gray-700">
+              Type <span className="font-mono font-semibold text-gray-900 break-all">{alias}</span> to confirm
             </Label>
             <Input
-              id="confirm-username"
+              id="confirm-alias"
               type="text"
-              placeholder="Type username here..."
+              placeholder="Type alias here..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               className={`font-mono ${
@@ -120,12 +120,12 @@ export function DeleteUserModal({
                 {isMatch ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600 font-medium">✓ Username confirmed</span>
+                    <span className="text-green-600 font-medium">✓ Alias confirmed</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4 text-red-500" />
-                    <span className="text-red-500">Username does not match</span>
+                    <span className="text-red-500">Alias does not match</span>
                   </>
                 )}
               </div>

@@ -30,7 +30,6 @@ import type { Notification as AppNotification } from "../../types/notification";
 import { formatDistanceToNow } from "date-fns";
 import { MessageService } from "../../services/messageService";
 import type { ChatRoom } from "../../types/message";
-import ProfileSetupModal from "../../components/ProfileSetupModal";
 import GBVChatbot from "../../components/GBVChatbot";
 import { pageStackClass } from "../../lib/sidebar-styles";
 
@@ -96,9 +95,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const unreadCount = notifications.filter((n) => n.status === "unread").length;
 
-  // ── Profile setup modal ──────────────────────────────────────────────────
-  const [showProfileSetup, setShowProfileSetup] = useState(false);
+  // ── Alias for welcome header (Laya ProfileSetup lives in protected layout) ──
   const [alias, setAlias] = useState<string | null>(null);
+  const [isReturningUser, setIsReturningUser] = useState(false);
   const [showPrivacyBanner, setShowPrivacyBanner] = useState(true);
 
   useEffect(() => {
@@ -106,18 +105,28 @@ export default function Dashboard() {
     (async () => {
       try {
         const snap = await getDoc(doc(db, "users", currentUser.uid));
-        if (!snap.exists() || !snap.data()?.profileSetupComplete) {
-          setShowProfileSetup(true);
-        } else {
-          setAlias(snap.data()?.alias ?? null);
+        if (snap.exists()) {
+          const data = snap.data();
+          setAlias(data?.alias ?? null);
+          // "Welcome back" only after they've finished first-time Laya setup before
+          setIsReturningUser(data?.profileSetupComplete === true);
         }
       } catch {
-        // non-blocking — skip modal if check fails
+        // non-blocking — treat as first visit
       }
     })();
+
+    const onSetupComplete = (e: Event) => {
+      const next = (e as CustomEvent<{ alias?: string }>).detail?.alias;
+      if (next) setAlias(next);
+      // Keep "Welcome" for this first session; next login becomes "Welcome back"
+    };
+    window.addEventListener("speakup:profile-setup-complete", onSetupComplete);
+    return () => window.removeEventListener("speakup:profile-setup-complete", onSetupComplete);
   }, [currentUser?.uid]);
 
   const userName = alias || user?.displayName?.split(" ")[0] || "User";
+  const welcomeLabel = isReturningUser ? "Welcome back" : "Welcome";
 
   // ─── Real-time complaint counts ───
   useEffect(() => {
@@ -323,22 +332,18 @@ export default function Dashboard() {
 
   return (
     <>
-      <ProfileSetupModal
-        isOpen={showProfileSetup}
-        onComplete={(completedAlias?: string) => {
-          if (completedAlias) setAlias(completedAlias);
-          setShowProfileSetup(false);
-        }}
-      />
-
       <div className={pageStackClass()}>
 
         {/* ─── Welcome Header ─── */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, <span className="text-[#1D9E75]">{userName}</span>
+            {welcomeLabel}, <span className="text-[#1D9E75]">{userName}</span>
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {isReturningUser
+              ? "Here's what's happening with your cases today."
+              : "Glad you're here — let's get you set up and ready."}
+          </p>
         </div>
 
         {/* ─── Privacy Notice (Dismissible) ─── */}

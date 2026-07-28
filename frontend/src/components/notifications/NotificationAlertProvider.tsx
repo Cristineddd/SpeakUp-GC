@@ -1,38 +1,78 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Bell, X } from 'lucide-react';
+import { Bell, X, Smartphone } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useAuth } from '../../contexts/AuthContext';
 import { useRealtimeNotificationAlerts } from '../../hooks/useRealtimeNotificationAlerts';
+import { useToast } from '../../hooks/use-toast';
 import {
   dismissNotificationPrompt,
   getBrowserNotificationPermission,
   isBrowserNotificationSupported,
-  requestBrowserNotificationPermission,
   wasNotificationPromptDismissed,
+  showBrowserNotification,
 } from '../../utils/browserNotifications';
+import {
+  enablePushNotifications,
+  isPushConfigured,
+  isPushSupported,
+  listenForForegroundPush,
+  syncPushTokenIfGranted,
+} from '../../services/fcmService';
 
 /**
- * Mount inside protected routes. Enables free proactive alerts:
- * - In-app toast when a new notification arrives (tab open)
- * - OS/browser notification when permission granted (tab in background)
+ * Mount inside protected routes.
+ * - In-app toast when Firestore notification arrives (tab open)
+ * - FCM / PWA push when app is backgrounded or closed (mobile install)
  */
 export function NotificationAlertProvider({
   children,
   showPermissionPrompt = true,
 }: {
   children: React.ReactNode;
-  /** Complainants only — hide on admin / case handler UI */
   showPermissionPrompt?: boolean;
 }) {
   useRealtimeNotificationAlerts(true);
+  const { currentUser } = useAuth();
+  const { toast } = useToast();
 
   const [showPrompt, setShowPrompt] = useState(false);
   const [requesting, setRequesting] = useState(false);
 
+  // Re-sync FCM token after login when permission already granted
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    void syncPushTokenIfGranted(currentUser.uid);
+  }, [currentUser?.uid]);
+
+  // Foreground FCM → toast + optional native notification
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    let unsubscribe = () => {};
+    void listenForForegroundPush(({ title, body, actionUrl }) => {
+      toast({
+        title,
+        description: body,
+      });
+      if (document.hidden) {
+        showBrowserNotification(title, {
+          body,
+          tag: 'fcm-foreground',
+          onClick: () => {
+            if (actionUrl) window.location.href = actionUrl;
+          },
+        });
+      }
+    }).then((unsub) => {
+      unsubscribe = unsub;
+    });
+    return () => unsubscribe();
+  }, [currentUser?.uid, toast]);
+
   useEffect(() => {
     if (!showPermissionPrompt) return;
-    if (!isBrowserNotificationSupported()) return;
+    if (!isBrowserNotificationSupported() && !isPushSupported()) return;
 
     const permission = getBrowserNotificationPermission();
     if (permission === 'granted' || permission === 'denied') return;
@@ -43,12 +83,31 @@ export function NotificationAlertProvider({
   }, [showPermissionPrompt]);
 
   const handleEnable = async () => {
+    if (!currentUser?.uid) return;
     setRequesting(true);
     try {
-      const result = await requestBrowserNotificationPermission();
-      if (result === 'granted' || result === 'denied') {
+      const result = await enablePushNotifications(currentUser.uid);
+      if (result.ok) {
         dismissNotificationPrompt();
         setShowPrompt(false);
+        toast({
+          title: 'Push notifications enabled',
+          description: 'You will get alerts on this device even when SpeakUp GC is closed.',
+        });
+      } else if (result.reason === 'Permission denied') {
+        dismissNotificationPrompt();
+        setShowPrompt(false);
+        toast({
+          title: 'Notifications blocked',
+          description: 'Enable notifications in your browser or phone settings to receive case updates.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Could not enable push',
+          description: result.reason || 'Try again, or install SpeakUp GC as an app on your phone.',
+          variant: 'destructive',
+        });
       }
     } finally {
       setRequesting(false);
@@ -68,13 +127,20 @@ export function NotificationAlertProvider({
         <div className="fixed bottom-4 left-4 right-4 z-[9998] mx-auto max-w-md sm:left-auto sm:right-6">
           <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 shadow-lg">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
-              <Bell className="h-5 w-5 text-[#1D9E75]" />
+              {isPushSupported() ? (
+                <Smartphone className="h-5 w-5 text-[#1D9E75]" />
+              ) : (
+                <Bell className="h-5 w-5 text-[#1D9E75]" />
+              )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900">Get case updates instantly</p>
+              <p className="text-sm font-semibold text-gray-900">Enable mobile push alerts</p>
               <p className="mt-1 text-xs leading-relaxed text-gray-600">
-                Allow notifications to know when your case status changes — free, no email needed.
-                Works while SpeakUp GC is open in your browser.
+                Get case updates on your lock screen — even when SpeakUp GC is closed.
+                {isPushSupported()
+                  ? ' Best on installed PWA (Add to Home Screen).'
+                  : ' Your browser may only support alerts while the site is open.'}
+                {!isPushConfigured() ? ' (Admin: add VAPID key to finish setup.)' : ''}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
@@ -83,7 +149,7 @@ export function NotificationAlertProvider({
                   onClick={handleEnable}
                   disabled={requesting}
                 >
-                  {requesting ? 'Enabling...' : 'Enable notifications'}
+                  {requesting ? 'Enabling...' : 'Enable push'}
                 </Button>
                 <Button size="sm" variant="ghost" className="h-8" onClick={handleDismiss}>
                   Not now

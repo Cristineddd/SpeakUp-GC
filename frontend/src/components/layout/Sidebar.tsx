@@ -95,6 +95,13 @@ export default function Sidebar() {
     };
 
     fetchUserRole();
+
+    const onSetupComplete = (e: Event) => {
+      const next = (e as CustomEvent<{ alias?: string }>).detail?.alias;
+      if (next) setAlias(next);
+    };
+    window.addEventListener("speakup:profile-setup-complete", onSetupComplete);
+    return () => window.removeEventListener("speakup:profile-setup-complete", onSetupComplete);
   }, [user]);
 
   // Save collapsed state to localStorage

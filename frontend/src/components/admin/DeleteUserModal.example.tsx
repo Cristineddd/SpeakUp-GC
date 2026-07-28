@@ -67,7 +67,7 @@ export function UsersManagementExample() {
         <DeleteUserModal
           open={deleteModalOpen}
           onOpenChange={setDeleteModalOpen}
-          username={userToDelete.username}
+          alias={userToDelete.username}
           reportCount={userToDelete.reportCount}
           onConfirmDelete={handleConfirmDelete}
         />
