@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { MessageService } from '../../services/messageService';
 import { NotificationService } from '../../services/notificationService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
@@ -55,6 +56,7 @@ interface ExtendedAdminReport {
   userId?: string;
   userName?: string;
   userEmail?: string;
+  assignedToName?: string | null;
 }
 
 interface HandlerChatInterfaceProps {
@@ -81,6 +83,11 @@ export function CODIMemberChatInterface({
   className = '',
 }: HandlerChatInterfaceProps) {
   const { currentUser } = useAuth();
+  const { representativeData } = useRepresentativeRole();
+  const codiPublicName =
+    representativeData?.displayName ||
+    complaint.assignedToName ||
+    'CODI Member';
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,19 +184,25 @@ export function CODIMemberChatInterface({
             await MessageService.addHandler(
               room.id,
               currentUser.uid,
-              currentUser.displayName || currentUser.email || 'CODI Member'
+              codiPublicName
             );
+          } else if (room.handlerName !== codiPublicName) {
+            await MessageService.updateHandlerDisplayName(
+              room.id,
+              currentUser.uid,
+              codiPublicName
+            );
+            room = { ...room, handlerName: codiPublicName };
           }
         } else {
           console.log('🆕 Creating new chat room');
-          // Create new chat room with CODI member info
           room = await MessageService.getOrCreateChatRoom(
             complaintId,
             complaint.title || 'Case Discussion',
             complainantId,
             complainantName,
             currentUser.uid,
-            currentUser.displayName || currentUser.email || 'CODI Member',
+            codiPublicName,
             { requestingUserId: currentUser.uid, asStaff: true, complainantId }
           );
         }
@@ -269,12 +282,12 @@ export function CODIMemberChatInterface({
         MessageService.setTyping(
           chatRoom.id,
           currentUser.uid,
-          currentUser.displayName || currentUser.email || 'CODI Member',
+          codiPublicName,
           false
         ).catch(console.error);
       }
     };
-  }, [complaintId, currentUser, complaint, toast, complainantId, complainantName]);
+  }, [complaintId, currentUser, complaint, toast, complainantId, complainantName, codiPublicName]);
 
   // Auto-scroll when messages change
   useEffect(() => {
@@ -310,7 +323,7 @@ export function CODIMemberChatInterface({
         chatRoom.id,
         complaintId,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'CODI Member',
+        codiPublicName,
         'codi',
         content,
         attachments
@@ -322,7 +335,7 @@ export function CODIMemberChatInterface({
       await MessageService.setTyping(
         chatRoom.id,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'CODI Member',
+        codiPublicName,
         false
       );
 
@@ -344,7 +357,7 @@ export function CODIMemberChatInterface({
       await MessageService.setTyping(
         chatRoom.id,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'CODI Member',
+        codiPublicName,
         isTyping
       );
     } catch (error) {

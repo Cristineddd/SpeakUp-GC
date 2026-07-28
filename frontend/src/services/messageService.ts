@@ -1052,15 +1052,61 @@ export class MessageService {
         updatedAt: Timestamp.now(),
       });
 
-      // Send system message
-      await this.sendSystemMessage(
-        chatRoomId,
-        chatRoom.complaintId,
-        `${handlerName} has been assigned to handle your case.`
-      );
+      const nameChanged =
+        chatRoom.handlerId === handlerId && chatRoom.handlerName !== handlerName;
+      const isNewHandler = chatRoom.handlerId !== handlerId;
+
+      if (isNewHandler) {
+        await this.sendSystemMessage(
+          chatRoomId,
+          chatRoom.complaintId,
+          `${handlerName} has been assigned to handle your case.`
+        );
+      } else if (nameChanged) {
+        // Name-only correction — no duplicate assignment notice
+      }
     } catch (error) {
       console.error('Error adding handler:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Update handler display name when auth name differs from representative nickname.
+   */
+  static async updateHandlerDisplayName(
+    chatRoomId: string,
+    handlerId: string,
+    handlerName: string
+  ): Promise<void> {
+    try {
+      const chatRoomRef = doc(db, this.CHAT_ROOMS_COLLECTION, chatRoomId);
+      const chatRoomSnap = await getDoc(chatRoomRef);
+
+      if (!chatRoomSnap.exists()) return;
+
+      const chatRoom = chatRoomSnap.data() as ChatRoom;
+      if (chatRoom.handlerId !== handlerId || chatRoom.handlerName === handlerName) {
+        return;
+      }
+
+      const participants = {
+        ...chatRoom.participants,
+        [handlerId]: {
+          ...chatRoom.participants[handlerId],
+          name: handlerName,
+          role: 'handler' as const,
+          joinedAt: chatRoom.participants[handlerId]?.joinedAt || Timestamp.now(),
+        },
+      };
+
+      await updateDoc(chatRoomRef, {
+        handlerName,
+        participants,
+        updatedAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error('Error updating handler display name:', error);
     }
   }
 

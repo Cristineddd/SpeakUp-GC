@@ -259,6 +259,8 @@ export default function CaseChat() {
           <ChatInterface
             complaintId={complaintId}
             complaintTitle={complaintTitle}
+            assignedToName={complaint?.assignedToName}
+            category={complaint?.category}
             className="h-full rounded-none border-0 shadow-none"
           />
         )}

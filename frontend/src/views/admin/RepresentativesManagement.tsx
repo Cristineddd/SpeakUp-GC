@@ -310,13 +310,16 @@ const RepresentativesManagement = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="displayName">Full Name *</Label>
+                  <Label htmlFor="displayName">Display Name / CODI Nickname *</Label>
                   <Input
                     id="displayName"
                     value={formData.displayName}
                     onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder="e.g. CODI 1"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Shown to complainants in case chat (not the staff member&apos;s personal name).
+                  </p>
                 </div>
 
                 <div>

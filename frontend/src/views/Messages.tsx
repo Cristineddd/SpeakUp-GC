@@ -11,6 +11,7 @@ import {
   MessageSquare, Clock, AlertCircle, Loader2,
   Shield, ChevronRight, User,
 } from 'lucide-react';
+import { getComplainantFacingHandlerName } from '../utils/codiPublicName';
 import { formatDistanceToNow } from 'date-fns';
 
 function safeToDate(value: any): Date {
@@ -69,10 +70,16 @@ export default function Messages() {
   const getOtherParticipant = (room: ChatRoom) => {
     if (!currentUser) return { name: 'Unknown', role: 'handler' as const };
     const otherId = room.participantIds.find((id) => id !== currentUser.uid);
-    if (!otherId) return { name: room.handlerName || 'CODI Member', role: 'handler' as const };
+    const formalHandlerName = getComplainantFacingHandlerName({
+      chatHandlerName: room.handlerName,
+    });
+    if (!otherId) return { name: formalHandlerName, role: 'handler' as const };
     const participant = room.participants[otherId];
+    const isStaff = participant?.role === 'handler' || participant?.role === 'codi' || participant?.role === 'admin';
     return {
-      name: participant?.name || room.handlerName || 'CODI Member',
+      name: isStaff
+        ? formalHandlerName
+        : participant?.name || room.complainantName || 'Complainant',
       role: participant?.role || 'handler',
     };
   };

@@ -25,6 +25,7 @@ interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
   showSenderName?: boolean;
+  senderDisplayName?: string;
   isGroupChat?: boolean;
   groupPosition?: 'single' | 'first' | 'middle' | 'last';
 }
@@ -33,6 +34,7 @@ export function MessageBubble({
   message,
   isOwn,
   showSenderName = true,
+  senderDisplayName,
   isGroupChat = false,
   groupPosition = 'single',
 }: MessageBubbleProps) {
@@ -117,15 +119,16 @@ export function MessageBubble({
 
   // Only show timestamp on last or single message
   const showTimestamp = groupPosition === 'last' || groupPosition === 'single';
+  const resolvedSenderName = senderDisplayName || message.senderName;
 
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} ${getMarginBottom()} animate-fadeIn`}>
       <div className={`max-w-[88%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col`}>
         {/* Sender name only if needed */}
-        {!isOwn && showSenderName && isGroupChat && (
+        {!isOwn && showSenderName && (isGroupChat || senderDisplayName) && (
           <div className="text-xs font-semibold mb-1 ml-3 text-gray-600 flex items-center gap-1">
             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            {message.senderName}
+            {resolvedSenderName}
           </div>
         )}
 

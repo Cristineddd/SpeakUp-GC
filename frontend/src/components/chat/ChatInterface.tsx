@@ -22,10 +22,16 @@ import {
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
+import {
+  getComplainantFacingHandlerName,
+  isStaffMessageRole,
+} from '../../utils/codiPublicName';
 
 interface ChatInterfaceProps {
   complaintId: string;
   complaintTitle: string;
+  assignedToName?: string | null;
+  category?: string;
   onClose?: () => void;
   className?: string;
 }
@@ -33,6 +39,8 @@ interface ChatInterfaceProps {
 export function ChatInterface({
   complaintId,
   complaintTitle,
+  assignedToName,
+  category,
   onClose,
   className = '',
 }: ChatInterfaceProps) {
@@ -316,9 +324,13 @@ export function ChatInterface({
   }
 
   const messageGroups = groupMessagesByDate();
-  const handlerDisplayName = chatRoom.handlerName || 'Case Support';
+  const hasAssignedHandler = Boolean(chatRoom.handlerId || assignedToName);
+  const handlerDisplayName = getComplainantFacingHandlerName({
+    assignedToName,
+    chatHandlerName: chatRoom.handlerName,
+    category,
+  });
   const handlerInitial = handlerDisplayName.charAt(0).toUpperCase();
-  const hasAssignedHandler = Boolean(chatRoom.handlerId);
 
   return (
     <div className={`flex h-full min-h-0 w-full flex-col ${className}`}>
@@ -425,6 +437,11 @@ export function ChatInterface({
                               message={message}
                               isOwn={message.senderId === currentUser?.uid}
                               showSenderName={message.senderId !== currentUser?.uid}
+                              senderDisplayName={
+                                isStaffMessageRole(message.senderRole)
+                                  ? handlerDisplayName
+                                  : undefined
+                              }
                               isGroupChat={chatRoom.participantIds.length > 2}
                               groupPosition={getGroupPosition(index)}
                             />
