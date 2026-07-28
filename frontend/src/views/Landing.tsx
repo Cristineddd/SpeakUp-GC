@@ -37,25 +37,21 @@ const FEATURED = [
     icon: ClipboardList,
     title: "File a Complaint",
     desc: "Anonymous or identified filing with secure document upload.",
-    action: "Open",
   },
   {
     icon: Activity,
     title: "Case Tracker",
     desc: "Monitor status live — from filing to resolution.",
-    action: "Open",
   },
   {
     icon: Lock,
     title: "Privacy First",
     desc: "End-to-end encryption. Your data stays yours.",
-    action: "Open",
   },
   {
     icon: HeadphonesIcon,
     title: "DEIU Support",
     desc: "Trained administrators guide you every step.",
-    action: "Open",
   },
 ];
 
@@ -296,8 +292,6 @@ const Landing = () => {
       {/* ── Quick Actions ──────────────────────────────────────────── */}
       <section className="pb-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-xs text-gray-500 mb-3">New here? Get started to file complaints and access resources.</p>
-
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {QUICK_ACTIONS.map((item) => (
               <button
@@ -354,7 +348,7 @@ const Landing = () => {
             <div>
               <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Online Services</p>
               <h2 className="text-lg font-black text-gray-900">Featured</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Quick access to common complaint services and resources.</p>
+              <p className="text-xs text-gray-500 mt-0.5">New here? Get started to file complaints and access resources.</p>
             </div>
             <button onClick={() => openWalkthrough()} className="text-xs font-medium text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1">
               View all <ArrowRight className="w-3 h-3" />
@@ -369,11 +363,10 @@ const Landing = () => {
                 className={`group text-left bg-white border border-gray-200 hover:border-[#1D9E75]/40 rounded-xl p-4 transition-all duration-500 hover:shadow-md ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                 style={{ transitionDelay: `${i * 60}ms` }}
               >
-                <div className="flex items-start justify-between mb-2">
+                <div className="mb-2">
                   <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
                     <item.icon className="w-4 h-4 text-[#1D9E75]" />
                   </div>
-                  <span className="text-[10px] font-semibold text-[#1D9E75] bg-green-50 px-2 py-0.5 rounded-full">{item.action}</span>
                 </div>
                 <h3 className="text-sm font-bold text-gray-900 mb-1">{item.title}</h3>
                 <p className="text-xs text-gray-500 leading-snug">{item.desc}</p>
