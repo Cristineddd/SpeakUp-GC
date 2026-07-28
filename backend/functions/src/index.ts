@@ -38,3 +38,9 @@ export { updateComplaintStatus, getAllowedNextStatuses } from './updateComplaint
 // REPORT STATUS MANAGEMENT
 // ============================================
 export { updateReportStatus, getAllowedReportStatuses } from './updateReportStatus';
+
+// ============================================
+// EMAIL NOTIFICATIONS (Resend)
+// ============================================
+export { onNotificationCreated } from './onNotificationCreated';
+export { sendVerificationEmail, sendPasswordResetEmail } from './emailService';

@@ -1,13 +1,11 @@
 import * as functions from 'firebase-functions';
-import { Resend } from 'resend';
 import * as admin from 'firebase-admin';
+import { getFromAddress, getResendClient } from './lib/resend';
 
 // Initialize admin if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp();
 }
-
-const resend = new Resend(functions.config().resend.api_key);
 
 /**
  * Send email verification using Resend
@@ -85,8 +83,13 @@ export const sendVerificationEmail = functions.https.onCall(async (data: any, co
       </html>
     `;
 
+    const resend = getResendClient();
+    if (!resend) {
+      throw new functions.https.HttpsError('failed-precondition', 'Email service is not configured');
+    }
+
     const result = await resend.emails.send({
-      from: 'SpeakUp GC <noreply@resend.dev>', // Use resend.dev for testing, change to your domain later
+      from: getFromAddress(),
       to: email,
       subject: 'Verify Your Email - SpeakUp GC',
       html: html,
@@ -178,8 +181,13 @@ export const sendPasswordResetEmail = functions.https.onCall(async (data: any) =
       </html>
     `;
 
+    const resend = getResendClient();
+    if (!resend) {
+      throw new functions.https.HttpsError('failed-precondition', 'Email service is not configured');
+    }
+
     const result = await resend.emails.send({
-      from: 'SpeakUp GC <noreply@resend.dev>',
+      from: getFromAddress(),
       to: email,
       subject: 'Reset Your Password - SpeakUp GC',
       html: html,

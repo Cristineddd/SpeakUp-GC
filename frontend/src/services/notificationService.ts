@@ -17,6 +17,7 @@ import {
   Unsubscribe
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { auth } from '../firebase';
 import type {
   Notification,
   NotificationType,
@@ -31,7 +32,7 @@ export class NotificationService {
   private static readonly notificationsCollection = 'notifications';
   private static readonly preferencesCollection = 'notificationPreferences';
 
-  /** In-app only — chat / read receipts should not spam EmailJS (assignment & status still email). 
+  /** In-app only — chat / read receipts should not spam email (assignment & status still email).
    * Internal notes ('new_comment', 'comment_added' for internal use) are also suppressed from email
    * to prevent complainants from being notified about admin/handler private conversations. */
   private static readonly emailSuppressedTypes: ReadonlySet<NotificationType> = new Set([
@@ -796,8 +797,6 @@ export class NotificationService {
       }
       console.log(`🔔 [DEBUG] Verified notification creation:`, docSnapshot.data());
 
-      // Send email notification if enabled
-      // Fall back to checking users/{uid}.notificationPreference if no preferences doc exists yet
       const emailEnabled = preferences
         ? preferences.emailEnabled && preferences.emailDigest === 'immediate'
         : await (async () => {
@@ -805,11 +804,13 @@ export class NotificationService {
               const userDoc = await getDoc(doc(db, 'users', userId));
               const pref = userDoc.data()?.notificationPreference ?? 'both';
               return pref === 'email' || pref === 'both';
-            } catch { return false; }
+            } catch {
+              return false;
+            }
           })();
 
       if (emailEnabled && !this.emailSuppressedTypes.has(type)) {
-        await this.sendEmailNotification(userId, {
+        await this.sendEmailViaResend(userId, {
           userId,
           type,
           priority: options?.priority || 'normal',
@@ -1163,84 +1164,71 @@ export class NotificationService {
   }
 
   /**
-   * Send email notification via EmailJS.
-   *
-   * Template routing:
-   *  - complaint_created  → TEMPLATE_SUBMITTED  (case_id, category, date, to_name)
-   *  - everything else    → TEMPLATE_UPDATE      (case_id, status, date, message, to_name)
-   *
-   * Chat (`new_message`) and read receipts are not emailed — see `emailSuppressedTypes` in createNotification.
+   * Send case notification email via Vercel API route + Resend (free — no Firebase Blaze needed).
    */
-  private static async sendEmailNotification(
+  private static async sendEmailViaResend(
     userId: string,
     notification: Omit<Notification, 'id'>
   ): Promise<void> {
     try {
-      const serviceId         = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-      const templateSubmitted = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_SUBMITTED;
-      const templateUpdate    = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_UPDATE;
-      const publicKey         = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
-
-      if (!serviceId || !templateSubmitted || !templateUpdate || !publicKey) {
-        console.warn('[NotificationService] EmailJS env vars not set — skipping email.');
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[NotificationService] No auth user — skipping email.');
         return;
       }
 
-      // Get user info from Firestore
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (!userDoc.exists()) return;
-      const email: string   = userDoc.data().email;
-      const toName: string  = userDoc.data().name ?? email;
-      if (!email) return;
 
-      const emailjs = await import('@emailjs/browser');
-      emailjs.init({ publicKey });
-      const dateStr = new Date().toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric',
-      });
+      const toEmail = userDoc.data()?.email as string | undefined;
+      const toName = (userDoc.data()?.name as string | undefined) || toEmail;
+      if (!toEmail) return;
 
-      const isSubmission = notification.type === 'complaint_created';
-      const templateId   = isSubmission ? templateSubmitted : templateUpdate;
-
-      // Get formatted Case ID from complaint document
-      let formattedCaseId = 'N/A';
+      let formattedCaseId = notification.complaintId || 'N/A';
       if (notification.complaintId) {
-        try {
-          const complaintDoc = await getDoc(doc(db, 'complaints', notification.complaintId));
-          if (complaintDoc.exists()) {
-            formattedCaseId = complaintDoc.data().caseId || notification.complaintId;
+        for (const collectionName of ['complaints', 'reports']) {
+          try {
+            const caseDoc = await getDoc(doc(db, collectionName, notification.complaintId));
+            if (caseDoc.exists()) {
+              formattedCaseId = caseDoc.data()?.caseId || notification.complaintId;
+              break;
+            }
+          } catch {
+            // try next collection
           }
-        } catch (error) {
-          console.warn('Could not fetch complaint caseId, using raw ID:', error);
-          formattedCaseId = notification.complaintId;
         }
       }
 
-      const templateParams = isSubmission
-        ? {
-            // template_2ry6qwe variables
-            to_email: email,
-            to_name:  toName,
-            case_id:  formattedCaseId,
-            category: notification.data?.category ?? 'General',
-            date:     dateStr,
-          }
-        : {
-            // template_z7sdtfq variables
-            to_email: email,
-            to_name:  toName,
-            case_id:  formattedCaseId,
-            status:   notification.data?.newStatus ?? notification.title,
-            message:  notification.message,
-            date:     dateStr,
-          };
+      const idToken = await currentUser.getIdToken();
 
-      await emailjs.send(serviceId, templateId, templateParams);
+      const response = await fetch('/api/notifications/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId,
+          toEmail,
+          toName,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          complaintId: notification.complaintId,
+          actionUrl: notification.actionUrl,
+          data: { ...notification.data, caseId: formattedCaseId },
+        }),
+      });
 
-      console.log(`[NotificationService] Email (${templateId}) sent to ${email}`);
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        console.warn('[NotificationService] Email API response:', response.status, err);
+        return;
+      }
+
+      console.log('[NotificationService] Email sent via Resend');
     } catch (error) {
-      console.error('Error sending email notification via EmailJS:', error);
-      // Don't throw — email failure shouldn't block notification creation
+      console.error('[NotificationService] Email send failed:', error);
     }
   }
 

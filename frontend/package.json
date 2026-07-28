@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
-    "@emailjs/browser": "^4.4.1",
     "@firebase/firestore": "^4.9.1",
     "@firebase/storage": "^0.14.0",
     "@google/generative-ai": "^0.24.1",
@@ -74,7 +73,7 @@
     "react-leaflet": "^4.2.1",
     "react-resizable-panels": "^2.1.9",
     "recharts": "^2.15.4",
-    "resend": "^6.12.3",
+    "resend": "^6.18.0",
     "sonner": "^1.7.4",
     "styled-components": "^6.1.19",
     "tailwind-merge": "^2.6.0",

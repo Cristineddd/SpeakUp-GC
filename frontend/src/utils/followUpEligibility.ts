@@ -1,6 +1,10 @@
-import { differenceInDays } from 'date-fns';
+import { addDays, differenceInDays } from 'date-fns';
 
 export const FOLLOW_UP_STALE_DAYS = 3;
+
+export function getFollowUpAvailableDate(lastUpdate: Date): Date {
+  return addDays(lastUpdate, FOLLOW_UP_STALE_DAYS);
+}
 
 const CLOSED_STATUSES = new Set(['resolved', 'dismissed', 'closed']);
 
@@ -15,6 +19,7 @@ export interface FollowUpEligibilityResult {
   canRequest: boolean;
   daysSinceUpdate: number;
   daysRemaining: number;
+  availableOn: Date;
   isClosed: boolean;
   alreadyRequested: boolean;
   reason: string;
@@ -36,6 +41,7 @@ export function evaluateFollowUpEligibility({
 }: FollowUpEligibilityInput): FollowUpEligibilityResult {
   const daysSinceUpdate = getDaysSinceLastUpdate(lastUpdate, now);
   const daysRemaining = Math.max(0, FOLLOW_UP_STALE_DAYS - daysSinceUpdate);
+  const availableOn = getFollowUpAvailableDate(lastUpdate);
   const closed = isCaseClosed(status);
 
   if (closed) {
@@ -43,6 +49,7 @@ export function evaluateFollowUpEligibility({
       canRequest: false,
       daysSinceUpdate,
       daysRemaining: 0,
+      availableOn,
       isClosed: true,
       alreadyRequested: followUpRequested,
       reason: 'This case is already closed.',
@@ -54,6 +61,7 @@ export function evaluateFollowUpEligibility({
       canRequest: false,
       daysSinceUpdate,
       daysRemaining: 0,
+      availableOn,
       isClosed: false,
       alreadyRequested: true,
       reason: 'You have already requested a follow-up for this case.',
@@ -66,9 +74,10 @@ export function evaluateFollowUpEligibility({
       canRequest: false,
       daysSinceUpdate,
       daysRemaining,
+      availableOn,
       isClosed: false,
       alreadyRequested: false,
-      reason: `Follow-up will be available after ${daysRemaining} more ${dayLabel} without an update.`,
+      reason: `Follow-up will be available after ${daysRemaining} more ${dayLabel} without an update (${FOLLOW_UP_STALE_DAYS}-day waiting period from last case activity).`,
     };
   }
 
@@ -76,6 +85,7 @@ export function evaluateFollowUpEligibility({
     canRequest: true,
     daysSinceUpdate,
     daysRemaining: 0,
+    availableOn,
     isClosed: false,
     alreadyRequested: false,
     reason: 'No update has been recorded for 3 or more days. You may request a follow-up.',

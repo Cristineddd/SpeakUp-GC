@@ -14,6 +14,8 @@ import {
   Users,
   MapPin,
   Loader2,
+  Lock,
+  Info,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -41,6 +43,11 @@ import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/casePr
 import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
 import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
 import { evaluateFollowUpEligibility, FOLLOW_UP_STALE_DAYS } from '../../utils/followUpEligibility';
+import {
+  getConfidentialityAccessInfo,
+  getNextStageEstimate,
+  SENSITIVE_HANDLER_NOTE,
+} from '../../utils/caseTransparency';
 import { requestCaseFollowUp } from '../../services/followUpService';
 import { useToast } from '../../hooks/use-toast';
 
@@ -567,6 +574,19 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     });
   }, [complaint]);
 
+  const confidentialityInfo = useMemo(
+    () => (complaint ? getConfidentialityAccessInfo(complaint.confidentialityLevel) : null),
+    [complaint]
+  );
+
+  const stageEstimate = useMemo(() => {
+    if (!complaint) return null;
+    const status = String((complaint as Complaint & { status?: string }).status || complaint.status);
+    return getNextStageEstimate(status, complaint.filingDate, isHandlerAssigned);
+  }, [complaint, isHandlerAssigned]);
+
+  const isSensitiveCase = complaint ? isSensitiveCaseType(complaint.type) : false;
+
   const handleRequestFollowUp = async () => {
     if (!user?.uid || !complaint || !followUpEligibility?.canRequest || followUpSubmitting) {
       return;
@@ -875,6 +895,10 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 <Calendar className="h-3.5 w-3.5" />
                 Filed {format(complaint.filingDate, "MMMM d, yyyy")}
               </p>
+              <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                Last updated {format(complaint.updatedAt, "MMMM d, yyyy · h:mm a")}
+              </p>
             </div>
           </div>
           <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2">
@@ -923,11 +947,57 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           </div>
         </div>
 
+        {stageEstimate && (
+          <div className="mt-3 flex items-start gap-2.5 p-3 bg-white/80 border border-[#1D9E75]/20 rounded-xl">
+            <Info className="h-4 w-4 text-[#1D9E75] flex-shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-gray-900">
+                Expected next step: {stageEstimate.nextStep}
+              </p>
+              <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                {stageEstimate.description}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {stageEstimate.timeframeLabel} · Estimated by{' '}
+                <span className="font-medium text-gray-700">
+                  {format(stageEstimate.estimatedBy, 'MMMM d, yyyy')}
+                </span>
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Legal notice */}
         <div className="mt-3 flex items-start gap-2 p-2.5 bg-white/70 border border-white rounded-xl text-xs text-gray-600">
           <Shield className="h-3.5 w-3.5 text-[#1D9E75] flex-shrink-0 mt-0.5" />
           <span>This complaint is filed under the <strong>Safe Spaces Act (RA 11313)</strong> and/or the <strong>Anti-Sexual Harassment Act (RA 7877)</strong>. Anti-retaliation protections apply to all parties.</span>
         </div>
+
+        {confidentialityInfo && (
+          <div className="mt-3 p-3 bg-white/80 border border-blue-100 rounded-xl">
+            <div className="flex items-center gap-2 mb-2">
+              <Lock className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
+              <p className="text-xs font-semibold text-gray-900">
+                {confidentialityInfo.levelLabel} — Who can see this case?
+              </p>
+            </div>
+            <ul className="space-y-1">
+              {confidentialityInfo.accessList.map((item) => (
+                <li key={item.role} className="text-[11px] text-gray-600 leading-relaxed">
+                  <span className="font-medium text-gray-800">{item.role}:</span> {item.access}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-blue-700 mt-2">{confidentialityInfo.note}</p>
+          </div>
+        )}
+
+        {isSensitiveCase && isHandlerAssigned && (
+          <div className="mt-3 flex items-start gap-2 p-2.5 bg-white/70 border border-white rounded-xl text-xs text-gray-600">
+            <User className="h-3.5 w-3.5 text-[#1D9E75] flex-shrink-0 mt-0.5" />
+            <span>{SENSITIVE_HANDLER_NOTE}</span>
+          </div>
+        )}
       </div>
 
       {isComplainant && followUpEligibility && !followUpEligibility.isClosed && (
@@ -956,7 +1026,11 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 )}
                 {!followUpEligibility.alreadyRequested && !followUpEligibility.canRequest && (
                   <p className="mt-1 text-[11px] text-gray-500">
-                    Follow-up becomes available after {FOLLOW_UP_STALE_DAYS} days without a case update.
+                    Follow-up unlocks on{' '}
+                    <span className="font-medium text-gray-700">
+                      {format(followUpEligibility.availableOn, 'MMMM d, yyyy')}
+                    </span>{' '}
+                    if no update is recorded ({FOLLOW_UP_STALE_DAYS}-day waiting period from last activity).
                   </p>
                 )}
               </div>
@@ -982,7 +1056,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   ) : followUpEligibility.canRequest ? (
                     'Request Follow-Up'
                   ) : followUpEligibility.daysRemaining > 0 ? (
-                    `Available in ${followUpEligibility.daysRemaining} day${followUpEligibility.daysRemaining === 1 ? '' : 's'}`
+                    `Available ${format(followUpEligibility.availableOn, 'MMM d')}`
                   ) : (
                     'Not Available Yet'
                   )}
@@ -1211,7 +1285,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             {[
               { label: "Type", value: complaint.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: FileText },
               { label: "Filed", value: format(complaint.filingDate, "MMM d, yyyy"), icon: Calendar },
-              { label: "Handler", value: handlerDisplayName || (isHandlerAssigned ? 'Case Handler assigned' : 'Pending assignment'), icon: User },
+              { label: "Handler", value: isSensitiveCase && isHandlerAssigned ? 'Case Handler (CODI)' : (handlerDisplayName || (isHandlerAssigned ? 'Case Handler assigned' : 'Pending assignment')), icon: User },
             ].map(item => (
               <div key={item.label} className="bg-white border border-gray-200 rounded-xl p-3">
                 <p className="text-xs text-gray-400 mb-1">{item.label}</p>
@@ -1332,12 +1406,15 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 {isHandlerAssigned ? (
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      {handlerDisplayName || 'Case Handler assigned'}
+                      {isSensitiveCase
+                        ? 'Case Handler (CODI)'
+                        : handlerDisplayName || 'Case Handler assigned'}
                     </p>
-                    {handlerDisplayName && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        Committee on Decorum and Investigation (CODI)
-                      </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Committee on Decorum and Investigation (CODI)
+                    </p>
+                    {isSensitiveCase && (
+                      <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">{SENSITIVE_HANDLER_NOTE}</p>
                     )}
                   </div>
                 ) : (
