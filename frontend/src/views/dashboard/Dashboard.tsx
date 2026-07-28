@@ -333,24 +333,12 @@ export default function Dashboard() {
 
       <div className={pageStackClass()}>
 
-        {/* ─── Welcome Header with Notification Bell ─── */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, <span className="text-[#1D9E75]">{userName}</span>
-            </h1>
-            <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
-          </div>
-          <button
-            onClick={() => navigate("/notifications")}
-            className="relative p-2.5 hover:bg-green-50 rounded-lg transition-colors flex-shrink-0"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5 text-gray-700" />
-            {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-            )}
-          </button>
+        {/* ─── Welcome Header ─── */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Welcome back, <span className="text-[#1D9E75]">{userName}</span>
+          </h1>
+          <p className="text-sm text-gray-400 mt-1">Here's what's happening with your cases today.</p>
         </div>
 
         {/* ─── Privacy Notice (Dismissible) ─── */}

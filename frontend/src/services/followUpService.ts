@@ -1,10 +1,11 @@
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { NotificationService } from './notificationService';
 import { RepresentativeService } from './representativeService';
 import {
   evaluateFollowUpEligibility,
   FOLLOW_UP_STALE_DAYS,
+  resolveLastCaseActivityDate,
 } from '../utils/followUpEligibility';
 
 export interface RequestFollowUpInput {
@@ -72,6 +73,61 @@ function getLastUpdateFromData(data: Record<string, unknown>): Date {
   );
 }
 
+function getStatusHistoryDates(data: Record<string, unknown>): Date[] {
+  const statusHistory = data.statusHistory;
+  if (!Array.isArray(statusHistory)) {
+    return [];
+  }
+
+  return statusHistory
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return null;
+      }
+      return toDate((entry as { updatedAt?: unknown }).updatedAt);
+    })
+    .filter((date): date is Date => date instanceof Date);
+}
+
+async function getLatestVisibleActivityDate(complaintId: string): Promise<Date | null> {
+  try {
+    const activitiesQuery = query(
+      collection(db, 'caseActivities'),
+      where('complaintId', '==', complaintId),
+      orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(activitiesQuery);
+
+    for (const activityDoc of snapshot.docs) {
+      const activity = activityDoc.data();
+      if (activity.isInternal) {
+        continue;
+      }
+
+      const createdAt = toDate(activity.createdAt);
+      if (createdAt) {
+        return createdAt;
+      }
+    }
+  } catch (error) {
+    console.warn('Could not load case activities for follow-up eligibility:', error);
+  }
+
+  return null;
+}
+
+async function resolveLastUpdateForComplaint(
+  complaintId: string,
+  data: Record<string, unknown>
+): Promise<Date> {
+  const latestActivityDate = await getLatestVisibleActivityDate(complaintId);
+
+  return resolveLastCaseActivityDate(
+    [getLastUpdateFromData(data), ...getStatusHistoryDates(data), latestActivityDate],
+    getLastUpdateFromData(data)
+  );
+}
+
 export async function requestCaseFollowUp({
   complaintId,
   userId,
@@ -93,7 +149,7 @@ export async function requestCaseFollowUp({
   const eligibility = evaluateFollowUpEligibility({
     status: String(data.status || 'pending'),
     followUpRequested: Boolean(data.followUpRequested),
-    lastUpdate: getLastUpdateFromData(data),
+    lastUpdate: await resolveLastUpdateForComplaint(complaintId, data),
   });
 
   if (!eligibility.canRequest) {

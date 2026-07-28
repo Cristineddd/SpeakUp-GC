@@ -56,10 +56,17 @@ export function topBarClass() {
   return 'h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-50';
 }
 
+export function complainantTopBarClass() {
+  return cn(
+    'sticky top-0 z-50 flex h-14 shrink-0 items-center justify-end',
+    'border-b border-gray-200 bg-white px-4 sm:h-16 sm:px-6'
+  );
+}
+
 export function mainContentClass() {
   return cn(
     'flex-1 overflow-y-auto bg-white',
-    APP_SHELL_TOP,
+    'pt-4 lg:pt-6',
     APP_CONTENT_X,
     'pb-20 lg:pb-8'
   );

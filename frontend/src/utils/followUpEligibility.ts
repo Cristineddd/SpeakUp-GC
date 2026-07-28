@@ -33,6 +33,22 @@ export function getDaysSinceLastUpdate(lastUpdate: Date, now = new Date()): numb
   return Math.max(0, differenceInDays(now, lastUpdate));
 }
 
+/** Pick the most recent timestamp from complaint doc fields and logged activities. */
+export function resolveLastCaseActivityDate(
+  candidates: Array<Date | null | undefined>,
+  fallback = new Date()
+): Date {
+  const valid = candidates.filter(
+    (date): date is Date => date instanceof Date && !Number.isNaN(date.getTime())
+  );
+
+  if (valid.length === 0) {
+    return fallback;
+  }
+
+  return valid.reduce((latest, date) => (date.getTime() > latest.getTime() ? date : latest));
+}
+
 export function evaluateFollowUpEligibility({
   status,
   followUpRequested,

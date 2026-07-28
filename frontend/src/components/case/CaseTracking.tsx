@@ -41,7 +41,11 @@ import { CaseActivity, ActivityType } from '../../types/caseActivity';
 import { getCaseProgress, getCaseStep, getStatusLabel } from '../../utils/caseProgress';
 import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDisplay';
 import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
-import { evaluateFollowUpEligibility, FOLLOW_UP_STALE_DAYS } from '../../utils/followUpEligibility';
+import {
+  evaluateFollowUpEligibility,
+  FOLLOW_UP_STALE_DAYS,
+  resolveLastCaseActivityDate,
+} from '../../utils/followUpEligibility';
 import {
   getNextStageEstimate,
   SENSITIVE_HANDLER_NOTE,
@@ -579,8 +583,29 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       (complaint.complainantId === user.uid || (complaint as Complaint & { userId?: string }).userId === user.uid)
   );
 
-  const followUpEligibility = useMemo(() => {
+  const lastCaseActivityAt = useMemo(() => {
     if (!complaint) {
+      return null;
+    }
+
+    const statusHistoryDates = (
+      Array.isArray((complaint as Complaint & { statusHistory?: Array<{ updatedAt?: unknown }> }).statusHistory)
+        ? (complaint as Complaint & { statusHistory?: Array<{ updatedAt?: unknown }> }).statusHistory!
+        : []
+    ).map((entry) => safeToDate(entry.updatedAt));
+
+    const visibleActivityDates = realActivities
+      .filter((activity) => !activity.isInternal)
+      .map((activity) => activity.createdAt);
+
+    return resolveLastCaseActivityDate(
+      [complaint.updatedAt, complaint.filingDate, ...statusHistoryDates, ...visibleActivityDates],
+      complaint.filingDate
+    );
+  }, [complaint, realActivities]);
+
+  const followUpEligibility = useMemo(() => {
+    if (!complaint || !lastCaseActivityAt) {
       return null;
     }
 
@@ -590,9 +615,9 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     return evaluateFollowUpEligibility({
       status,
       followUpRequested,
-      lastUpdate: complaint.updatedAt || complaint.filingDate,
+      lastUpdate: lastCaseActivityAt,
     });
-  }, [complaint]);
+  }, [complaint, lastCaseActivityAt]);
 
   const stageEstimate = useMemo(() => {
     if (!complaint) return null;

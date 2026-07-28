@@ -344,7 +344,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[420px] p-0 border-gray-200 dark:border-gray-800 rounded-2xl">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[min(420px,calc(100vw-2rem))] p-0 border-gray-200 dark:border-gray-800 rounded-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-2">
