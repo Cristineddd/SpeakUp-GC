@@ -71,7 +71,10 @@ export function ChatInterface({
         setLoading(true);
 
         // Get or create chat room
-        const existingRoom = await MessageService.getChatRoomByComplaint(complaintId);
+        const existingRoom = await MessageService.getChatRoomByComplaint(
+          complaintId,
+          currentUser.uid
+        );
         
         let room: ChatRoom;
         if (existingRoom) {
@@ -83,7 +86,9 @@ export function ChatInterface({
             complaintTitle,
             currentUser.uid,
             currentUser.displayName || currentUser.email || 'User',
-            userRole
+            undefined,
+            undefined,
+            { requestingUserId: currentUser.uid }
           );
         }
 

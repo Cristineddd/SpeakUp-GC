@@ -74,7 +74,7 @@ export class MessageService {
 
     for (const complaintId of complaintIds) {
       const snap = await getDocs(
-        query(collection(db, this.CHAT_ROOMS_COLLECTION), where('complaintId', '==', complaintId))
+        this.buildComplaintRoomQuery(complaintId, userId, false)
       );
       snap.docs.forEach((d) => chatRoomIds.add(d.id));
     }
@@ -162,6 +162,24 @@ export class MessageService {
     return cleaned;
   }
 
+  private static buildComplaintRoomQuery(
+    complaintId: string,
+    userId: string,
+    asStaff = false
+  ) {
+    const chatRoomsRef = collection(db, this.CHAT_ROOMS_COLLECTION);
+
+    if (asStaff) {
+      return query(chatRoomsRef, where('complaintId', '==', complaintId));
+    }
+
+    return query(
+      chatRoomsRef,
+      where('complaintId', '==', complaintId),
+      where('complainantId', '==', userId)
+    );
+  }
+
   /**
    * Merge duplicate chat rooms that share the same complaintId.
    */
@@ -178,7 +196,9 @@ export class MessageService {
 
     let merged = 0;
     for (const complaintId of complaintIds) {
-      merged += await this.mergeDuplicateChatRoomsForComplaint(complaintId);
+      const roomForComplaint = snap.docs.find((roomDoc) => roomDoc.data().complaintId === complaintId);
+      const asStaff = roomForComplaint?.data().complainantId !== userId;
+      merged += await this.mergeDuplicateChatRoomsForComplaint(complaintId, userId, { asStaff });
     }
 
     if (merged > 0) {
@@ -188,9 +208,13 @@ export class MessageService {
     return merged;
   }
 
-  static async mergeDuplicateChatRoomsForComplaint(complaintId: string): Promise<number> {
+  static async mergeDuplicateChatRoomsForComplaint(
+    complaintId: string,
+    userId: string,
+    options?: { asStaff?: boolean }
+  ): Promise<number> {
     const snap = await getDocs(
-      query(collection(db, this.CHAT_ROOMS_COLLECTION), where('complaintId', '==', complaintId))
+      this.buildComplaintRoomQuery(complaintId, userId, options?.asStaff ?? false)
     );
 
     if (snap.docs.length <= 1) return 0;
@@ -325,18 +349,22 @@ export class MessageService {
     complainantId: string,
     complainantName: string,
     handlerId?: string,
-    handlerName?: string
+    handlerName?: string,
+    options?: { requestingUserId?: string; asStaff?: boolean }
   ): Promise<ChatRoom> {
     try {
+      const requesterId = options?.requestingUserId ?? complainantId;
+      const asStaff = options?.asStaff ?? false;
+
       // Check if chat room already exists
-      const chatRoomsRef = collection(db, this.CHAT_ROOMS_COLLECTION);
-      const q = query(chatRoomsRef, where('complaintId', '==', complaintId));
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(
+        this.buildComplaintRoomQuery(complaintId, requesterId, asStaff)
+      );
 
       if (!snapshot.empty) {
         if (snapshot.docs.length > 1) {
-          await this.mergeDuplicateChatRoomsForComplaint(complaintId);
-          const mergedRoom = await this.getChatRoomByComplaint(complaintId);
+          await this.mergeDuplicateChatRoomsForComplaint(complaintId, requesterId, { asStaff });
+          const mergedRoom = await this.getChatRoomByComplaint(complaintId, requesterId, { asStaff });
           if (mergedRoom) return mergedRoom;
         }
 
@@ -386,7 +414,7 @@ export class MessageService {
         settings: DEFAULT_CHAT_SETTINGS,
       };
 
-      const docRef = await addDoc(chatRoomsRef, chatRoomData);
+      const docRef = await addDoc(collection(db, this.CHAT_ROOMS_COLLECTION), chatRoomData);
 
       // Don't send automatic welcome message - let handler initiate conversation
 
@@ -425,19 +453,26 @@ export class MessageService {
   /**
    * Get chat room by complaint ID
    */
-  static async getChatRoomByComplaint(complaintId: string): Promise<ChatRoom | null> {
+  static async getChatRoomByComplaint(
+    complaintId: string,
+    userId: string,
+    options?: { asStaff?: boolean }
+  ): Promise<ChatRoom | null> {
     try {
-      const chatRoomsRef = collection(db, this.CHAT_ROOMS_COLLECTION);
-      const q = query(chatRoomsRef, where('complaintId', '==', complaintId));
-      const snapshot = await getDocs(q);
+      const asStaff = options?.asStaff ?? false;
+      const snapshot = await getDocs(
+        this.buildComplaintRoomQuery(complaintId, userId, asStaff)
+      );
 
       if (snapshot.empty) {
         return null;
       }
 
       if (snapshot.docs.length > 1) {
-        await this.mergeDuplicateChatRoomsForComplaint(complaintId);
-        const refreshed = await getDocs(q);
+        await this.mergeDuplicateChatRoomsForComplaint(complaintId, userId, { asStaff });
+        const refreshed = await getDocs(
+          this.buildComplaintRoomQuery(complaintId, userId, asStaff)
+        );
         if (refreshed.empty) return null;
         const primary = this.pickPrimaryRoomDoc(refreshed.docs);
         return {

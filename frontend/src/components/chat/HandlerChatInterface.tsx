@@ -160,7 +160,11 @@ export function CODIMemberChatInterface({
 
         // Get or create chat room
         let room: ChatRoom;
-        const existingRoom = await MessageService.getChatRoomByComplaint(complaintId);
+        const existingRoom = await MessageService.getChatRoomByComplaint(
+          complaintId,
+          currentUser.uid,
+          { asStaff: true }
+        );
         
         if (existingRoom) {
           console.log('📋 Found existing chat room:', existingRoom.id);
@@ -184,7 +188,8 @@ export function CODIMemberChatInterface({
             complainantId,
             complainantName,
             currentUser.uid,
-            currentUser.displayName || currentUser.email || 'CODI Member'
+            currentUser.displayName || currentUser.email || 'CODI Member',
+            { requestingUserId: currentUser.uid, asStaff: true }
           );
         }
 
