@@ -10,7 +10,7 @@ import { CODIMemberChatInterface } from '../../components/chat/HandlerChatInterf
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { ArrowLeft, Loader2, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, type DocumentSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,11 +19,54 @@ import { getDisplayCaseNumber } from '../../utils/caseId';
 import { safeToDate } from '../../utils/dateFormat';
 import { markCaseSeen } from '../../utils/caseQueueBadge';
 
+type ComplaintCollection = 'complaints' | 'reports';
+
+function parseComplaintSnapshot(snap: DocumentSnapshot): AdminReport {
+  const data = snap.data() ?? {};
+  const toIsoString = (value: unknown) => {
+    const date = safeToDate(value);
+    return date ? date.toISOString() : undefined;
+  };
+
+  return {
+    id: snap.id,
+    caseId: data.caseId,
+    title: data.title || '',
+    description: data.description || '',
+    location: data.location || data.incidentLocation || '',
+    category: data.category || data.type || '',
+    severity: data.severity || 'medium',
+    status: data.status || 'pending',
+    userName: data.userName || data.complainantName || 'Unknown',
+    complainantName: data.complainantName || data.userName || 'Unknown',
+    userEmail: data.userEmail || data.complainantEmail || '',
+    userId: data.userId || data.complainantId || '',
+    complainantId: data.complainantId || data.userId || '',
+    incidentDate:
+      toIsoString(data.incidentDate) ||
+      toIsoString(data.filingDate) ||
+      toIsoString(data.createdAt),
+    reportedAt:
+      toIsoString(data.reportedAt) ||
+      toIsoString(data.filingDate) ||
+      toIsoString(data.createdAt),
+    lastUpdated:
+      toIsoString(data.lastUpdated) ||
+      toIsoString(data.updatedAt) ||
+      toIsoString(data.createdAt),
+    assignedTo: data.assignedTo || null,
+    assignedToName: data.assignedToName || null,
+    handlerHistory: data.handlerHistory || [],
+    isAnonymous: data.isAnonymous || data.complainantName === 'Anonymous',
+  } as AdminReport;
+}
+
 export default function CaseChat() {
   const { complaintId } = useParams<{ complaintId: string }>();
   const navigate = useNavigate();
   const [complaintTitle, setComplaintTitle] = useState<string>('');
   const [complaint, setComplaint] = useState<AdminReport | null>(null);
+  const [complaintCollection, setComplaintCollection] = useState<ComplaintCollection>('complaints');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { currentUser } = useAuth();
@@ -44,86 +87,73 @@ export default function CaseChat() {
   });
 
   useEffect(() => {
-    const fetchComplaint = async () => {
-      if (!complaintId) {
-        setError('No complaint ID provided');
-        setLoading(false);
-        return;
-      }
+    if (!complaintId) {
+      setError('No complaint ID provided');
+      setLoading(false);
+      return;
+    }
 
-      try {
-        console.log('📋 Fetching complaint data for:', complaintId);
-        
-        // Try complaints collection first
-        let complaintRef = doc(db, 'complaints', complaintId);
-        let complaintSnap = await getDoc(complaintRef);
+    setLoading(true);
+    setError(null);
 
-        // If not found, try reports collection
-        if (!complaintSnap.exists()) {
-          console.log('🔍 Complaint not found in "complaints", trying "reports" collection');
-          complaintRef = doc(db, 'reports', complaintId);
-          complaintSnap = await getDoc(complaintRef);
-        }
+    let reportsUnsub: (() => void) | undefined;
+    let foundInComplaints = false;
 
-        if (complaintSnap.exists()) {
-          const data = complaintSnap.data();
-          console.log('✅ Complaint found:', data);
-          setComplaintTitle(data.title || 'Case Chat');
-
-          const toIsoString = (value: unknown) => {
-            const date = safeToDate(value);
-            return date ? date.toISOString() : undefined;
-          };
-          
-          // Always convert to AdminReport format
-          const complaintData = {
-            id: complaintSnap.id,
-            caseId: data.caseId,
-            title: data.title || '',
-            description: data.description || '',
-            location: data.location || data.incidentLocation || '',
-            category: data.category || data.type || '',
-            severity: data.severity || 'medium',
-            status: data.status || 'pending',
-            userName: data.userName || data.complainantName || 'Unknown',
-            complainantName: data.complainantName || data.userName || 'Unknown',
-            userEmail: data.userEmail || data.complainantEmail || '',
-            userId: data.userId || data.complainantId || '',
-            complainantId: data.complainantId || data.userId || '',
-            incidentDate:
-              toIsoString(data.incidentDate) ||
-              toIsoString(data.filingDate) ||
-              toIsoString(data.createdAt),
-            reportedAt:
-              toIsoString(data.reportedAt) ||
-              toIsoString(data.filingDate) ||
-              toIsoString(data.createdAt),
-            lastUpdated:
-              toIsoString(data.lastUpdated) ||
-              toIsoString(data.updatedAt) ||
-              toIsoString(data.createdAt),
-            assignedTo: data.assignedTo || null,
-            assignedToName: data.assignedToName || null,
-            handlerHistory: data.handlerHistory || [],
-            isAnonymous: data.isAnonymous || data.complainantName === 'Anonymous',
-          } as AdminReport;
-          
-          console.log('👤 Complaint parsed:', complaintData);
-          setComplaint(complaintData);
-          setError(null);
-        } else {
-          console.log('❌ No complaint found with ID:', complaintId);
-          setError('Complaint not found');
-        }
-      } catch (error) {
-        console.error('❌ Error fetching complaint:', error);
-        setError('Failed to load complaint data');
-      } finally {
-        setLoading(false);
-      }
+    const applySnapshot = (snap: DocumentSnapshot, collectionName: ComplaintCollection) => {
+      const complaintData = parseComplaintSnapshot(snap);
+      setComplaint(complaintData);
+      setComplaintTitle(complaintData.title || 'Case Chat');
+      setComplaintCollection(collectionName);
+      setError(null);
+      setLoading(false);
     };
 
-    fetchComplaint();
+    const complaintsUnsub = onSnapshot(
+      doc(db, 'complaints', complaintId),
+      (snap) => {
+        if (snap.exists()) {
+          foundInComplaints = true;
+          applySnapshot(snap, 'complaints');
+          if (reportsUnsub) {
+            reportsUnsub();
+            reportsUnsub = undefined;
+          }
+          return;
+        }
+
+        if (foundInComplaints) return;
+
+        if (!reportsUnsub) {
+          reportsUnsub = onSnapshot(
+            doc(db, 'reports', complaintId),
+            (reportsSnap) => {
+              if (reportsSnap.exists()) {
+                applySnapshot(reportsSnap, 'reports');
+              } else {
+                setComplaint(null);
+                setError('Complaint not found');
+                setLoading(false);
+              }
+            },
+            (err) => {
+              console.error('Error listening to reports doc:', err);
+              setError('Failed to load complaint data');
+              setLoading(false);
+            }
+          );
+        }
+      },
+      (err) => {
+        console.error('Error listening to complaints doc:', err);
+        setError('Failed to load complaint data');
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      complaintsUnsub();
+      reportsUnsub?.();
+    };
   }, [complaintId]);
 
   useEffect(() => {
@@ -253,6 +283,7 @@ export default function CaseChat() {
           <CODIMemberChatInterface
             complaintId={complaintId}
             complaint={complaint!}
+            complaintCollection={complaintCollection}
             className="h-full rounded-none border-0 shadow-none"
           />
         ) : (

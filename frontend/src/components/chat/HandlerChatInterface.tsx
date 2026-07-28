@@ -23,9 +23,15 @@ import {
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
 import { isSameDay } from 'date-fns';
+import { FirebaseError } from 'firebase/app';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { FORMAL_COMPLAINT_CATEGORIES, getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import {
+  FORMAL_COMPLAINT_CATEGORIES,
+  buildComplaintTitle,
+  getFormalComplaintCategoryLabel,
+  normalizeFormalComplaintCategory,
+} from '../../constants/formalComplaintCategories';
 import { getDisplayCaseNumber } from '../../utils/caseId';
 import {
   formatDisplayDate,
@@ -62,6 +68,7 @@ interface ExtendedAdminReport {
 interface HandlerChatInterfaceProps {
   complaintId: string;
   complaint: ExtendedAdminReport;
+  complaintCollection?: 'complaints' | 'reports';
   onClose?: () => void;
   className?: string;
 }
@@ -79,6 +86,7 @@ const getSafeProperty = <T,>(
 export function CODIMemberChatInterface({
   complaintId,
   complaint,
+  complaintCollection = 'complaints',
   onClose,
   className = '',
 }: HandlerChatInterfaceProps) {
@@ -97,7 +105,8 @@ export function CODIMemberChatInterface({
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isEditingCategory, setIsEditingCategory] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(complaint.category || '');
+  const currentCategory = normalizeFormalComplaintCategory(complaint.category || '');
+  const [selectedCategory, setSelectedCategory] = useState(currentCategory);
   const [updatingCategory, setUpdatingCategory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +128,13 @@ export function CODIMemberChatInterface({
     firestoreId: complaintId,
     filedAt: safeToDate(reportedAtValue),
   });
-  const categoryLabel = getFormalComplaintCategoryLabel(complaint.category || '');
+  const categoryLabel = getFormalComplaintCategoryLabel(currentCategory);
+
+  useEffect(() => {
+    if (!isEditingCategory) {
+      setSelectedCategory(currentCategory);
+    }
+  }, [currentCategory, isEditingCategory]);
   const descriptionText = complaint.description?.trim() || 'No description provided';
   const isLongDescription = descriptionText.length > 140;
   
@@ -366,19 +381,21 @@ export function CODIMemberChatInterface({
   };
 
   const handleUpdateCategory = async () => {
-    if (!selectedCategory || selectedCategory === complaint.category) {
+    if (!selectedCategory || selectedCategory === currentCategory) {
       setIsEditingCategory(false);
       return;
     }
 
     try {
       setUpdatingCategory(true);
-      
-      const complaintRef = doc(db, 'complaints', complaintId);
+
+      const newTitle = buildComplaintTitle(selectedCategory, incidentDateValue);
+      const complaintRef = doc(db, complaintCollection, complaintId);
       await updateDoc(complaintRef, {
         category: selectedCategory,
         type: selectedCategory,
-        updatedAt: new Date()
+        title: newTitle,
+        updatedAt: new Date(),
       });
 
       toast({
@@ -389,10 +406,14 @@ export function CODIMemberChatInterface({
       setIsEditingCategory(false);
     } catch (error) {
       console.error('Error updating category:', error);
+      const isPermissionDenied =
+        error instanceof FirebaseError && error.code === 'permission-denied';
       toast({
         title: 'Update Failed',
-        description: 'Failed to update category. Please try again.',
-        variant: 'destructive'
+        description: isPermissionDenied
+          ? 'You must be assigned to this case (or be an admin) to reclassify it.'
+          : 'Failed to update category. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setUpdatingCategory(false);
@@ -512,7 +533,7 @@ export function CODIMemberChatInterface({
                         className="h-5 w-5 p-0 hover:bg-gray-100"
                         onClick={() => {
                           setIsEditingCategory(true);
-                          setSelectedCategory(complaint.category || '');
+                          setSelectedCategory(currentCategory);
                         }}
                       >
                         <Edit2 className="h-3 w-3 text-gray-500" />
@@ -538,7 +559,7 @@ export function CODIMemberChatInterface({
                           size="sm"
                           className="h-7 flex-1 bg-[#1D9E75] text-xs hover:bg-[#178F65]"
                           onClick={handleUpdateCategory}
-                          disabled={updatingCategory || selectedCategory === complaint.category}
+                          disabled={updatingCategory || selectedCategory === currentCategory}
                         >
                           {updatingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
                         </Button>
@@ -548,7 +569,7 @@ export function CODIMemberChatInterface({
                           className="h-7 flex-1 text-xs"
                           onClick={() => {
                             setIsEditingCategory(false);
-                            setSelectedCategory(complaint.category || '');
+                            setSelectedCategory(currentCategory);
                           }}
                           disabled={updatingCategory}
                         >
