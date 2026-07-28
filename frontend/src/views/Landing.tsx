@@ -32,29 +32,6 @@ const QUICK_ACTIONS = [
   { icon: BookOpen, title: "Know Your Rights", desc: "Guides, policies, and legal protections." },
 ];
 
-const FEATURED = [
-  {
-    icon: ClipboardList,
-    title: "File a Complaint",
-    desc: "Anonymous or identified filing with secure document upload.",
-  },
-  {
-    icon: Activity,
-    title: "Case Tracker",
-    desc: "Monitor status live — from filing to resolution.",
-  },
-  {
-    icon: Lock,
-    title: "Privacy First",
-    desc: "End-to-end encryption. Your data stays yours.",
-  },
-  {
-    icon: HeadphonesIcon,
-    title: "DEIU Support",
-    desc: "Trained administrators guide you every step.",
-  },
-];
-
 const STEPS = [
   { n: "01", title: "Submit", desc: "Fill out the secure form. Stay anonymous or identify yourself." },
   { n: "02", title: "Track", desc: "Get real-time updates at each stage of your case." },
@@ -120,7 +97,6 @@ const Landing = () => {
     }
   }, [location]);
 
-  const featuresRef = useInView();
   const aboutRef = useInView();
 
   const openWalkthrough = (view?: "login") => {
@@ -290,7 +266,7 @@ const Landing = () => {
       </section>
 
       {/* ── Quick Actions ──────────────────────────────────────────── */}
-      <section className="pb-6">
+      <section id="features" className="pb-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {QUICK_ACTIONS.map((item) => (
@@ -334,44 +310,6 @@ const Landing = () => {
                 </span>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Featured Services ──────────────────────────────────────── */}
-      <section id="features" className="pb-6">
-        <div
-          ref={featuresRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
-        >
-          <div className={`flex items-end justify-between mb-4 transition-all duration-500 ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            <div>
-              <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Online Services</p>
-              <h2 className="text-lg font-black text-gray-900">Featured</h2>
-              <p className="text-xs text-gray-500 mt-0.5">New here? Get started to file complaints and access resources.</p>
-            </div>
-            <button onClick={() => openWalkthrough()} className="text-xs font-medium text-[#1D9E75] hover:text-[#178F65] flex items-center gap-1">
-              View all <ArrowRight className="w-3 h-3" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {FEATURED.map((item, i) => (
-              <button
-                key={item.title}
-                onClick={() => openWalkthrough()}
-                className={`group text-left bg-white border border-gray-200 hover:border-[#1D9E75]/40 rounded-xl p-4 transition-all duration-500 hover:shadow-md ${featuresRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                style={{ transitionDelay: `${i * 60}ms` }}
-              >
-                <div className="mb-2">
-                  <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center">
-                    <item.icon className="w-4 h-4 text-[#1D9E75]" />
-                  </div>
-                </div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1">{item.title}</h3>
-                <p className="text-xs text-gray-500 leading-snug">{item.desc}</p>
-              </button>
-            ))}
           </div>
         </div>
       </section>
