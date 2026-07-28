@@ -856,14 +856,6 @@ export class NotificationService {
         orderBy('createdAt', 'desc')
       );
 
-      if (options?.status) {
-        q = query(q, where('status', '==', options.status));
-      }
-
-      if (options?.unreadOnly) {
-        q = query(q, where('status', '==', 'unread'));
-      }
-
       if (options?.limit) {
         q = query(q, limit(options.limit));
       }
@@ -883,7 +875,11 @@ export class NotificationService {
         } as Notification);
       });
 
-      return notifications;
+      return notifications.filter((notification) => {
+        if (options?.status && notification.status !== options.status) return false;
+        if (options?.unreadOnly && notification.status !== 'unread') return false;
+        return true;
+      });
     } catch (error) {
       console.error('Error getting notifications:', error);
       throw error;
@@ -923,15 +919,14 @@ export class NotificationService {
         orderBy('createdAt', 'desc')
       );
 
-      if (options?.unreadOnly) {
-        q = query(q, where('status', '==', 'unread'));
-      }
-
       if (options?.limit) {
-        q = query(q, limit(options.limit));
+        q = query(q, limit(options?.unreadOnly ? Math.max(options.limit * 3, 30) : options.limit));
+      } else if (options?.unreadOnly) {
+        q = query(q, limit(50));
       }
 
-      // FIX: Process entire snapshot instead of docChanges() to avoid duplicates
+      // FIX: Process entire snapshot instead of docChanges() to avoid duplicates.
+      // Status filters are applied client-side to avoid brittle composite-index requirements.
       const unsubscribe = onSnapshot(q, 
         (snapshot) => {
           console.log('[NotificationService] Received snapshot, docs:', snapshot.size);
@@ -955,14 +950,21 @@ export class NotificationService {
               console.error('[NotificationService] Error processing doc:', doc.id, docError);
             }
           });
+
+          const filtered = options?.unreadOnly
+            ? notifications.filter((n) => n.status === 'unread')
+            : notifications;
+          const limited =
+            options?.limit && filtered.length > options.limit
+              ? filtered.slice(0, options.limit)
+              : filtered;
           
-          console.log('[NotificationService] Processed notifications:', notifications.length);
-          console.log('[NotificationService] Unread count:', notifications.filter(n => n.status === 'unread').length);
-          callback(notifications, { fromCache: snapshot.metadata.fromCache });
+          console.log('[NotificationService] Processed notifications:', limited.length);
+          console.log('[NotificationService] Unread count:', limited.filter(n => n.status === 'unread').length);
+          callback(limited, { fromCache: snapshot.metadata.fromCache });
         },
         (error) => {
           console.error('[NotificationService] Subscription error:', error);
-          callback([]);
         }
       );
 
@@ -1008,14 +1010,23 @@ export class NotificationService {
       if (snapshot.empty) return;
 
       const batch = writeBatch(db);
+      let pending = 0;
+
       snapshot.forEach((document) => {
+        const type = document.data().type as NotificationType | undefined;
+        // Opening chat should clear message alerts only — keep status/decision notices unread.
+        if (type !== 'new_message') return;
+
         batch.update(document.ref, {
           status: 'read',
           readAt: Timestamp.fromDate(new Date()),
         });
+        pending += 1;
       });
 
-      await batch.commit();
+      if (pending > 0) {
+        await batch.commit();
+      }
     } catch (error) {
       console.warn('Error marking complaint notifications as read:', error);
     }

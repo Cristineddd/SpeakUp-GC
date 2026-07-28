@@ -9,22 +9,19 @@ import { MessageService } from '../../services/messageService';
 import { NotificationService } from '../../services/notificationService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { useToast } from '../../hooks/use-toast';
 import {
   MessageCircle,
   X,
-  CheckCircle,
   AlertCircle,
   Loader2,
-  User,
   Shield,
   ChevronDown,
 } from 'lucide-react';
 import type { Message, ChatRoom, MessageAttachment } from '../../types/message';
-import { format, isSameDay } from 'date-fns';
+import { isSameDay } from 'date-fns';
 
 interface ChatInterfaceProps {
   complaintId: string;
@@ -52,13 +49,6 @@ export function ChatInterface({
   // Get user role from currentUser or use default
   const userRole = currentUser?.role || 'complainant'; // Default to complainant if no role
   const isHandler = userRole === 'handler' || chatRoom?.handlerId === currentUser?.uid;
-  const isComplainant = userRole === 'complainant';
-  
-  // DEBUG: Log handler status
-  console.log('🔍 [CHAT] User role:', userRole);
-  console.log('🔍 [CHAT] Is handler:', isHandler);
-  console.log('🔍 [CHAT] Current user ID:', currentUser?.uid);
-  console.log('🔍 [CHAT] Chat room handler ID:', chatRoom?.handlerId);
 
   // Initialize chat room and subscribe to messages
   useEffect(() => {
@@ -326,183 +316,163 @@ export function ChatInterface({
   }
 
   const messageGroups = groupMessagesByDate();
+  const handlerDisplayName = chatRoom.handlerName || 'Case Support';
+  const handlerInitial = handlerDisplayName.charAt(0).toUpperCase();
+  const hasAssignedHandler = Boolean(chatRoom.handlerId);
 
   return (
-    <Card className={`flex flex-col h-full bg-transparent overflow-hidden ${className}`}>
-      {/* Only show header when used as standalone (with onClose) */}
-      {onClose && (
-        <CardHeader className="border-b px-3 py-2.5 flex-shrink-0 bg-white/90 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#1D9E75] to-emerald-600 rounded-lg flex items-center justify-center">
-                <MessageCircle className="h-4 w-4 text-white" />
+    <div className={`flex h-full min-h-0 w-full flex-col ${className}`}>
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-[720px] flex-col px-2 pb-2 pt-1 sm:px-3">
+        <div className="flex min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.08)]">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {/* Messenger-style header */}
+            <div className="flex shrink-0 items-center gap-3 border-b border-slate-200/80 bg-gradient-to-r from-white to-emerald-50/30 px-3 py-2.5 sm:px-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0d7a5c] to-[#1D9E75] text-sm font-bold text-white shadow-md ring-2 ring-white">
+                {hasAssignedHandler ? handlerInitial : <Shield className="h-5 w-5" />}
               </div>
-              <div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <Badge 
-                      variant="outline" 
-                      className={`text-[11px] px-2 py-0.5 ${
-                        isHandler 
-                          ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                          : 'bg-green-50 text-green-700 border-green-200'
-                      }`}
-                    >
-                      {isHandler ? (
-                        <Shield className="h-3 w-3 mr-0.5" />
-                      ) : (
-                        <User className="h-3 w-3 mr-0.5" />
-                      )}
-                      {isHandler ? 'Handler' : 'Complainant'}
-                    </Badge>
-
-                    {/* Handler info for complainants only */}
-                    {isComplainant && chatRoom.handlerId && chatRoom.handlerName && (
-                      <span className="text-[11px] text-gray-600">{chatRoom.handlerName}</span>
-                    )}
-
-                    {/* Pending status for complainants */}
-                    {isComplainant && !chatRoom.handlerId && (
-                      <Badge variant="outline" className="text-[11px] px-2 py-0.5 bg-yellow-50 text-yellow-700">
-                        <AlertCircle className="h-3 w-3 mr-0.5" />
-                        Waiting
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-semibold text-gray-900">
+                  {hasAssignedHandler ? handlerDisplayName : 'Waiting for handler'}
+                </p>
+                <p className="truncate text-xs text-gray-500">
+                  {complaintTitle}
+                  {!hasAssignedHandler && (
+                    <>
+                      <span className="mx-1 text-gray-300">·</span>
+                      <span className="text-amber-600">A CODI member will join soon</span>
+                    </>
+                  )}
+                </p>
               </div>
+              {onClose && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onClose}
+                  className="h-9 w-9 shrink-0 rounded-full"
+                  aria-label="Close chat"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="flex-shrink-0"
+
+            {/* Messages area */}
+            <div
+              className="relative min-h-0 flex-1"
+              style={{
+                backgroundColor: '#eef2f6',
+                backgroundImage:
+                  'radial-gradient(circle at 1px 1px, rgba(148,163,184,0.15) 1px, transparent 0)',
+                backgroundSize: '20px 20px',
+              }}
+            >
+              <div
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                className="absolute inset-0 overflow-y-auto overflow-x-hidden"
               >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      )}
+                {messageGroups.length === 0 ? (
+                  <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+                    <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-200/80">
+                      <MessageCircle className="h-8 w-8 text-[#1D9E75]" />
+                    </div>
+                    <p className="text-sm font-semibold text-gray-900">No messages yet</p>
+                    <p className="mt-1 max-w-xs text-xs text-gray-500">
+                      {isHandler
+                        ? 'Start the conversation by introducing yourself to the complainant.'
+                        : 'Welcome to your case chat. A handler will respond to you shortly.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 px-3 py-3 sm:px-4">
+                    {messageGroups.map((group, groupIndex) => {
+                      const groupedMessages = group.messages;
 
-      {/* Messages area */}
-      <div className="flex-1 min-h-0 relative">
-        <div 
-          ref={messagesContainerRef}
-          onScroll={handleScroll}
-          className="absolute inset-0 overflow-y-auto px-3 py-3 space-y-1 bg-gradient-to-b from-green-50/30 to-white"
-        >
-        {messageGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center py-6">
-            <div className="w-14 h-14 bg-gradient-to-br from-green-100 to-emerald-200 rounded-2xl flex items-center justify-center mb-3 shadow-lg">
-              <MessageCircle className="h-7 w-7 text-[#1D9E75]" />
+                      const toDate = (timestamp: any): Date => {
+                        if (!timestamp) return new Date();
+                        if (timestamp.toDate) return timestamp.toDate();
+                        return new Date(timestamp);
+                      };
+
+                      const getGroupPosition = (index: number): 'single' | 'first' | 'middle' | 'last' => {
+                        const currentMsg = groupedMessages[index];
+                        const prevMsg = index > 0 ? groupedMessages[index - 1] : null;
+                        const nextMsg = index < groupedMessages.length - 1 ? groupedMessages[index + 1] : null;
+
+                        const isSameSenderAsPrev =
+                          prevMsg &&
+                          prevMsg.senderId === currentMsg.senderId &&
+                          Math.abs(toDate(currentMsg.createdAt).getTime() - toDate(prevMsg.createdAt).getTime()) < 120000;
+
+                        const isSameSenderAsNext =
+                          nextMsg &&
+                          nextMsg.senderId === currentMsg.senderId &&
+                          Math.abs(toDate(nextMsg.createdAt).getTime() - toDate(currentMsg.createdAt).getTime()) < 120000;
+
+                        if (!isSameSenderAsPrev && !isSameSenderAsNext) return 'single';
+                        if (isSameSenderAsPrev && isSameSenderAsNext) return 'middle';
+                        if (!isSameSenderAsPrev && isSameSenderAsNext) return 'first';
+                        return 'last';
+                      };
+
+                      return (
+                        <div key={groupIndex}>
+                          <DateSeparator date={group.date} />
+                          {groupedMessages.map((message, index) => (
+                            <MessageBubble
+                              key={message.id}
+                              message={message}
+                              isOwn={message.senderId === currentUser?.uid}
+                              showSenderName={message.senderId !== currentUser?.uid}
+                              isGroupChat={chatRoom.participantIds.length > 2}
+                              groupPosition={getGroupPosition(index)}
+                            />
+                          ))}
+                        </div>
+                      );
+                    })}
+
+                    {typingUsers.length > 0 && <TypingIndicator userNames={typingUsers} />}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+              </div>
+
+              {isUserScrolling && (
+                <Button
+                  onClick={() => {
+                    const el = messagesContainerRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+                    setIsUserScrolling(false);
+                  }}
+                  className="absolute bottom-20 left-1/2 z-10 h-8 -translate-x-1/2 rounded-full bg-[#1D9E75] px-3 text-xs text-white shadow-md hover:bg-emerald-700"
+                  size="sm"
+                >
+                  <ChevronDown className="mr-1 h-3.5 w-3.5" />
+                  New messages
+                </Button>
+              )}
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              No Messages Yet
-            </h3>
-            <p className="text-sm text-gray-600 max-w-sm leading-relaxed">
-              {isHandler 
-                ? 'Start the conversation by introducing yourself to the complainant.'
-                : 'Welcome to the case chat. A handler will respond to you shortly.'}
-            </p>
+
+            {/* Input area */}
+            <div className="shrink-0 border-t border-slate-200/80 bg-white/95 backdrop-blur-sm">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onTyping={handleTyping}
+                onFileUpload={handleFileUpload}
+                disabled={!chatRoom.isActive}
+                placeholder={chatRoom.isActive ? 'Aa' : 'This chat has been closed'}
+                allowAttachments={chatRoom.settings?.allowAttachments}
+                maxAttachments={5}
+                showQuickResponses={isHandler}
+                embedded
+                messengerStyle
+              />
+            </div>
           </div>
-        ) : (
-          <>
-            {messageGroups.map((group, groupIndex) => {
-              const groupedMessages = group.messages;
-              
-              // Helper to convert timestamp to Date
-              const toDate = (timestamp: any): Date => {
-                if (!timestamp) return new Date();
-                if (timestamp.toDate) return timestamp.toDate();
-                return new Date(timestamp);
-              };
-              
-              // Determine group position for each message
-              const getGroupPosition = (index: number): 'single' | 'first' | 'middle' | 'last' => {
-                const currentMsg = groupedMessages[index];
-                const prevMsg = index > 0 ? groupedMessages[index - 1] : null;
-                const nextMsg = index < groupedMessages.length - 1 ? groupedMessages[index + 1] : null;
-                
-                // Check if messages are from same sender and within 2 minutes
-                const isSameSenderAsPrev = prevMsg && prevMsg.senderId === currentMsg.senderId &&
-                  Math.abs(toDate(currentMsg.createdAt).getTime() - toDate(prevMsg.createdAt).getTime()) < 120000;
-                          
-                const isSameSenderAsNext = nextMsg && nextMsg.senderId === currentMsg.senderId &&
-                  Math.abs(toDate(nextMsg.createdAt).getTime() - toDate(currentMsg.createdAt).getTime()) < 120000;
-                
-                if (!isSameSenderAsPrev && !isSameSenderAsNext) return 'single';
-                if (isSameSenderAsPrev && isSameSenderAsNext) return 'middle';
-                if (!isSameSenderAsPrev && isSameSenderAsNext) return 'first';
-                return 'last';
-              };
-              
-              return (
-                <div key={groupIndex}>
-                  <DateSeparator date={group.date} />
-                  {groupedMessages.map((message, index) => (
-                    <MessageBubble
-                      key={message.id}
-                      message={message}
-                      isOwn={message.senderId === currentUser?.uid}
-                      showSenderName={true}
-                      isGroupChat={chatRoom.participantIds.length > 2}
-                      groupPosition={getGroupPosition(index)}
-                    />
-                  ))}
-                </div>
-              );
-            })}
-            
-            {/* Typing indicator */}
-            {typingUsers.length > 0 && (
-              <TypingIndicator userNames={typingUsers} />
-            )}
-            
-            {/* Scroll anchor */}
-            <div ref={messagesEndRef} />
-          </>
-        )}
         </div>
-
-        {/* Scroll to bottom button */}
-        {isUserScrolling && (
-          <Button
-            onClick={() => {
-              const el = messagesContainerRef.current;
-              if (el) {
-                el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-              }
-              setIsUserScrolling(false);
-            }}
-            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 rounded-full shadow-lg bg-[#1D9E75] hover:bg-emerald-700 text-white"
-            size="sm"
-          >
-            <ChevronDown className="h-4 w-4 mr-1" />
-            New Messages
-          </Button>
-        )}
       </div>
-
-      {/* Input area */}
-      <div className="shrink-0">
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          onTyping={handleTyping}
-          onFileUpload={handleFileUpload}
-          disabled={!chatRoom.isActive}
-          placeholder={
-            chatRoom.isActive
-              ? (isHandler ? 'Type your response...' : 'Type a message...')
-              : 'This chat has been closed'
-          }
-          allowAttachments={chatRoom.settings?.allowAttachments}
-          maxAttachments={5}
-          showQuickResponses={isHandler}
-        />
-      </div>
-    </Card>
+    </div>
   );
 }
