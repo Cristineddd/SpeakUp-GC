@@ -12,8 +12,14 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import type { Message } from '../../types/message';
-import { formatFileSize, getFileIcon } from '../../types/message';
+import { formatFileSize, getFileIcon, type MessageAttachment } from '../../types/message';
 import { PDFViewerModal } from '../common/PDFViewerModal';
+import { ImagePreviewModal } from '../common/ImagePreviewModal';
+
+function isImageAttachment(attachment: MessageAttachment): boolean {
+  if (attachment.type.startsWith('image/')) return true;
+  return /\.(jpg|jpeg|png|gif|webp|bmp|svg|heic|heif)$/i.test(attachment.name);
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -33,6 +39,15 @@ export function MessageBubble({
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState('');
   const [selectedPdfName, setSelectedPdfName] = useState('');
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState('');
+  const [selectedImageName, setSelectedImageName] = useState('');
+
+  const openImagePreview = (url: string, name: string) => {
+    setSelectedImageUrl(url);
+    setSelectedImageName(name);
+    setImageViewerOpen(true);
+  };
   
   const formatTime = (timestamp: any): string => {
     try {
@@ -138,26 +153,25 @@ export function MessageBubble({
             <div className="mt-3 space-y-2">
               {message.attachments.map((attachment) => {
                 // Display images as full-size embedded images with preview button
-                if (attachment.type.startsWith('image/')) {
+                if (isImageAttachment(attachment)) {
                   return (
-                    <div key={attachment.id} className="relative rounded-xl overflow-hidden max-w-xs group">
-                      <img
-                        src={attachment.url}
-                        alt={attachment.name}
-                        className="w-full h-auto max-h-96 object-cover"
-                      />
-                      {/* Preview overlay on hover */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          onClick={() => {
-                            setSelectedPdfUrl(attachment.url);
-                            setSelectedPdfName(attachment.name);
-                            setPdfViewerOpen(true);
-                          }}
-                          className="p-3 bg-white/90 rounded-full hover:bg-white transition-colors"
-                        >
+                    <div key={attachment.id} className="group relative max-w-xs overflow-hidden rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => openImagePreview(attachment.url, attachment.name)}
+                        className="block w-full cursor-zoom-in"
+                        aria-label={`View ${attachment.name}`}
+                      >
+                        <img
+                          src={attachment.url}
+                          alt={attachment.name}
+                          className="h-auto max-h-96 w-full object-cover"
+                        />
+                      </button>
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                        <div className="rounded-full bg-white/90 p-3">
                           <Eye className="h-5 w-5 text-gray-800" />
-                        </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -269,6 +283,15 @@ export function MessageBubble({
       </div>
 
       {/* PDF Viewer Modal */}
+      {imageViewerOpen && (
+        <ImagePreviewModal
+          isOpen={imageViewerOpen}
+          onClose={() => setImageViewerOpen(false)}
+          imageUrl={selectedImageUrl}
+          fileName={selectedImageName}
+        />
+      )}
+
       {pdfViewerOpen && (
         <PDFViewerModal
           isOpen={pdfViewerOpen}

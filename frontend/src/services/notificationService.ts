@@ -990,6 +990,38 @@ export class NotificationService {
   }
 
   /**
+   * Mark unread notifications for a specific case as read (e.g. when opening chat).
+   */
+  static async markComplaintNotificationsAsRead(
+    userId: string,
+    complaintId: string
+  ): Promise<void> {
+    try {
+      const q = query(
+        collection(db, this.notificationsCollection),
+        where('userId', '==', userId),
+        where('complaintId', '==', complaintId),
+        where('status', '==', 'unread')
+      );
+
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) return;
+
+      const batch = writeBatch(db);
+      snapshot.forEach((document) => {
+        batch.update(document.ref, {
+          status: 'read',
+          readAt: Timestamp.fromDate(new Date()),
+        });
+      });
+
+      await batch.commit();
+    } catch (error) {
+      console.warn('Error marking complaint notifications as read:', error);
+    }
+  }
+
+  /**
    * Mark all notifications as read for a user
    */
   static async markAllAsRead(userId: string): Promise<void> {

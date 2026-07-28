@@ -847,7 +847,7 @@ export class MessageService {
       const messageSnap = await getDoc(messageRef);
 
       if (!messageSnap.exists()) {
-        throw new Error('Message not found');
+        return;
       }
 
       const message = messageSnap.data() as Message;
@@ -863,8 +863,7 @@ export class MessageService {
         status: 'read',
       });
     } catch (error) {
-      console.error('Error marking message as read:', error);
-      throw error;
+      console.warn('Error marking message as read:', error);
     }
   }
 
@@ -877,32 +876,36 @@ export class MessageService {
       const q = query(messagesRef, where('chatRoomId', '==', chatRoomId));
       const snapshot = await getDocs(q);
 
-      const batch = writeBatch(db);
+      await Promise.all(
+        snapshot.docs.map(async (messageDoc) => {
+          const message = messageDoc.data() as Message;
 
-      snapshot.docs.forEach((doc) => {
-        const message = doc.data() as Message;
-        
-        // Skip if already read or sent by this user
-        if (message.readBy.includes(userId) || message.senderId === userId) {
-          return;
-        }
+          if (message.readBy.includes(userId) || message.senderId === userId) {
+            return;
+          }
 
-        batch.update(doc.ref, {
-          readBy: [...message.readBy, userId],
-          [`readAt.${userId}`]: Timestamp.now(),
-          status: 'read',
-        });
-      });
+          try {
+            await updateDoc(messageDoc.ref, {
+              readBy: [...message.readBy, userId],
+              [`readAt.${userId}`]: Timestamp.now(),
+              status: 'read',
+            });
+          } catch (error) {
+            console.warn('Could not mark message as read:', messageDoc.id, error);
+          }
+        })
+      );
+    } catch (error) {
+      console.warn('Error loading messages to mark as read:', error);
+    }
 
-      await batch.commit();
-
-      // Reset unread count for this user
+    try {
       const chatRoomRef = doc(db, this.CHAT_ROOMS_COLLECTION, chatRoomId);
       await updateDoc(chatRoomRef, {
         [`unreadCount.${userId}`]: 0,
       });
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error('Error resetting chat unread count:', error);
       throw error;
     }
   }

@@ -223,8 +223,14 @@ service cloud.firestore {
                       isActiveUser() &&
                       request.resource.data.senderId == request.auth.uid;
       
-      // Update: Only sender or admin (for soft delete)
-      allow update: if isOwner(resource.data.senderId) || isAdmin();
+      // Update: Sender, admin, or participant marking themselves as having read
+      allow update: if isOwner(resource.data.senderId) ||
+                      isAdmin() ||
+                      (
+                        request.auth.uid in request.resource.data.readBy &&
+                        request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['readBy', 'readAt', 'status'])
+                      );
       
       // Delete: Only admins
       allow delete: if isAdmin();

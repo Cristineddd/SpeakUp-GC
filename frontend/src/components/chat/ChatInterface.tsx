@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { MessageService } from '../../services/messageService';
+import { NotificationService } from '../../services/notificationService';
 import { MessageBubble, TypingIndicator, DateSeparator } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -103,7 +104,7 @@ export function ChatInterface({
             // Mark messages as read
             newMessages.forEach((msg) => {
               if (msg.senderId !== currentUser.uid && !msg.readBy.includes(currentUser.uid)) {
-                MessageService.markMessageAsRead(msg.id, currentUser.uid);
+                void MessageService.markMessageAsRead(msg.id, currentUser.uid);
               }
             });
             
@@ -134,8 +135,14 @@ export function ChatInterface({
           }
         );
 
-        // Mark all as read
-        await MessageService.markAllAsRead(room.id, currentUser.uid);
+        setLoading(false);
+
+        void Promise.all([
+          MessageService.markAllAsRead(room.id, currentUser.uid),
+          NotificationService.markComplaintNotificationsAsRead(currentUser.uid, complaintId),
+        ]).catch((readError) => {
+          console.warn('Could not fully clear unread state for chat:', readError);
+        });
 
       } catch (error) {
         console.error('Error initializing chat:', error);
@@ -144,7 +151,6 @@ export function ChatInterface({
           description: 'Failed to load chat. Please try again.',
           variant: 'destructive',
         });
-      } finally {
         setLoading(false);
       }
     };
