@@ -27,6 +27,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, CheckCircle2, Clock, XCircle, Upload } from 'lucide-react';
+import { StatusNoteSuggestionsSelect } from '@/components/case/StatusNoteSuggestionsSelect';
+import {
+  getClosureActionSuggestions,
+  getClosureDecisionSuggestions,
+  getStatusNoteSuggestions,
+} from '@/utils/statusNoteSuggestions';
 
 interface ReportStatusManagerProps {
   reportId: string;
@@ -70,6 +76,7 @@ export function ReportStatusManager({
   const notesRequired =
     selectedStatus === 'resolved' || selectedStatus === 'inProgress';
   const notesMissing = notesRequired && !notes.trim();
+  const statusNoteSuggestions = getStatusNoteSuggestions(selectedStatus);
 
   const handleStatusClick = (status: ReportStatus) => {
     setSelectedStatus(status);
@@ -238,6 +245,13 @@ export function ReportStatusManager({
                 <Label htmlFor="decision-summary" className="font-semibold">
                   Decision Summary * <span className="text-red-500">(Required)</span>
                 </Label>
+                <StatusNoteSuggestionsSelect
+                  id="decision-summary-suggestions"
+                  suggestions={getClosureDecisionSuggestions()}
+                  value={decisionSummary}
+                  onSelect={setDecisionSummary}
+                  label="Quick suggestions for decision summary (optional)"
+                />
                 <Textarea
                   id="decision-summary"
                   placeholder="Summarize the final decision made on this case..."
@@ -257,6 +271,13 @@ export function ReportStatusManager({
                 <Label htmlFor="action-taken" className="font-semibold">
                   Action Taken * <span className="text-red-500">(Required)</span>
                 </Label>
+                <StatusNoteSuggestionsSelect
+                  id="action-taken-suggestions"
+                  suggestions={getClosureActionSuggestions()}
+                  value={actionTaken}
+                  onSelect={setActionTaken}
+                  label="Quick suggestions for action taken (optional)"
+                />
                 <Textarea
                   id="action-taken"
                   placeholder="Describe the actions taken as a result of this decision..."
@@ -314,6 +335,14 @@ export function ReportStatusManager({
               <Label htmlFor="notes" className="font-semibold">
                 {getNotesLabel()}
               </Label>
+              {statusNoteSuggestions.length > 0 && (
+                <StatusNoteSuggestionsSelect
+                  id="status-notes-suggestions"
+                  suggestions={statusNoteSuggestions}
+                  value={notes}
+                  onSelect={setNotes}
+                />
+              )}
               <Textarea
                 id="notes"
                 placeholder={getNotesPlaceholder()}

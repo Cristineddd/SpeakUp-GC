@@ -94,7 +94,7 @@ export async function takeCase(params: TakeCaseParams): Promise<void> {
     const sensitive = isSensitiveCaseType(params.complaintType);
     await NotificationService.createNotification(
       params.complainantUserId,
-      'case_assigned',
+      'handler_assigned',
       sensitive ? 'Case Handler Assigned' : 'Case Handler Assigned',
       sensitive
         ? `${GENERIC_HANDLER_ASSIGNED_MESSAGE}. You will be contacted for updates regarding "${params.complaintTitle || 'your complaint'}".`
@@ -160,9 +160,10 @@ export async function maybeStartInvestigation(
     false
   );
 
-  if (data.userId) {
+  const complainantId = data.complainantId || data.userId;
+  if (complainantId) {
     await NotificationService.sendComplaintInProgressNotification(
-      data.userId,
+      complainantId,
       complaintId,
       data.title || 'Your complaint',
       'Your complaint is now under investigation.'

@@ -254,7 +254,7 @@ export function useReportStatus(
         
         if (reportSnapshot.exists()) {
           const reportData = reportSnapshot.data();
-          const complainantId = reportData.userId;
+          const complainantId = reportData.complainantId || reportData.userId;
           const { NotificationService } = await import('../services/notificationService');
           
           // Send notification to complainant

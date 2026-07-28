@@ -26,7 +26,11 @@ import type {
   NotificationPreferences,
   NotificationStats,
 } from '../types/notification';
-import { DEFAULT_NOTIFICATION_PREFERENCES } from '../types/notification';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  DEFAULT_TYPE_PREFERENCES,
+  isNotificationTypeEnabled,
+} from '../types/notification';
 
 export class NotificationService {
   private static readonly notificationsCollection = 'notifications';
@@ -710,9 +714,8 @@ export class NotificationService {
     }
   ): Promise<string> {
     try {
-      // Check if user has this notification type enabled
       const preferences = await this.getPreferences(userId);
-      if (preferences && !preferences.preferences[type]) {
+      if (!isNotificationTypeEnabled(type, preferences)) {
         console.log(`Notification type ${type} is disabled for user ${userId}`);
         return '';
       }
@@ -1148,6 +1151,11 @@ export class NotificationService {
       const updatedPreferences = {
         ...(existingPrefs || DEFAULT_NOTIFICATION_PREFERENCES),
         ...preferences,
+        preferences: {
+          ...DEFAULT_TYPE_PREFERENCES,
+          ...(existingPrefs?.preferences ?? {}),
+          ...(preferences.preferences ?? {}),
+        },
         userId,
         emailAddress,
         updatedAt: Timestamp.fromDate(new Date()),

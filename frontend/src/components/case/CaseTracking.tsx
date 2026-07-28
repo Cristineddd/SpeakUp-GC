@@ -14,7 +14,6 @@ import {
   Users,
   MapPin,
   Loader2,
-  Lock,
   Info,
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -44,12 +43,17 @@ import { getUserDisplayName, getCachedUserDisplayName } from '../../utils/userDi
 import { isSensitiveCaseType, GENERIC_HANDLER_ASSIGNED_MESSAGE } from '../../utils/sensitiveCaseTypes';
 import { evaluateFollowUpEligibility, FOLLOW_UP_STALE_DAYS } from '../../utils/followUpEligibility';
 import {
-  getConfidentialityAccessInfo,
   getNextStageEstimate,
   SENSITIVE_HANDLER_NOTE,
 } from '../../utils/caseTransparency';
 import { requestCaseFollowUp } from '../../services/followUpService';
 import { useToast } from '../../hooks/use-toast';
+
+const ACTIVITY_DEDUP_WINDOW_MS = 120_000;
+
+function activityNotesDedupKey(notes: string, date: Date): string {
+  return `${notes.trim().toLowerCase()}|${Math.floor(date.getTime() / ACTIVITY_DEDUP_WINDOW_MS)}`;
+}
 
 interface CaseTrackingProps {
   complaintId: string;
@@ -243,7 +247,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                   stage: ComplaintStage.ACTION_ON_COMPLAINT,
                   status: historyEntry.status,
                   description: `Status updated to ${statusLabel}`,
-                  actor: historyEntry.updatedByName || 'Case Handler',
+                  actor: '(CODI member)',
                   timestamp: historyEntry.updatedAt?.toDate ? historyEntry.updatedAt.toDate() : new Date(historyEntry.updatedAt),
                   attachments: [],
                   details: noteText || `The case status has been changed to ${statusLabel}.`
@@ -501,7 +505,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       .map((h: any, i: number) => ({
         id: `status_history_notes_${i}_${safeToDate(h.updatedAt).getTime()}`,
         complaintId: complaint.id,
-        investigatorId: h.updatedByName || 'Case Handler',
+        investigatorId: '(CODI member)',
         activityType: 'document_review' as const,
         description: `Status update (${statusLabels[h.previousStatus] || h.previousStatus} → ${statusLabels[h.status] || h.status})`,
         findings: String(h.notes).trim(),
@@ -518,6 +522,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           return 'evidence_collection';
         case ActivityType.DELIBERATION:
           return 'deliberation';
+        case ActivityType.STATUS_UPDATE:
+          return 'document_review';
         default:
           return 'document_review';
       }
@@ -528,7 +534,10 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       .map((ra) => ({
       id: `case_activity_${ra.id}`,
       complaintId: ra.complaintId,
-      investigatorId: isSensitiveCaseType(complaint.type) ? 'Case Handler' : ra.performedByName,
+      investigatorId:
+        ra.activityType === ActivityType.STATUS_UPDATE || isSensitiveCaseType(complaint.type)
+          ? '(CODI member)'
+          : ra.performedByName,
       investigatorRole: ra.performedByRole,
       activityType: mapCaseActivityType(ra.activityType),
       description: ra.description,
@@ -537,8 +546,19 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       attachments: ra.attachments || [],
     }));
 
+    // Skip synthetic statusHistory rows when the same update was logged in caseActivities
+    const loggedStatusKeys = new Set(
+      realActivities
+        .filter((ra) => ra.activityType === ActivityType.STATUS_UPDATE)
+        .map((ra) => activityNotesDedupKey(String(ra.findings || ''), ra.createdAt))
+    );
+
+    const dedupedStatusHistory = fromStatusHistory.filter(
+      (entry) => !loggedStatusKeys.has(activityNotesDedupKey(entry.findings || '', entry.date))
+    );
+
     const now = new Date();
-    return [...activities, ...fromStatusHistory, ...fromLogged]
+    return [...activities, ...dedupedStatusHistory, ...fromLogged]
       .filter((a) => a.date <= now)
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [complaint, activities, realActivities]);
@@ -573,11 +593,6 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       lastUpdate: complaint.updatedAt || complaint.filingDate,
     });
   }, [complaint]);
-
-  const confidentialityInfo = useMemo(
-    () => (complaint ? getConfidentialityAccessInfo(complaint.confidentialityLevel) : null),
-    [complaint]
-  );
 
   const stageEstimate = useMemo(() => {
     if (!complaint) return null;
@@ -972,25 +987,6 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
           <Shield className="h-3.5 w-3.5 text-[#1D9E75] flex-shrink-0 mt-0.5" />
           <span>This complaint is filed under the <strong>Safe Spaces Act (RA 11313)</strong> and/or the <strong>Anti-Sexual Harassment Act (RA 7877)</strong>. Anti-retaliation protections apply to all parties.</span>
         </div>
-
-        {confidentialityInfo && (
-          <div className="mt-3 p-3 bg-white/80 border border-blue-100 rounded-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Lock className="h-3.5 w-3.5 text-blue-600 flex-shrink-0" />
-              <p className="text-xs font-semibold text-gray-900">
-                {confidentialityInfo.levelLabel} — Who can see this case?
-              </p>
-            </div>
-            <ul className="space-y-1">
-              {confidentialityInfo.accessList.map((item) => (
-                <li key={item.role} className="text-[11px] text-gray-600 leading-relaxed">
-                  <span className="font-medium text-gray-800">{item.role}:</span> {item.access}
-                </li>
-              ))}
-            </ul>
-            <p className="text-[11px] text-blue-700 mt-2">{confidentialityInfo.note}</p>
-          </div>
-        )}
 
         {isSensitiveCase && isHandlerAssigned && (
           <div className="mt-3 flex items-start gap-2 p-2.5 bg-white/70 border border-white rounded-xl text-xs text-gray-600">

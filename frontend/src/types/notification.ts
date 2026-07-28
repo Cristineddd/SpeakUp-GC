@@ -82,30 +82,8 @@ export interface NotificationPreferences {
   emailEnabled: boolean;
   emailAddress: string;
   
-  // Notification type preferences
-  preferences: {
-    complaint_created: boolean;
-    complaint_assigned: boolean;
-    status_update: boolean;
-    complaint_resolved: boolean;
-    complaint_escalated: boolean;
-    complaint_reopened: boolean;
-    new_comment: boolean;
-    evidence_requested: boolean;
-    deadline_reminder: boolean;
-    action_required: boolean;
-    new_message: boolean;
-    message_read: boolean;
-    evidence_uploaded: boolean;
-    comment_added: boolean;
-    handler_assigned: boolean;
-    handler_changed: boolean;
-    deadline_approaching: boolean;
-    deadline_passed: boolean;
-    system_announcement: boolean;
-    maintenance_scheduled: boolean;
-    account_updated: boolean;
-  };
+  // Notification type preferences (partial — missing keys default to enabled)
+  preferences: Partial<Record<NotificationType, boolean>>;
   
   // Digest settings
   emailDigest: 'immediate' | 'hourly' | 'daily' | 'weekly' | 'never';
@@ -223,38 +201,59 @@ export function getNotificationBadgeColor(priority: NotificationPriority): strin
   }
 }
 
+/** Default on/off per notification type — used when user prefs omit a type */
+export const DEFAULT_TYPE_PREFERENCES: Record<NotificationType, boolean> = {
+  complaint_created: true,
+  complaint_assigned: true,
+  case_assigned: true,
+  status_update: true,
+  complaint_resolved: true,
+  complaint_escalated: true,
+  complaint_reopened: true,
+  case_closed: true,
+  new_comment: true,
+  evidence_requested: true,
+  deadline_reminder: true,
+  action_required: true,
+  new_message: true,
+  message_read: false,
+  evidence_uploaded: true,
+  comment_added: true,
+  handler_assigned: true,
+  handler_changed: true,
+  deadline_approaching: true,
+  deadline_passed: true,
+  hearing_scheduled: true,
+  hearing_reminder: true,
+  decision_issued: true,
+  respondent_notified: true,
+  complaint_filed_against_you: true,
+  system_announcement: true,
+  maintenance_scheduled: true,
+  account_updated: true,
+};
+
 export const DEFAULT_NOTIFICATION_PREFERENCES: Omit<NotificationPreferences, 'userId' | 'emailAddress' | 'updatedAt'> = {
   inAppEnabled: true,
   emailEnabled: true,
-  preferences: {
-    complaint_created: true,
-    complaint_assigned: true,
-    status_update: true,
-    complaint_resolved: true,
-    complaint_escalated: true,
-    complaint_reopened: true,
-    new_comment: true,
-    evidence_requested: true,
-    deadline_reminder: true,
-    action_required: true,
-    new_message: true,
-    message_read: false,
-    evidence_uploaded: true,
-    comment_added: true,
-    handler_assigned: true,
-    handler_changed: true,
-    deadline_approaching: true,
-    deadline_passed: true,
-    system_announcement: true,
-    maintenance_scheduled: true,
-    account_updated: true,
-  },
+  preferences: { ...DEFAULT_TYPE_PREFERENCES },
   emailDigest: 'immediate',
   digestTime: '09:00',
   quietHoursEnabled: false,
   quietHoursStart: '22:00',
   quietHoursEnd: '08:00',
 };
+
+/** Returns whether a notification type should be delivered (defaults to enabled). */
+export function isNotificationTypeEnabled(
+  type: NotificationType,
+  preferences: NotificationPreferences | null
+): boolean {
+  if (!preferences) return true;
+  const explicit = preferences.preferences?.[type];
+  if (explicit !== undefined) return explicit;
+  return DEFAULT_TYPE_PREFERENCES[type] ?? true;
+}
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   complaint_created: 'Complaint Created',

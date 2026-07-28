@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUnreadCasesCount } from "../../hooks/useUnreadCasesCount";
+import { NotificationBell } from "../notifications/NotificationBell";
 import {
   sidebarShell,
   sidebarBrandTitle,
@@ -185,6 +186,11 @@ export default function Sidebar() {
 
   return (
     <>
+    {/* Mobile notification bell — visible on all complainant pages (PWA) */}
+    <div className="lg:hidden fixed top-3 right-3 z-[60]">
+      <NotificationBell />
+    </div>
+
     {/* ── Desktop sidebar ── */}
     <aside className="hidden lg:flex lg:flex-shrink-0 h-screen">
       <div className={sidebarShell(isCollapsed)}>
@@ -207,6 +213,7 @@ export default function Sidebar() {
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
+              <NotificationBell />
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-2">

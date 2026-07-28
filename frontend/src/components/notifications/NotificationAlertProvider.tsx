@@ -17,13 +17,21 @@ import {
  * - In-app toast when a new notification arrives (tab open)
  * - OS/browser notification when permission granted (tab in background)
  */
-export function NotificationAlertProvider({ children }: { children: React.ReactNode }) {
+export function NotificationAlertProvider({
+  children,
+  showPermissionPrompt = true,
+}: {
+  children: React.ReactNode;
+  /** Complainants only — hide on admin / case handler UI */
+  showPermissionPrompt?: boolean;
+}) {
   useRealtimeNotificationAlerts(true);
 
   const [showPrompt, setShowPrompt] = useState(false);
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
+    if (!showPermissionPrompt) return;
     if (!isBrowserNotificationSupported()) return;
 
     const permission = getBrowserNotificationPermission();
@@ -32,7 +40,7 @@ export function NotificationAlertProvider({ children }: { children: React.ReactN
 
     const timer = window.setTimeout(() => setShowPrompt(true), 2000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [showPermissionPrompt]);
 
   const handleEnable = async () => {
     setRequesting(true);

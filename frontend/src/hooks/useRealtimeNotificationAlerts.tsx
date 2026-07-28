@@ -75,12 +75,9 @@ export function useRealtimeNotificationAlerts(enabled = true): void {
       (notifications, meta) => {
         if (!initializedRef.current) {
           notifications.forEach((n) => seenIdsRef.current.add(n.id));
-
-          if (meta?.fromCache) {
-            return;
+          if (!meta?.fromCache) {
+            initializedRef.current = true;
           }
-
-          initializedRef.current = true;
           return;
         }
 
