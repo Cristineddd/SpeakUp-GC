@@ -46,6 +46,7 @@ export default function Messages() {
     (async () => {
       try {
         await MessageService.cleanupOrphanedChatRoomsForParticipant(currentUser.uid);
+        await MessageService.syncClosedComplaintChatRooms(currentUser.uid);
         await MessageService.dedupeChatRoomsForUser(currentUser.uid);
       } catch (error) {
         console.warn('Could not clean chat rooms:', error);

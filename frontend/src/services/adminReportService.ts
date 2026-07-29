@@ -186,6 +186,20 @@ export class AdminReportService {
   }
 
   /**
+   * Fetch a single complaint by ID (e.g. closed case archive view).
+   */
+  static async getComplaintById(complaintId: string): Promise<AdminReport | null> {
+    try {
+      const snap = await getDoc(doc(db, 'complaints', complaintId));
+      if (!snap.exists()) return null;
+      return this.transformToAdminReport(snap.id, snap.data(), 'complaints');
+    } catch (error) {
+      console.error(`❌ AdminReportService: Error fetching complaint ${complaintId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Fetch all reports assigned to a specific handler
    */
   static async getReportsByHandler(handlerId: string): Promise<AdminReport[]> {

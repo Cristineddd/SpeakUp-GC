@@ -815,7 +815,7 @@ export class MessageService {
   static subscribeToUserChatRooms(
     userId: string,
     callback: (chatRooms: ChatRoom[], meta?: { fromCache: boolean }) => void,
-    options?: { limit?: number }
+    options?: { limit?: number; includeClosed?: boolean }
   ): Unsubscribe {
     const chatRoomsRef = collection(db, this.CHAT_ROOMS_COLLECTION);
     const q = query(
@@ -833,7 +833,7 @@ export class MessageService {
             ...d.data(),
           }))
           .filter((room) => !(room as ChatRoom & { isDeleted?: boolean }).isDeleted) as ChatRoom[]
-      );
+      ).filter((room) => options?.includeClosed || this.isChatRoomActive(room));
       callback(rooms, { fromCache: snapshot.metadata.fromCache });
     });
   }
@@ -971,6 +971,82 @@ export class MessageService {
       console.error('Error getting user chat rooms:', error);
       throw error;
     }
+  }
+
+  static isChatRoomActive(room: Pick<ChatRoom, 'isActive' | 'status'>): boolean {
+    return room.isActive !== false && room.status !== 'closed';
+  }
+
+  /**
+   * Close all chat rooms tied to a complaint (e.g. when the case is archived).
+   */
+  static async closeChatRoomsForComplaint(
+    complaintId: string,
+    closedBy: string
+  ): Promise<number> {
+    const snap = await getDocs(
+      query(
+        collection(db, this.CHAT_ROOMS_COLLECTION),
+        where('complaintId', '==', complaintId)
+      )
+    );
+
+    let closed = 0;
+
+    for (const roomDoc of snap.docs) {
+      const room = { id: roomDoc.id, ...roomDoc.data() } as ChatRoom;
+      if (!this.isChatRoomActive(room)) continue;
+
+      await this.closeChatRoom(roomDoc.id, closedBy);
+      await this.sendSystemMessage(
+        roomDoc.id,
+        complaintId,
+        'This case has been officially closed. Messaging is no longer available for this conversation.'
+      );
+      closed++;
+    }
+
+    if (closed > 0) {
+      console.log(`🔒 MessageService: closed ${closed} chat room(s) for complaint ${complaintId}`);
+    }
+
+    return closed;
+  }
+
+  /**
+   * Backfill: close chat rooms that still appear active while the complaint is closed.
+   */
+  static async syncClosedComplaintChatRooms(userId: string): Promise<number> {
+    const snap = await getDocs(
+      query(
+        collection(db, this.CHAT_ROOMS_COLLECTION),
+        where('participantIds', 'array-contains', userId)
+      )
+    );
+
+    let synced = 0;
+
+    for (const roomDoc of snap.docs) {
+      const room = { id: roomDoc.id, ...roomDoc.data() } as ChatRoom;
+      if (!this.isChatRoomActive(room)) continue;
+
+      const complaintId = room.complaintId;
+      if (!complaintId) continue;
+
+      const complaintSnap = await getDoc(doc(db, 'complaints', complaintId));
+      if (!complaintSnap.exists() || complaintSnap.data()?.status !== 'closed') {
+        continue;
+      }
+
+      await this.closeChatRoom(roomDoc.id, userId);
+      synced++;
+    }
+
+    if (synced > 0) {
+      console.log(`🔄 MessageService: synced ${synced} closed complaint chat room(s) for user ${userId}`);
+    }
+
+    return synced;
   }
 
   /**

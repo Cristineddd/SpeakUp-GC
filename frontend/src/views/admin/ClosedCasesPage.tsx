@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -19,33 +26,46 @@ import {
   Calendar,
   Download,
   Eye,
-  Filter,
 } from 'lucide-react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { format } from 'date-fns';
-import { useNavigate } from '../../compat/router';
+import { useLocation } from '../../compat/router';
 import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
+import {
+  CaseDetailField,
+  CaseDetailGrid,
+  CaseDetailSection,
+  CaseDetailStat,
+  CaseDetailTextBlock,
+} from '../../components/case/CaseDetailLayout';
+import { getDisplayCaseNumber } from '../../utils/caseId';
 
 interface ClosedCase {
   id: string;
+  caseId?: string;
   title: string;
   type: string;
+  description?: string;
   complainant: string;
   isAnonymous: boolean;
   dateFiled: Date;
   dateResolved: Date;
   decisionSummary: string;
+  actionTaken?: string;
+  finalNotes?: string;
+  closedByName?: string;
   assignedRepresentative: string;
   closureDocument?: string;
+  closureDocumentName?: string;
   complianceReport?: string;
   status: string;
 }
 
 const ClosedCasesPage = () => {
-  const navigate = useNavigate();
+  const location = useLocation();
   const { isAdmin } = useAuth();
   const { role, representativeData } = useRepresentativeRole();
   const isCODI = !isAdmin && ((role as string) === 'codi' || role === 'handler');
@@ -54,6 +74,7 @@ const ClosedCasesPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [selectedCase, setSelectedCase] = useState<ClosedCase | null>(null);
 
   useEffect(() => {
     // Query for officially closed cases only
@@ -74,15 +95,21 @@ const ClosedCasesPage = () => {
 
         cases.push({
           id: doc.id,
+          caseId: data.caseId,
           title: data.title || data.description?.substring(0, 50) || 'Untitled Case',
           type: data.type || data.category || 'General',
+          description: data.description || data.statementOfFacts || '',
           complainant: data.isAnonymous ? 'Anonymous' : (data.complainantName || 'Unknown'),
           isAnonymous: data.isAnonymous || false,
           dateFiled: data.createdAt?.toDate() || new Date(),
           dateResolved: data.dateResolved?.toDate() || data.updatedAt?.toDate() || new Date(),
           decisionSummary: data.decisionSummary || data.resolution || 'No summary available',
+          actionTaken: data.actionTaken || '',
+          finalNotes: data.finalNotes || '',
+          closedByName: data.closedByName || data.updatedByName || '',
           assignedRepresentative: data.assignedToName || data.assignedHandlerName || data.assignedRepresentative || 'Unassigned',
           closureDocument: data.closureDocument,
+          closureDocumentName: data.closureDocumentName,
           complianceReport: data.complianceReport,
           status: data.status || 'closed',
         });
@@ -110,6 +137,26 @@ const ClosedCasesPage = () => {
     
     return matchesSearch && matchesFilter;
   });
+
+  const openCaseDetail = useCallback((case_: ClosedCase) => {
+    setSelectedCase(case_);
+    window.history.replaceState({}, '', `/admin/closed-cases?caseId=${case_.id}`);
+  }, []);
+
+  const closeCaseDetail = useCallback(() => {
+    setSelectedCase(null);
+    window.history.replaceState({}, '', '/admin/closed-cases');
+  }, []);
+
+  useEffect(() => {
+    const caseId = new URLSearchParams(location.search).get('caseId');
+    if (!caseId || closedCases.length === 0) return;
+
+    const match = closedCases.find((case_) => case_.id === caseId);
+    if (match) {
+      setSelectedCase(match);
+    }
+  }, [location.search, closedCases]);
 
   if (loading) {
     return (
@@ -204,7 +251,11 @@ const ClosedCasesPage = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredCases.map((case_) => (
-                    <TableRow key={case_.id} className="hover:bg-gray-50">
+                    <TableRow
+                      key={case_.id}
+                      className="cursor-pointer hover:bg-gray-50"
+                      onClick={() => openCaseDetail(case_)}
+                    >
                       <TableCell>
                         <div>
                           <p className="font-medium text-gray-900">{case_.title}</p>
@@ -280,7 +331,10 @@ const ClosedCasesPage = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/admin/reports?reportId=${case_.id}`)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openCaseDetail(case_);
+                          }}
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -294,6 +348,143 @@ const ClosedCasesPage = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(selectedCase)}
+        onOpenChange={(open) => {
+          if (!open) closeCaseDetail();
+        }}
+      >
+        <DialogContent className="flex max-h-[min(90dvh,90vh)] w-[calc(100vw-2rem)] max-w-3xl flex-col overflow-hidden p-0 sm:w-full">
+          {selectedCase && (
+            <>
+              <DialogHeader className="shrink-0 space-y-1.5 border-b px-6 py-5">
+                <DialogTitle className="text-xl font-bold text-gray-900">
+                  Closed Case Details
+                </DialogTitle>
+                <DialogDescription asChild>
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    <div>
+                      Case No:{' '}
+                      <span className="font-semibold text-gray-900">
+                        {getDisplayCaseNumber({
+                          caseId: selectedCase.caseId,
+                          firestoreId: selectedCase.id,
+                          filedAt: selectedCase.dateFiled.toISOString(),
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-gray-600">{selectedCase.title}</p>
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <CaseDetailStat label="Status">
+                    <Badge className="bg-gray-100 text-gray-700 border-gray-200">Closed</Badge>
+                  </CaseDetailStat>
+                  <CaseDetailStat label="Category">
+                    {getFormalComplaintCategoryLabel(selectedCase.type)}
+                  </CaseDetailStat>
+                  <CaseDetailStat label="Assigned CODI">
+                    {selectedCase.assignedRepresentative}
+                  </CaseDetailStat>
+                </div>
+
+                <CaseDetailSection title="Case Information" icon={FileText}>
+                  <CaseDetailGrid>
+                    <CaseDetailField
+                      label="Complainant"
+                      value={selectedCase.complainant}
+                    />
+                    <CaseDetailField
+                      label="Date Filed"
+                      value={format(selectedCase.dateFiled, 'MMM dd, yyyy')}
+                    />
+                    <CaseDetailField
+                      label="Date Closed"
+                      value={format(selectedCase.dateResolved, 'MMM dd, yyyy')}
+                    />
+                    {selectedCase.closedByName && (
+                      <CaseDetailField
+                        label="Closed By"
+                        value={selectedCase.closedByName}
+                      />
+                    )}
+                  </CaseDetailGrid>
+                  {selectedCase.description && (
+                    <div className="mt-4">
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                        Description
+                      </p>
+                      <CaseDetailTextBlock>{selectedCase.description}</CaseDetailTextBlock>
+                    </div>
+                  )}
+                </CaseDetailSection>
+
+                <CaseDetailSection title="Final Decision" icon={Archive} variant="muted">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                        Decision Summary
+                      </p>
+                      <CaseDetailTextBlock>{selectedCase.decisionSummary}</CaseDetailTextBlock>
+                    </div>
+                    {selectedCase.actionTaken && (
+                      <div>
+                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                          Action Taken
+                        </p>
+                        <CaseDetailTextBlock>{selectedCase.actionTaken}</CaseDetailTextBlock>
+                      </div>
+                    )}
+                    {selectedCase.finalNotes && (
+                      <div>
+                        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                          Final Notes
+                        </p>
+                        <CaseDetailTextBlock>{selectedCase.finalNotes}</CaseDetailTextBlock>
+                      </div>
+                    )}
+                  </div>
+                </CaseDetailSection>
+
+                {(selectedCase.closureDocument || selectedCase.complianceReport) && (
+                  <CaseDetailSection title="Documents" icon={Download}>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedCase.closureDocument && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={selectedCase.closureDocument}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            {selectedCase.closureDocumentName || 'Closure Document'}
+                          </a>
+                        </Button>
+                      )}
+                      {selectedCase.complianceReport && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a
+                            href={selectedCase.complianceReport}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Compliance Report
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </CaseDetailSection>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

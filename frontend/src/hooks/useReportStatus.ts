@@ -243,6 +243,15 @@ export function useReportStatus(
       await updateDoc(reportRef, statusUpdate);
       console.log('✅ [STATUS UPDATE] Successfully updated to:', newStatus);
 
+      if (newStatus === 'closed') {
+        try {
+          const { MessageService } = await import('../services/messageService');
+          await MessageService.closeChatRoomsForComplaint(reportId, currentUser.uid);
+        } catch (chatCloseError) {
+          console.error('Failed to close chat rooms for case:', chatCloseError);
+        }
+      }
+
       // Log manual status change with current user as actor
       try {
         const representative = await RepresentativeService.getByUserId(currentUser.uid);
