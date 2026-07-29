@@ -239,8 +239,8 @@ export function ReportStatusManager({
 
   const renderConfirmDialog = () => (
     <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex max-h-[min(90dvh,90vh)] w-[calc(100vw-2rem)] max-w-lg flex-col overflow-hidden p-0 sm:w-full">
+        <DialogHeader className="shrink-0 space-y-1.5 px-6 pt-6 pb-2">
           <DialogTitle>Confirm Status Update</DialogTitle>
           <DialogDescription>
             Change report status from <strong>{getStatusLabel(currentStatus)}</strong> to{' '}
@@ -248,7 +248,7 @@ export function ReportStatusManager({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-6 py-4">
           {selectedStatus === 'closed' ? (
             <>
               <div className="space-y-2">
@@ -375,7 +375,7 @@ export function ReportStatusManager({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="shrink-0 gap-2 border-t bg-background px-6 py-4 sm:gap-0">
           <Button variant="outline" onClick={handleCancelUpdate} disabled={isUpdating}>
             Cancel
           </Button>

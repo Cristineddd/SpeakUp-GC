@@ -1886,15 +1886,24 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
     );
   }
 
-  // Calculate handler stats from current reports
+  // Calculate handler stats from active (non-closed) cases assigned to this CODI member
   const getHandlerStats = () => {
     if (!reports) return null;
+    const myActiveCases = reports.filter(
+      (r) =>
+        (r.status as string) !== 'closed' &&
+        (!representativeId || r.assignedTo === representativeId)
+    );
     return {
-      total: reports.length,
-      pending: reports.filter(r => r.status === 'pending').length,
-      inProgress: reports.filter(r => r.status === 'inProgress').length,
-      resolved: reports.filter(r => ['resolved', 'dismissed'].includes(r.status || '')).length,
-      escalated: reports.filter(r => (r.escalationLevel || 0) > 0).length
+      total: myActiveCases.length,
+      pending: myActiveCases.filter(
+        (r) => r.status === 'pending' || (r.status as string) === 'submitted'
+      ).length,
+      inProgress: myActiveCases.filter((r) => r.status === 'inProgress').length,
+      resolved: myActiveCases.filter((r) =>
+        ['resolved', 'dismissed'].includes(r.status || '')
+      ).length,
+      escalated: myActiveCases.filter((r) => (r.escalationLevel || 0) > 0).length,
     };
   };
 
