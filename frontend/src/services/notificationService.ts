@@ -714,14 +714,16 @@ export class NotificationService {
     }
   ): Promise<string> {
     try {
-      const preferences = await this.getPreferences(userId);
-      if (!isNotificationTypeEnabled(type, preferences)) {
+      const isRecipientSelf = auth.currentUser?.uid === userId;
+      const preferences = isRecipientSelf ? await this.getPreferences(userId) : null;
+
+      if (isRecipientSelf && !isNotificationTypeEnabled(type, preferences)) {
         console.log(`Notification type ${type} is disabled for user ${userId}`);
         return '';
       }
 
-      // Check quiet hours
-      if (preferences?.quietHoursEnabled) {
+      // Check quiet hours (only when the signed-in user is the recipient)
+      if (isRecipientSelf && preferences?.quietHoursEnabled) {
         const now = new Date();
         const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         
@@ -787,10 +789,13 @@ export class NotificationService {
 
       const notificationsRef = collection(db, this.notificationsCollection);
       const docRef = await addDoc(notificationsRef, notificationData);
-      
-      const docSnapshot = await getDoc(docRef);
-      if (!docSnapshot.exists()) {
-        throw new Error('Document was not created successfully');
+
+      // Only the recipient (or rules allowing cross-read) can read the doc back
+      if (isRecipientSelf) {
+        const docSnapshot = await getDoc(docRef);
+        if (!docSnapshot.exists()) {
+          throw new Error('Document was not created successfully');
+        }
       }
 
       const emailEnabled = preferences
@@ -1176,7 +1181,11 @@ export class NotificationService {
       }
 
       return null;
-    } catch (error) {
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'permission-denied') {
+        return null;
+      }
       console.error('Error getting preferences:', error);
       throw error;
     }

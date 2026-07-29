@@ -326,6 +326,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             createdAt: new Date().toISOString(),
             provider: 'email',
             isRegistered: true,
+            isActive: true,
+            isDeleted: false,
             ...additionalData
           });
         } catch (dbError) {
@@ -425,7 +427,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               isAdmin: isAdminEmail(user.email),
               createdAt: new Date().toISOString(),
               provider: 'google',
-              isRegistered: true
+              isRegistered: true,
+              isActive: true,
+              isDeleted: false
             });
           } else {
             console.log('User document exists, checking admin status');
@@ -515,7 +519,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               isAdmin: isAdminEmail(user.email),
               createdAt: new Date().toISOString(),
               provider: 'google',
-              isRegistered: true
+              isRegistered: true,
+              isActive: true,
+              isDeleted: false
             });
           }
         } catch (dbError) {
@@ -590,6 +596,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           userData = userDoc.data();
+
+          if (!userDoc.exists()) {
+            await setDoc(doc(db, 'users', user.uid), {
+              email: user.email,
+              displayName: user.displayName || userData?.displayName || '',
+              isAdmin: isAdminEmail(user.email),
+              isActive: true,
+              isDeleted: false,
+              createdAt: new Date().toISOString(),
+              provider: user.providerData[0]?.providerId || 'unknown',
+            });
+          } else {
+            const patch: Record<string, unknown> = {};
+            if (!('isActive' in (userData || {}))) patch.isActive = true;
+            if (!('isDeleted' in (userData || {}))) patch.isDeleted = false;
+            if (Object.keys(patch).length > 0) {
+              await setDoc(doc(db, 'users', user.uid), patch, { merge: true });
+            }
+          }
           
           // Method 1: Check Firestore document
           if (userData?.isAdmin) {

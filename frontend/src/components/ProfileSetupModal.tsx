@@ -134,7 +134,13 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
       if (snap.exists()) {
         await updateDoc(ref, payload);
       } else {
-        await setDoc(ref, { ...payload, uid: currentUser.uid, email: currentUser.email ?? "" });
+        await setDoc(ref, {
+          ...payload,
+          uid: currentUser.uid,
+          email: currentUser.email ?? "",
+          isActive: true,
+          isDeleted: false,
+        });
       }
       setStep("done");
     } catch (err) {

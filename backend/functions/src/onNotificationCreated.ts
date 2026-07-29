@@ -15,6 +15,11 @@ const EMAIL_SUPPRESSED_TYPES = new Set([
   'new_comment',
 ]);
 
+/** Push is useful for messages too; only skip pure read receipts. */
+const PUSH_SUPPRESSED_TYPES = new Set([
+  'message_read',
+]);
+
 interface NotificationDoc {
   userId: string;
   type: string;
@@ -71,6 +76,38 @@ async function shouldSendEmail(userId: string, type: string): Promise<boolean> {
   return pref === 'email' || pref === 'both';
 }
 
+async function shouldSendPush(userId: string, type: string): Promise<boolean> {
+  if (PUSH_SUPPRESSED_TYPES.has(type)) {
+    return false;
+  }
+
+  const prefsDoc = await db.collection('notificationPreferences').doc(userId).get();
+  if (prefsDoc.exists) {
+    const prefs = prefsDoc.data();
+    if (prefs?.pushEnabled === false) return false;
+    if (prefs?.inAppEnabled === false && prefs?.pushEnabled !== true) {
+      // Legacy prefs without pushEnabled — still allow push if in-app isn't explicitly off-only weirdness
+    }
+    if (prefs?.preferences && prefs.preferences[type] === false) {
+      return false;
+    }
+    if (prefs?.quietHoursEnabled && prefs.quietHoursStart && prefs.quietHoursEnd) {
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      if (isInQuietHours(currentTime, prefs.quietHoursStart, prefs.quietHoursEnd)) {
+        return false;
+      }
+    }
+  }
+
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) return false;
+
+  const pref = userDoc.data()?.notificationPreference ?? 'both';
+  // Push counts as "in-app" channel for preference purposes
+  return pref === 'in-app' || pref === 'both';
+}
+
 async function resolveFormattedCaseId(complaintId?: string): Promise<string> {
   if (!complaintId) return 'N/A';
 
@@ -85,17 +122,105 @@ async function resolveFormattedCaseId(complaintId?: string): Promise<string> {
   return complaintId;
 }
 
+async function sendPushToUser(
+  userId: string,
+  notificationId: string,
+  data: NotificationDoc
+): Promise<number> {
+  const tokenSnap = await db.collection('fcmTokens').where('userId', '==', userId).get();
+  if (tokenSnap.empty) {
+    console.log(`[onNotificationCreated] No FCM tokens for user ${userId}`);
+    return 0;
+  }
+
+  const tokens: string[] = [];
+  const tokenDocs: admin.firestore.QueryDocumentSnapshot[] = [];
+  tokenSnap.forEach((docSnap) => {
+    const token = docSnap.data()?.token as string | undefined;
+    if (token) {
+      tokens.push(token);
+      tokenDocs.push(docSnap);
+    }
+  });
+
+  if (tokens.length === 0) return 0;
+
+  const actionUrl = data.actionUrl || '/notifications';
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens,
+    notification: {
+      title: data.title,
+      body: data.message,
+    },
+    data: {
+      title: data.title,
+      body: data.message,
+      message: data.message,
+      type: data.type,
+      actionUrl,
+      notificationId,
+      complaintId: data.complaintId || '',
+    },
+    webpush: {
+      fcmOptions: {
+        link: actionUrl.startsWith('http') ? actionUrl : undefined,
+      },
+      notification: {
+        icon: '/icon-192x192.png',
+        badge: '/icon-192x192.png',
+      },
+    },
+  });
+
+  // Drop invalid tokens
+  const stale: Promise<admin.firestore.WriteResult>[] = [];
+  response.responses.forEach((res, idx) => {
+    if (res.success) return;
+    const code = res.error?.code || '';
+    if (
+      code.includes('registration-token-not-registered') ||
+      code.includes('invalid-registration-token') ||
+      code.includes('invalid-argument')
+    ) {
+      stale.push(tokenDocs[idx].ref.delete());
+    } else {
+      console.warn(`[onNotificationCreated] FCM error for token ${idx}:`, res.error?.message);
+    }
+  });
+  if (stale.length) {
+    await Promise.allSettled(stale);
+  }
+
+  console.log(
+    `[onNotificationCreated] Push sent to ${response.successCount}/${tokens.length} devices for ${userId}`
+  );
+  return response.successCount;
+}
+
 export const onNotificationCreated = firestore
   .document('notifications/{notificationId}')
   .onCreate(async (snap) => {
     const data = snap.data() as NotificationDoc;
     const { userId, type, title, message } = data;
+    const notificationId = snap.id;
 
     if (!userId || !type || !title || !message) {
       console.warn('[onNotificationCreated] Missing required notification fields.');
       return null;
     }
 
+    // ── 1) PWA / mobile push (independent of email) ─────────────────────────
+    try {
+      if (await shouldSendPush(userId, type)) {
+        await sendPushToUser(userId, notificationId, data);
+      } else {
+        console.log(`[onNotificationCreated] Push skipped for user ${userId}, type ${type}`);
+      }
+    } catch (error) {
+      console.error('[onNotificationCreated] Push failed:', error);
+    }
+
+    // ── 2) Email via Resend ─────────────────────────────────────────────────
     const emailAllowed = await shouldSendEmail(userId, type);
     if (!emailAllowed) {
       console.log(`[onNotificationCreated] Email skipped for user ${userId}, type ${type}`);

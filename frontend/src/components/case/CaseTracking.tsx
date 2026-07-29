@@ -151,8 +151,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
       try {
         let foundComplaint: Complaint | null = null;
 
-        // Try to find the complaint in both reports and complaints collections
-        const collections = ['reports', 'complaints'];
+        // Primary source is complaints; reports is legacy (different doc IDs)
+        const collections = ['complaints', 'reports'];
         
         for (const collectionName of collections) {
           try {
@@ -211,8 +211,11 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               } as any;
               break;
             }
-          } catch (error) {
-            console.error(`❌ Error fetching from ${collectionName}:`, error);
+          } catch (error: unknown) {
+            const code = (error as { code?: string })?.code;
+            if (code !== 'permission-denied') {
+              console.error(`❌ Error fetching from ${collectionName}:`, error);
+            }
           }
         }
 

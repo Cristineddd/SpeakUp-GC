@@ -1313,6 +1313,7 @@ const FormalComplaint = () => {
         // Status and metadata
         status: 'pending',
         stage: 'filing',
+        isDeleted: false,
         confidentialityLevel: 'confidential',
         
         // Timestamps
