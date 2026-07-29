@@ -31,7 +31,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { format } from 'date-fns';
 import { useLocation } from '../../compat/router';
-import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
+import { getFormalComplaintCategoryLabel, FORMAL_COMPLAINT_CATEGORIES, normalizeFormalComplaintCategory } from '../../constants/formalComplaintCategories';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import {
@@ -97,7 +97,7 @@ const ClosedCasesPage = () => {
           id: doc.id,
           caseId: data.caseId,
           title: data.title || data.description?.substring(0, 50) || 'Untitled Case',
-          type: data.type || data.category || 'General',
+          type: normalizeFormalComplaintCategory(data.type || data.category || 'other'),
           description: data.description || data.statementOfFacts || '',
           complainant: data.isAnonymous ? 'Anonymous' : (data.complainantName || 'Unknown'),
           isAnonymous: data.isAnonymous || false,
@@ -133,7 +133,8 @@ const ClosedCasesPage = () => {
       case_.complainant.toLowerCase().includes(searchTerm.toLowerCase()) ||
       case_.type.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFilter = filterType === 'all' || case_.type.toLowerCase().includes(filterType.toLowerCase());
+    const matchesFilter =
+      filterType === 'all' || normalizeFormalComplaintCategory(case_.type) === filterType;
     
     return matchesSearch && matchesFilter;
   });
@@ -206,11 +207,12 @@ const ClosedCasesPage = () => {
               onChange={(e) => setFilterType(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              <option value="all">All Types</option>
-              <option value="harassment">Harassment</option>
-              <option value="bullying">Bullying</option>
-              <option value="discrimination">Discrimination</option>
-              <option value="other">Other</option>
+              <option value="all">All Categories</option>
+              {FORMAL_COMPLAINT_CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.label}
+                </option>
+              ))}
             </select>
           </div>
         </CardContent>
