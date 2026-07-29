@@ -12,6 +12,7 @@ import type { Notification, NotificationType } from '../types/notification';
 const CASE_CARD_EXCLUDED_NOTIFICATION_TYPES = new Set<NotificationType>([
   'complaint_created',
   'message_read',
+  'new_message', // already counted via chat room unreadCount
   'system_announcement',
   'maintenance_scheduled',
   'account_updated',

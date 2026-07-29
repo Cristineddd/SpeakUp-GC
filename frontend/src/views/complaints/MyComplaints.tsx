@@ -362,7 +362,6 @@ export default function MyComplaints() {
               const unreadMessages = messageUnread[complaint.id] || 0;
               const unreadNotifications = notificationUnread[complaint.id] || 0;
               const hasUpdate = unreadReady && unreadCount > 0;
-              const hasUnreadMessages = unreadReady && unreadMessages > 0;
               const hasCaseUpdate = unreadReady && unreadNotifications > 0;
 
               return (
@@ -459,9 +458,18 @@ export default function MyComplaints() {
                         >
                           <MessageSquare className="h-4 w-4" />
                           Message
-                          {hasUnreadMessages && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                              {unreadMessages > 9 ? '9+' : unreadMessages}
+                          {hasUpdate && (
+                            <span
+                              className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+                              title={
+                                unreadMessages > 0 && unreadNotifications > 0
+                                  ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}, ${unreadNotifications} case update${unreadNotifications === 1 ? '' : 's'}`
+                                  : unreadMessages > 0
+                                  ? `${unreadMessages} unread message${unreadMessages === 1 ? '' : 's'}`
+                                  : `${unreadNotifications} case update${unreadNotifications === 1 ? '' : 's'}`
+                              }
+                            >
+                              {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                           )}
                         </button>

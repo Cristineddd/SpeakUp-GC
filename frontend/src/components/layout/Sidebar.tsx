@@ -391,7 +391,7 @@ export default function Sidebar() {
             <span className={cn("text-[10px] font-semibold leading-tight text-center", active && "text-gray-900")}>{label}</span>
             {item.badge !== undefined && item.badge > 0 && (
               <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                {item.badge}
+                {item.badge > 9 ? '9+' : item.badge}
               </span>
             )}
           </Link>

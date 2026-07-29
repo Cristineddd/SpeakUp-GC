@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, type JSX } from 'react';
+import { createPortal } from 'react-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from "../../services/notificationService";
@@ -48,14 +49,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "../../components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -634,6 +627,49 @@ const AdminReportsPage = () => {
 
     fetchNotesCounts();
   }, [reports]);
+
+  useEffect(() => {
+    if (!fullscreenImage) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setFullscreenImage(null);
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.body.dataset.evidenceLightboxOpen = 'true';
+    window.addEventListener('keydown', onKeyDown, true);
+
+    const disableDialogPointerEvents = () => {
+      document.querySelectorAll('[data-radix-dialog-overlay], [data-radix-dialog-content]').forEach((layer) => {
+        (layer as HTMLElement).style.pointerEvents = 'none';
+      });
+    };
+
+    const restoreDialogPointerEvents = () => {
+      document.querySelectorAll('[data-radix-dialog-overlay], [data-radix-dialog-content]').forEach((layer) => {
+        (layer as HTMLElement).style.pointerEvents = '';
+      });
+    };
+
+    disableDialogPointerEvents();
+    const syncPointerEvents = window.setTimeout(disableDialogPointerEvents, 0);
+
+    return () => {
+      window.clearTimeout(syncPointerEvents);
+      document.body.style.overflow = '';
+      delete document.body.dataset.evidenceLightboxOpen;
+      window.removeEventListener('keydown', onKeyDown, true);
+      restoreDialogPointerEvents();
+    };
+  }, [fullscreenImage]);
+
+  const closeFullscreenImage = useCallback(() => {
+    setFullscreenImage(null);
+  }, []);
 
   const fetchReports = async () => {
     try {
@@ -1316,28 +1352,41 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           setModalOpen(false);
         }
       }}>
-        <DialogContent className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
+        <DialogContent
+          className="w-full max-w-2xl sm:max-w-3xl md:max-w-4xl max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6"
+          onPointerDownOutside={(event) => {
+            if (fullscreenImage) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (fullscreenImage) event.preventDefault();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (fullscreenImage) event.preventDefault();
+          }}
+        >
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-xl sm:text-2xl font-bold">
               {isAdmin ? "Full Report Details" : "Case Details"}
             </DialogTitle>
-            <DialogDescription className="text-sm space-y-1">
-              <div>
-                Case No:{' '}
-                <span className="font-semibold text-base text-gray-900">
-                  {getDisplayCaseNumber({
-                    caseId: safeGet(report, 'caseId', ''),
-                    firestoreId: safeGet(report, 'id', ''),
-                    filedAt: safeGet(report, 'reportedAt', ''),
-                  })}
-                </span>
-              </div>
-              {getInternalCaseRef(safeGet(report, 'id', '')) && (
-                <div className="text-xs text-gray-400">
-                  Internal ref:{' '}
-                  <span className="font-mono">{getInternalCaseRef(safeGet(report, 'id', ''))}</span>
+            <DialogDescription asChild>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <div>
+                  Case No:{' '}
+                  <span className="text-base font-semibold text-gray-900">
+                    {getDisplayCaseNumber({
+                      caseId: safeGet(report, 'caseId', ''),
+                      firestoreId: safeGet(report, 'id', ''),
+                      filedAt: safeGet(report, 'reportedAt', ''),
+                    })}
+                  </span>
                 </div>
-              )}
+                {getInternalCaseRef(safeGet(report, 'id', '')) && (
+                  <div className="text-xs text-gray-400">
+                    Internal ref:{' '}
+                    <span className="font-mono">{getInternalCaseRef(safeGet(report, 'id', ''))}</span>
+                  </div>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           
@@ -1870,47 +1919,58 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
     window.history.pushState({}, '', newUrl);
   };
 
-  return (
-    <div className="w-full space-y-8 pb-10">
-      {/* Fullscreen Image Viewer Modal */}
-      {fullscreenImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex flex-col items-center justify-center" onClick={() => setFullscreenImage(null)}>
-          <div className="absolute top-4 right-4 flex gap-2 z-[10000]">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-              onClick={(e) => {
+  const renderFullscreenImageViewer = () => {
+    if (!fullscreenImage || typeof document === 'undefined') return null;
+
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[99999] isolate bg-black"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Evidence image preview"
+      >
+        <div
+          className="absolute inset-0"
+          aria-hidden
+          onPointerDown={closeFullscreenImage}
+        />
+        <div className="relative z-10 flex h-full flex-col">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-black px-4 py-3">
+            <p className="text-sm text-white/80">
+              Evidence {fullscreenImage.index + 1} of {fullscreenImage.total}
+            </p>
+            <button
+              type="button"
+              autoFocus
+              className="inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/25"
+              aria-label="Close image preview"
+              onPointerDown={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                window.open(fullscreenImage.url, '_blank');
+                closeFullscreenImage();
               }}
             >
-              <Eye className="h-4 w-4 mr-2" />
-              Open
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFullscreenImage(null);
-              }}
-            >
-              ✕ Close
-            </Button>
+              <X className="h-4 w-4" />
+              Close
+            </button>
           </div>
-          <img 
-            src={fullscreenImage.url} 
-            alt="Fullscreen view"
-            className="max-w-[90%] max-h-[90%] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
-            {fullscreenImage.index + 1} / {fullscreenImage.total}
+          <div className="flex flex-1 items-center justify-center p-4">
+            <img
+              src={fullscreenImage.url}
+              alt="Evidence preview"
+              className="max-h-full max-w-full object-contain"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
-      )}
+      </div>,
+      document.body
+    );
+  };
+
+  return (
+    <div className="w-full space-y-8 pb-10">
+      {renderFullscreenImageViewer()}
 
       {/* Handler Dashboard Stats - ONLY for handlers, NOT for admins */}
       {!isAdmin && isHandler && (
@@ -2310,12 +2370,44 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         </CardContent>
       </Card>
 
-      {/* Reports Table */}
+      {/* Reports list — one card per case */}
       <Card className={reportCardClass}>
         <CardHeader className="border-b border-emerald-100/70 bg-gradient-to-r from-emerald-50/40 to-transparent pb-4 pt-5">
-          <CardTitle className="text-base font-semibold text-emerald-950">
-            Reports <span className="font-normal text-emerald-800/60">({filteredReports.length})</span>
-          </CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-base font-semibold text-emerald-950">
+              Reports <span className="font-normal text-emerald-800/60">({filteredReports.length})</span>
+            </CardTitle>
+            {filteredReports.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                <span className="mr-1">Sort:</span>
+                {[
+                  { field: 'date', label: 'Date' },
+                  { field: 'title', label: 'Title' },
+                  { field: 'status', label: 'Status' },
+                  { field: 'complainant', label: 'Complainant' },
+                  ...(!isHandler ? [{ field: 'handler', label: 'CODI' }] : []),
+                ].map(({ field, label }) => (
+                  <button
+                    key={field}
+                    type="button"
+                    onClick={() => handleSort(field)}
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 transition-colors ${
+                      sortField === field
+                        ? 'bg-[#1D9E75]/10 text-[#1D9E75] font-medium'
+                        : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {label}
+                    {sortField === field ? (
+                      sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3 opacity-30" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {filteredReports.length === 0 ? (
@@ -2325,227 +2417,137 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               </div>
               <h3 className="mb-2 text-lg font-semibold text-emerald-950">No reports found</h3>
               <p className="text-sm text-emerald-900/55">
-                {reports.length === 0 
-                  ? "No reports have been submitted yet." 
-                  : "No reports match your current filters."
-                }
+                {reports.length === 0
+                  ? 'No reports have been submitted yet.'
+                  : 'No reports match your current filters.'}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-b-xl">
-              <Table>
-              <TableHeader className="bg-emerald-50/55 [&_tr]:border-emerald-100/80">
-                <TableRow className="border-emerald-100/80 hover:bg-transparent">
-                  <TableHead className="text-emerald-950/75 w-16">#</TableHead>
-                  <TableHead className="text-emerald-950/75">
-                    <button 
-                      onClick={() => handleSort('title')} 
-                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                    >
-                      Report
-                      {sortField === 'title' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-emerald-950/75">
-                    <button 
-                      onClick={() => handleSort('complainant')} 
-                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                    >
-                      Complainant
-                      {sortField === 'complainant' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </TableHead>
-                  {/* CODI (CODI Member) Column - Only show for admins */}
-                  {!isHandler && (
-                    <TableHead className="text-emerald-950/75">
-                      <button 
-                        onClick={() => handleSort('handler')} 
-                        className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                      >
-                        CODI
-                        {sortField === 'handler' ? (
-                          sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                        ) : (
-                          <ArrowUpDown className="h-3 w-3 opacity-40" />
-                        )}
-                      </button>
-                    </TableHead>
-                  )}
-                  <TableHead className="text-emerald-950/75">
-                    <button 
-                      onClick={() => handleSort('status')} 
-                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                    >
-                      Status
-                      {sortField === 'status' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-emerald-950/75">
-                    <button
-                      onClick={() => handleSort('date')}
-                      className="flex items-center gap-1 hover:text-emerald-900 transition-colors"
-                    >
-                      Date
-                      {sortField === 'date' ? (
-                        sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-emerald-950/75">Last Updated</TableHead>
-                  <TableHead className="text-emerald-950/75">Days Open</TableHead>
-                  <TableHead className="text-emerald-950/75">Activity</TableHead>
-                  <TableHead className="text-emerald-950/75">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredReports.map((report, index) => {
-                  const reportEvidence = processEvidence(safeGet(report, 'evidence'));
-                  const isEscalated = (report.escalationLevel || 0) > 0;
-                  const isUnseenQueue = isUnseenInQueue(report);
-                  
-                  return (
-                    <TableRow
-                      key={report.id}
-                      className={`border-b transition-colors ${
-                        isUnseenQueue
-                          ? 'border-l-4 border-l-red-500 bg-red-50/70 hover:bg-red-50'
-                          : isEscalated
-                          ? 'border-emerald-100/50 bg-red-100 hover:bg-red-200/80 border-red-200'
-                          : 'border-emerald-100/50 hover:bg-emerald-50/35'
-                      }`}
-                    >
-                      <TableCell className="font-semibold text-gray-600">
-                        <div className="flex items-center gap-2">
+            <div className="space-y-3 p-4">
+              {filteredReports.map((report) => {
+                const isUnseenQueue = isUnseenInQueue(report);
+                const daysOpen = getDaysOpen(report);
+                const status = safeGet(report, 'status', 'pending');
+                const isMine = representativeId && report.assignedTo === representativeId;
+
+                return (
+                  <div
+                    key={report.id}
+                    className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${
+                      isUnseenQueue ? 'bg-red-50/40' : ''
+                    }`}
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-start gap-2">
                           {isUnseenQueue && (
-                            <span
-                              className="relative flex h-2.5 w-2.5 shrink-0"
-                              title="Not yet reviewed"
-                            >
+                            <span className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0" title="Not yet reviewed">
                               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
                               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
                             </span>
                           )}
-                          {index + 1}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <div className="font-medium">{safeGet(report, 'title', 'No Title')}</div>
-                            {isUnseenQueue && (
-                              <Badge className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5">
-                                Not reviewed
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold text-gray-900 leading-snug">
+                                {safeGet(report, 'title', 'No Title')}
+                              </h3>
+                              <Badge className={`${getStatusColor(status)} font-medium shrink-0`}>
+                                {getStatusLabel(status)}
                               </Badge>
-                            )}
-                            {/* Inline escalation badge - only show when escalated */}
-                            {(report.escalationLevel || 0) > 0 && (
-                              <Badge className="bg-red-100 text-red-700 border border-red-300 text-xs font-semibold px-2">
-                                {report.hoursUnprocessed || 0}h
-                              </Badge>
-                            )}
-                            {/* Follow-Up Request badge */}
-                            {safeGet(report, 'followUpRequested', false) && (
-                              <Badge className="bg-amber-100 text-amber-700 border border-amber-300 text-xs font-semibold px-2 flex items-center gap-1">
-                                <MessageCircle className="h-3 w-3" />
-                                Follow-Up
-                              </Badge>
-                            )}
+                            </div>
+                            <p className="mt-1 text-xs text-gray-400">
+                              {getDisplayCaseNumber({
+                                caseId: report.caseId,
+                                firestoreId: report.id,
+                                filedAt: report.reportedAt,
+                              })}
+                            </p>
                           </div>
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
+                        </div>
+
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400" />
                             {safeGet(report, 'location', 'No location')}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
-                          <div className="flex items-center gap-1.5" title="Anonymous Complainant">
-                            <Lock className="h-3.5 w-3.5 text-gray-400" />
-                            <span className="text-gray-500 text-sm">Anonymous</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="font-medium">{safeGet(report, 'userName', 'Unknown')}</span>
-                          </div>
-                        )}
-                      </TableCell>
-                      {/* CODI (CODI Member) Column - Only show for admins */}
-                      {!isHandler && (
-                        <TableCell>
-                          {report.assignedToName ? (
-                            <div className="space-y-1">
-                              <div className="font-medium text-sm flex items-center gap-2">
-                                <User className="h-4 w-4 text-[#1D9E75]" />
-                                {report.assignedToName}
-                              </div>
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            {safeGet(report, 'userName', 'Unknown') === 'Anonymous' ? (
+                              <>
+                                <Lock className="h-3.5 w-3.5 text-gray-400" />
+                                Anonymous
+                              </>
+                            ) : (
+                              <>
+                                <User className="h-3.5 w-3.5 text-gray-400" />
+                                {safeGet(report, 'userName', 'Unknown')}
+                              </>
+                            )}
+                          </span>
+                          {!isHandler && (
+                            <span className="inline-flex flex-wrap items-center gap-1.5">
+                              <User className="h-3.5 w-3.5 text-[#1D9E75]" />
+                              {report.assignedToName || 'Unassigned'}
                               {report.assignedToRole && (
                                 <CodiRoleBadge role={report.assignedToRole} />
                               )}
-                              {report.assignedAt && (
-                                <div className="text-xs text-gray-500">
-                                  Assigned: {safeFormat(report.assignedAt, 'MMM dd, HH:mm')}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-sm text-gray-400">
-                              <User className="h-4 w-4" />
-                              Unassigned
-                            </div>
+                            </span>
                           )}
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <Badge className={`${getStatusColor(safeGet(report, 'status', 'pending'))} font-medium`}>
-                          {getStatusLabel(safeGet(report, 'status', 'pending'))}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{safeFormat(safeGet(report, 'reportedAt'), 'MMM dd, yyyy')}</div>
-                          <div className="text-gray-500">{safeFormat(safeGet(report, 'reportedAt'), 'HH:mm')}</div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={`text-sm ${differenceInDays(new Date(), safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt) || new Date()) >= 3 ? 'text-amber-600 font-medium' : ''}`}>
-                          {getLastUpdated(report)}
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          {isUnseenQueue && (
+                            <Badge className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5">
+                              Not reviewed
+                            </Badge>
+                          )}
+                          {isMine && (
+                            <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5">
+                              Assigned to you
+                            </Badge>
+                          )}
+                          {!report.assignedTo && (status === 'pending' || status === 'submitted') && (
+                            <Badge className="bg-amber-100 text-amber-800 text-[10px] font-semibold px-2 py-0.5">
+                              Unassigned
+                            </Badge>
+                          )}
+                          {(report.escalationLevel || 0) > 0 && (
+                            <Badge className="bg-red-100 text-red-700 border border-red-300 text-xs font-semibold px-2">
+                              {report.hoursUnprocessed || 0}h escalated
+                            </Badge>
+                          )}
+                          {safeGet(report, 'followUpRequested', false) && (
+                            <Badge className="bg-amber-100 text-amber-700 border border-amber-300 text-xs font-semibold px-2 flex items-center gap-1">
+                              <MessageCircle className="h-3 w-3" />
+                              Follow-Up
+                            </Badge>
+                          )}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className={`text-sm font-medium ${getDaysOpen(report) >= 10 ? 'text-red-600' : getDaysOpen(report) >= 5 ? 'text-amber-600' : ''}`}>
-                          {getDaysOpen(report)}d
+
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Filed {safeFormat(safeGet(report, 'reportedAt'), 'MMM dd, yyyy HH:mm')}
+                          </span>
+                          <span>·</span>
+                          <span className={differenceInDays(new Date(), safeToDate((report as any).lastUpdated) || safeToDate((report as any).updatedAt) || safeToDate(report.reportedAt) || new Date()) >= 3 ? 'text-amber-600 font-medium' : ''}>
+                            Updated {getLastUpdated(report)}
+                          </span>
+                          <span>·</span>
+                          <span className={daysOpen >= 10 ? 'text-red-600 font-medium' : daysOpen >= 5 ? 'text-amber-600 font-medium' : ''}>
+                            {daysOpen}d open
+                          </span>
+                          <span>·</span>
+                          <span>{getActivityCount(report)} activity</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm font-medium text-gray-700">
-                          {getActivityCount(report)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {getActionButtons(report)}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+
+                      <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-gray-100 pt-3 lg:border-t-0 lg:border-l lg:pl-4 lg:pt-0">
+                        {getActionButtons(report)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>

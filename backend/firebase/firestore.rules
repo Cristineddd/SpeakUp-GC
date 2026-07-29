@@ -106,6 +106,29 @@ service cloud.firestore {
              resource.data.followUpRequested != true;
     }
 
+    function isCaseUnassigned() {
+      return !('assignedTo' in resource.data) ||
+             resource.data.assignedTo == null ||
+             resource.data.assignedTo == '';
+    }
+
+    // Staff self-assign ("Take Case") on an unassigned complaint
+    function isStaffTakeCaseUpdate() {
+      return isStaffMember() &&
+             isCaseUnassigned() &&
+             request.resource.data.assignedTo == staffProfile().representativeId &&
+             (
+               !('assignedToUserId' in request.resource.data) ||
+               request.resource.data.assignedToUserId == request.auth.uid
+             ) &&
+             request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly([
+                 'assignedTo', 'assignedToName', 'assignedToRole', 'assignedToUserId',
+                 'assignedAt', 'assignedBy', 'assignedByName', 'handlerHistory',
+                 'updatedAt', 'lastUpdated'
+               ]);
+    }
+
     function isComplainantSubmissionUpdate() {
       return isOwner(resource.data.userId) &&
              resource.data.uploadStatus == 'uploading_files' &&
@@ -195,9 +218,10 @@ service cloud.firestore {
                       request.resource.data.userId == request.auth.uid &&
                       request.resource.data.isDeleted == false;
       
-      // Update: Admin, assigned staff, complainant filing finalize, or follow-up request
+      // Update: Admin, assigned staff, staff take-case self-assign, complainant filing finalize, or follow-up request
       allow update: if isAdmin() ||
                       (isStaffMember() && isAssignedStaff()) ||
+                      isStaffTakeCaseUpdate() ||
                       isComplainantSubmissionUpdate() ||
                       isFollowUpRequestUpdate();
       
@@ -404,6 +428,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isActiveUser();
       allow update: if isAdmin() ||
                       (isStaffMember() && isAssignedStaff()) ||
+                      isStaffTakeCaseUpdate() ||
                       isFollowUpRequestUpdate();
       allow delete: if isAdmin();
     }

@@ -106,20 +106,12 @@ export class NotificationService {
     severity: string
   ): Promise<string> {
     const assignedAt = new Date();
-    const formattedTime = assignedAt.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
     
     return this.createNotification(
       handlerId,
       'case_assigned' as NotificationType,
       'New Case Assigned to You',
-      `You have been assigned to handle "${complaintTitle}" from ${complainantName}. Assigned on ${formattedTime}. Category: ${category}, Severity: ${severity}.`,
+      `"${complaintTitle}" — tap View for details.`,
       {
         priority: 'high',
         complaintId: complaintId,

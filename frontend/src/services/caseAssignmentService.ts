@@ -79,7 +79,10 @@ export async function takeCase(params: TakeCaseParams): Promise<void> {
     isSensitiveCaseType(params.complaintType)
   );
 
-  if (params.handlerUserId) {
+  if (
+    params.handlerUserId &&
+    params.assignedByUserId !== params.handlerUserId
+  ) {
     await NotificationService.sendHandlerCaseAssignedNotification(
       params.handlerUserId,
       params.complaintId,

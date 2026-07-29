@@ -103,15 +103,25 @@ export function ReportStatusManager({
     if (selectedStatus === 'resolved' && !notes.trim()) return;
 
     const success = await updateStatus(
-      selectedStatus, 
-      notes || undefined,
+      selectedStatus,
+      selectedStatus === 'closed'
+        ? [
+            `Decision: ${decisionSummary.trim()}`,
+            `Actions: ${actionTaken.trim()}`,
+            finalNotes.trim() ? `Notes: ${finalNotes.trim()}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n\n')
+        : notes || undefined,
       undefined,
-      selectedStatus === 'closed' ? {
-        decisionSummary: decisionSummary.trim(),
-        actionTaken: actionTaken.trim(),
-        closureDocument,
-        finalNotes: finalNotes.trim() || undefined
-      } : undefined
+      selectedStatus === 'closed'
+        ? {
+            decisionSummary: decisionSummary.trim(),
+            actionTaken: actionTaken.trim(),
+            closureDocument,
+            finalNotes: finalNotes.trim() || undefined,
+          }
+        : undefined
     );
     
     if (success) {

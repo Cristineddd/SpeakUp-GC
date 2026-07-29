@@ -107,14 +107,26 @@ export function useReportStatus(
       return false;
     }
 
-    // Require notes for status changes (except for initial submission)
-    if (newStatus !== 'pending' && newStatus !== 'submitted' && !notes?.trim()) {
+    // Notes field applies to investigation/resolution updates; closure uses closureData instead
+    const statusesRequiringNotes: ReportStatus[] = ['inProgress', 'resolved'];
+    if (statusesRequiringNotes.includes(newStatus) && !notes?.trim()) {
       toast({
         title: 'Description Required',
         description: 'Please provide a description for this status change before submitting.',
         variant: 'destructive',
       });
       return false;
+    }
+
+    if (newStatus === 'closed') {
+      if (!closureData?.decisionSummary?.trim() || !closureData?.actionTaken?.trim()) {
+        toast({
+          title: 'Closure Details Required',
+          description: 'Please provide a decision summary and actions taken before closing the case.',
+          variant: 'destructive',
+        });
+        return false;
+      }
     }
 
     // Validate minimum length for notes
