@@ -821,7 +821,7 @@ export class NotificationService {
         } as Omit<Notification, 'id'>);
       }
 
-      // PWA push via Next API (no Firebase Blaze required)
+      // Push via Vercel API (single delivery path — Cloud Function push disabled to avoid duplicates)
       await this.sendPushViaApi(userId, {
         type,
         title,

@@ -152,10 +152,8 @@ async function sendPushToUser(
 
   const response = await admin.messaging().sendEachForMulticast({
     tokens,
-    notification: {
-      title: data.title,
-      body: data.message,
-    },
+    // Data-only for web: onBackgroundMessage in firebase-messaging-sw.js renders one notification.
+    // Including `notification` here causes the browser to auto-show a duplicate.
     data: {
       title: data.title,
       body: data.message,
@@ -168,10 +166,6 @@ async function sendPushToUser(
     webpush: {
       fcmOptions: {
         link: absoluteActionUrl,
-      },
-      notification: {
-        icon: '/icon-192x192.png',
-        badge: '/icon-192x192.png',
       },
     },
   });
@@ -213,18 +207,9 @@ export const onNotificationCreated = firestore
       return null;
     }
 
-    // ── 1) PWA / mobile push (independent of email) ─────────────────────────
-    try {
-      if (await shouldSendPush(userId, type)) {
-        await sendPushToUser(userId, notificationId, data);
-      } else {
-        console.log(`[onNotificationCreated] Push skipped for user ${userId}, type ${type}`);
-      }
-    } catch (error) {
-      console.error('[onNotificationCreated] Push failed:', error);
-    }
-
-    // ── 2) Email via Resend ─────────────────────────────────────────────────
+    // ── 1) PWA / mobile push — handled by Vercel /api/notifications/send-push when the
+    //     notification doc is created client-side. Skip here to prevent duplicate alerts.
+    // ────────────────────────────────────────────────────────────────────────────────
     const emailAllowed = await shouldSendEmail(userId, type);
     if (!emailAllowed) {
       console.log(`[onNotificationCreated] Email skipped for user ${userId}, type ${type}`);

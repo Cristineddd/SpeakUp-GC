@@ -10,6 +10,7 @@ import {
   showBrowserNotification,
   truncateNotificationMessage,
 } from '../utils/browserNotifications';
+import { hasSavedPushToken, isPushConfigured } from '../services/fcmService';
 
 function shouldAlert(notif: Notification): boolean {
   return notif.status === 'unread';
@@ -30,6 +31,14 @@ function alertForNotification(
   };
 
   const browserPermission = getBrowserNotificationPermission();
+  const pushActive =
+    isPushConfigured() && browserPermission === 'granted' && hasSavedPushToken();
+
+  // When FCM push is enabled, the service worker handles lock-screen alerts.
+  if (document.hidden && pushActive) {
+    return;
+  }
+
   const useNative = browserPermission === 'granted' && document.hidden;
 
   if (useNative) {

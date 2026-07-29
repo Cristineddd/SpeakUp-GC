@@ -82,7 +82,6 @@ export async function POST(request: NextRequest) {
     const messaging = getAdminMessaging();
     const response = await messaging.sendEachForMulticast({
       tokens,
-      notification: { title, body: message },
       data: {
         title,
         body: message,
@@ -95,10 +94,6 @@ export async function POST(request: NextRequest) {
       webpush: {
         fcmOptions: {
           link,
-        },
-        notification: {
-          icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png',
         },
       },
     });

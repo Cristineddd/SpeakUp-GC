@@ -11,7 +11,6 @@ import {
   getBrowserNotificationPermission,
   isBrowserNotificationSupported,
   wasNotificationPromptDismissed,
-  showBrowserNotification,
 } from '../../utils/browserNotifications';
 import {
   enablePushNotifications,
@@ -50,20 +49,13 @@ export function NotificationAlertProvider({
   useEffect(() => {
     if (!currentUser?.uid) return;
     let unsubscribe = () => {};
-    void listenForForegroundPush(({ title, body, actionUrl }) => {
+    void listenForForegroundPush(({ title, body }) => {
+      // Background/lock-screen pushes are handled by firebase-messaging-sw.js only.
+      if (document.hidden) return;
       toast({
         title,
         description: body,
       });
-      if (document.hidden) {
-        showBrowserNotification(title, {
-          body,
-          tag: 'fcm-foreground',
-          onClick: () => {
-            if (actionUrl) window.location.href = actionUrl;
-          },
-        });
-      }
     }).then((unsub) => {
       unsubscribe = unsub;
     });
