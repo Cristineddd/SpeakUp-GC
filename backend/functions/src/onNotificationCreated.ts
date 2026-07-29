@@ -146,6 +146,10 @@ async function sendPushToUser(
   if (tokens.length === 0) return 0;
 
   const actionUrl = data.actionUrl || '/notifications';
+  const absoluteActionUrl = actionUrl.startsWith('http')
+    ? actionUrl
+    : `${process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://speak-up-gc-2026.vercel.app'}${actionUrl.startsWith('/') ? actionUrl : `/${actionUrl}`}`;
+
   const response = await admin.messaging().sendEachForMulticast({
     tokens,
     notification: {
@@ -157,13 +161,13 @@ async function sendPushToUser(
       body: data.message,
       message: data.message,
       type: data.type,
-      actionUrl,
+      actionUrl: absoluteActionUrl,
       notificationId,
       complaintId: data.complaintId || '',
     },
     webpush: {
       fcmOptions: {
-        link: actionUrl.startsWith('http') ? actionUrl : undefined,
+        link: absoluteActionUrl,
       },
       notification: {
         icon: '/icon-192x192.png',

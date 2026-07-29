@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Mail, Key, User, Bell, Shield, CheckCircle2, Loader2, Pencil, LogOut, Smartphone } from "lucide-react";
+import { Mail, Key, User, Bell, Shield, CheckCircle2, Loader2, Pencil, LogOut } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Input } from "../components/ui/input";
@@ -23,13 +23,7 @@ import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { cn } from "../lib/utils";
 import { NotificationService } from "../services/notificationService";
-import {
-  disablePushNotifications,
-  enablePushNotifications,
-  isPushConfigured,
-  isPushSupported,
-} from "../services/fcmService";
-import { getBrowserNotificationPermission } from "../utils/browserNotifications";
+import { PushNotificationSettings } from "../components/notifications/PushNotificationSettings";
 
 type NotifPref = "email" | "in-app" | "both";
 
@@ -64,8 +58,6 @@ const Account = () => {
   const [editingNotif, setEditingNotif] = useState(false);
   const [notifInput, setNotifInput] = useState<NotifPref>("both");
   const [savingNotif, setSavingNotif] = useState(false);
-  const [pushBusy, setPushBusy] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(false);
 
   // ── Load Firestore profile ───────────────────────────────────────────────
   useEffect(() => {
@@ -88,36 +80,6 @@ const Account = () => {
       }
     })();
   }, [currentUser?.uid]);
-
-  useEffect(() => {
-    setPushEnabled(getBrowserNotificationPermission() === "granted");
-  }, []);
-
-  const handleTogglePush = async () => {
-    if (!currentUser?.uid) return;
-    setPushBusy(true);
-    try {
-      if (pushEnabled) {
-        await disablePushNotifications(currentUser.uid);
-        setPushEnabled(false);
-        toast({ title: "Push disabled", description: "This device will no longer receive lock-screen alerts." });
-      } else {
-        const result = await enablePushNotifications(currentUser.uid);
-        if (result.ok) {
-          setPushEnabled(true);
-          toast({ title: "Push enabled", description: "You will get case updates even when the app is closed." });
-        } else {
-          toast({
-            title: "Could not enable push",
-            description: result.reason || "Check browser permission or install SpeakUp as a PWA.",
-            variant: "destructive",
-          });
-        }
-      }
-    } finally {
-      setPushBusy(false);
-    }
-  };
 
   // ── Save alias ───────────────────────────────────────────────────────────
   const handleSaveAlias = async () => {
@@ -398,67 +360,7 @@ const Account = () => {
               </CardContent>
             </Card>
 
-            {/* ── Mobile Push (PWA) ── */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3 border-b bg-gradient-to-r from-emerald-50 to-teal-50">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base font-semibold flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-[#1D9E75]" />
-                      Mobile Push (PWA)
-                    </CardTitle>
-                    <CardDescription className="text-xs mt-1">
-                      Lock-screen alerts when SpeakUp GC is closed or in the background.
-                    </CardDescription>
-                  </div>
-                  <Badge
-                    className={cn(
-                      "text-xs font-semibold",
-                      pushEnabled
-                        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                        : "bg-gray-100 text-gray-600 border-gray-200"
-                    )}
-                  >
-                    {pushEnabled ? "On" : "Off"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-3">
-                <p className="text-xs text-gray-600 leading-relaxed">
-                  On iPhone: Safari → Share → <strong>Add to Home Screen</strong>, then open the app and enable push
-                  (iOS 16.4+). On Android: Chrome → Install app / Add to Home screen.
-                </p>
-                {!isPushConfigured() && (
-                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                    Admin setup needed: add <code className="font-mono">NEXT_PUBLIC_FIREBASE_VAPID_KEY</code> from
-                    Firebase → Project settings → Cloud Messaging → Web Push certificates.
-                  </p>
-                )}
-                <Button
-                  size="sm"
-                  onClick={handleTogglePush}
-                  disabled={pushBusy || !isPushSupported()}
-                  className={cn(
-                    "rounded-lg",
-                    pushEnabled
-                      ? "bg-white text-gray-800 border border-gray-200 hover:bg-gray-50"
-                      : "bg-[#1D9E75] hover:bg-[#178F65] text-white"
-                  )}
-                  variant={pushEnabled ? "outline" : "default"}
-                >
-                  {pushBusy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
-                  ) : (
-                    <Smartphone className="h-3.5 w-3.5 mr-2" />
-                  )}
-                  {!isPushSupported()
-                    ? "Not supported on this browser"
-                    : pushEnabled
-                      ? "Disable push on this device"
-                      : "Enable push on this device"}
-                </Button>
-              </CardContent>
-            </Card>
+            <PushNotificationSettings />
 
             {/* ── Privacy Status Card ── */}
             <Card className="border-0 shadow-sm">

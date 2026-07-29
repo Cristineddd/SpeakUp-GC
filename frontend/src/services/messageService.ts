@@ -34,6 +34,10 @@ import type {
 } from '../types/message';
 import { createSystemMessage, DEFAULT_CHAT_SETTINGS, TYPING_TIMEOUT_MS } from '../types/message';
 import { NotificationService } from './notificationService';
+import {
+  getComplainantFacingHandlerName,
+  isStaffMessageRole,
+} from '../utils/codiPublicName';
 
 export class MessageService {
   private static readonly MESSAGES_COLLECTION = 'messages';
@@ -635,20 +639,37 @@ export class MessageService {
             : chatRoom.complainantId;
           
           if (recipientId) {
-            // Check if complaint is anonymous
-            let isAnonymous = false;
+            let isAnonymousComplaint = false;
+            let complaintCategory: string | undefined;
             try {
               const complaintRef = doc(db, 'complaints', complaintId);
               const complaintSnap = await getDoc(complaintRef);
               if (complaintSnap.exists()) {
-                isAnonymous = complaintSnap.data()?.isAnonymous === true;
+                const complaintData = complaintSnap.data();
+                isAnonymousComplaint = complaintData?.isAnonymous === true;
+                complaintCategory = complaintData?.category || complaintData?.type;
               }
             } catch (err) {
               console.warn('Could not check anonymous status:', err);
             }
 
-            // Use "Anonymous" if complaint is anonymous, otherwise use sender name
-            const displayName = isAnonymous ? 'Anonymous' : senderName;
+            const isComplainantSender =
+              senderId === chatRoom.complainantId || senderRole === 'complainant';
+
+            // Mask only the complainant on anonymous cases — staff names stay visible to complainant
+            let displayName: string;
+            if (isComplainantSender && isAnonymousComplaint) {
+              displayName = 'Anonymous';
+            } else if (isStaffMessageRole(senderRole)) {
+              displayName = getComplainantFacingHandlerName({
+                chatHandlerName: chatRoom.handlerName || senderName,
+                assignedToName: chatRoom.handlerName,
+                category: complaintCategory,
+              });
+            } else {
+              displayName = senderName;
+            }
+
             const preview = content.length > 50 ? `${content.substring(0, 50)}...` : content;
             
             await NotificationService.createNotification(

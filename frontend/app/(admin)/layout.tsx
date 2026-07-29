@@ -7,7 +7,7 @@ import { NotificationAlertProvider } from '../../src/components/notifications/No
 export default function AdminGroupLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProtectedRoute requireAdmin>
-      <NotificationAlertProvider showPermissionPrompt={false}>
+      <NotificationAlertProvider showPermissionPrompt={true}>
         <AdminLayout>
           {children}
         </AdminLayout>

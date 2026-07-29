@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminApp, getAdminMessaging } from '../../../../src/firebaseAdmin';
 import { getFirestore } from 'firebase-admin/firestore';
+import { toAbsoluteAppUrl } from '../../../../src/utils/appUrl';
 
 const PUSH_SUPPRESSED_TYPES = new Set(['message_read']);
 
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, sent: 0, reason: 'no_tokens' });
     }
 
-    const link = actionUrl || '/notifications';
+    const link = toAbsoluteAppUrl(actionUrl || '/notifications');
     const messaging = getAdminMessaging();
     const response = await messaging.sendEachForMulticast({
       tokens,
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       },
       webpush: {
         fcmOptions: {
-          link: link.startsWith('http') ? link : undefined,
+          link,
         },
         notification: {
           icon: '/icon-192x192.png',

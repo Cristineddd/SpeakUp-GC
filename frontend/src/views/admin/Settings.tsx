@@ -15,6 +15,7 @@ import { useSystemSettings } from '../../hooks/useSystemSettings';
 import { setChatbotEnabled as setChatbotEnabledSetting, setMaintenanceMode as setMaintenanceModeSetting } from '../../services/systemSettingsService';
 import { changePassword, sendPasswordResetToCurrentUser } from '../../services/authPasswordService';
 import { validatePassword } from '../../utils/passwordValidation';
+import { PushNotificationSettings } from '../../components/notifications/PushNotificationSettings';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -225,6 +226,8 @@ const Settings = () => {
           </div>
         </CardContent>
       </Card>
+
+      <PushNotificationSettings />
 
       {/* Security Settings */}
       <Card>

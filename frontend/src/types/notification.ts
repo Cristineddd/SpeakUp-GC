@@ -77,6 +77,9 @@ export interface NotificationPreferences {
   
   // In-app notifications
   inAppEnabled: boolean;
+
+  /** Web push / lock-screen alerts (PWA + FCM) */
+  pushEnabled?: boolean;
   
   // Email notifications
   emailEnabled: boolean;
@@ -235,6 +238,7 @@ export const DEFAULT_TYPE_PREFERENCES: Record<NotificationType, boolean> = {
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: Omit<NotificationPreferences, 'userId' | 'emailAddress' | 'updatedAt'> = {
   inAppEnabled: true,
+  pushEnabled: true,
   emailEnabled: true,
   preferences: { ...DEFAULT_TYPE_PREFERENCES },
   emailDigest: 'immediate',

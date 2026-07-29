@@ -3,8 +3,9 @@
  * Saves device tokens under fcmTokens/{tokenHash} and refreshes on login.
  */
 import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
-import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { app, db } from '../firebase';
+import { NotificationService } from './notificationService';
 import {
   isBrowserNotificationSupported,
   requestBrowserNotificationPermission,
@@ -12,6 +13,8 @@ import {
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '';
 const SW_PATH = '/firebase-messaging-sw.js';
+/** FCM default scope — must NOT be '/' or it conflicts with the PWA service worker. */
+const FCM_SW_SCOPE = '/firebase-cloud-messaging-push-scope';
 const TOKEN_STORAGE_KEY = 'speakup_fcm_token';
 
 let messagingPromise: Promise<Messaging | null> | null = null;
@@ -49,13 +52,18 @@ export async function registerMessagingServiceWorker(): Promise<ServiceWorkerReg
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
 
   try {
-    const existing = await navigator.serviceWorker.getRegistration(SW_PATH);
+    const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
     if (existing) return existing;
-    return await navigator.serviceWorker.register(SW_PATH, { scope: '/' });
+    return await navigator.serviceWorker.register(SW_PATH, { scope: FCM_SW_SCOPE });
   } catch (err) {
     console.warn('[FCM] SW registration failed', err);
     return null;
   }
+}
+
+export function hasSavedPushToken(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(localStorage.getItem(TOKEN_STORAGE_KEY));
 }
 
 export function isPushConfigured(): boolean {
@@ -130,6 +138,14 @@ export async function enablePushNotifications(userId: string): Promise<{
       { merge: true }
     );
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      const email = userDoc.exists() ? (userDoc.data()?.email as string) : '';
+      await NotificationService.updatePreferences(userId, email || '', { pushEnabled: true });
+    } catch (prefErr) {
+      console.warn('[FCM] Could not sync pushEnabled preference', prefErr);
+    }
   } catch (err: any) {
     console.error('[FCM] Failed to save token', err);
     return { ok: false, reason: err?.message || 'Could not save token' };
