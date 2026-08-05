@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   collection,
   query,
@@ -56,6 +56,7 @@ import { MessageService } from '../../services/messageService';
 import type { RepresentativeRole } from '../../types/representative';
 import { ROLE_LABELS, ROLE_COLORS } from '../../types/representative';
 import { DeleteUserModal } from '../../components/admin/DeleteUserModal';
+import { buildDisambiguatedAliasMap, getDisambiguatedAlias } from '../../utils/aliasDisplay';
 
 interface User {
   uid: string;
@@ -183,6 +184,15 @@ const UsersManagement = () => {
   }, [users, searchTerm, statusFilter, showRepresentatives]);
 
   const regularUsers = users.filter(user => !user.isAdmin && !user.representativeRole);
+
+  // Same alias → Alias(1), Alias(2) for staff lists (does not change stored aliases)
+  const aliasDisplayMap = useMemo(
+    () =>
+      buildDisambiguatedAliasMap(
+        users.map((u) => ({ id: u.uid, alias: u.alias, createdAt: u.createdAt }))
+      ),
+    [users]
+  );
 
   // Calculate stats (regular complainant accounts only)
   const stats = {
@@ -719,19 +729,22 @@ const UsersManagement = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              filteredUsers.map((user) => {
+              const displayAlias = getDisambiguatedAlias(aliasDisplayMap, user.uid, user.alias);
+              const hasAlias = Boolean(user.alias && user.alias !== 'N/A');
+              return (
               <TableRow key={user.uid}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 text-xs font-semibold">
-                      {(user.alias || user.displayName || user.email).charAt(0).toUpperCase()}
+                      {(hasAlias ? displayAlias : user.displayName || user.email).charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-medium text-gray-900">
-                        {user.alias === 'N/A' || !user.alias ? (
+                        {!hasAlias ? (
                           <span className="text-gray-400 italic">Anonymous User</span>
                         ) : (
-                          user.alias || user.displayName || <span className="text-gray-400 italic">Anonymous User</span>
+                          displayAlias
                         )}
                       </div>
                       {user.position && (
@@ -798,7 +811,8 @@ const UsersManagement = () => {
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-              ))
+              );
+              })
             )}
           </TableBody>
         </Table>
@@ -810,7 +824,10 @@ const UsersManagement = () => {
           <DialogHeader>
             <DialogTitle>User Details</DialogTitle>
             <DialogDescription>
-              View information and report history for {selectedUser?.alias || selectedUser?.displayName}
+              View information and report history for{' '}
+              {selectedUser
+                ? getDisambiguatedAlias(aliasDisplayMap, selectedUser.uid, selectedUser.alias || selectedUser.displayName)
+                : ''}
             </DialogDescription>
           </DialogHeader>
 
@@ -820,7 +837,11 @@ const UsersManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-gray-500">Alias</Label>
-                  <p className="font-medium">{selectedUser.alias || selectedUser.displayName || 'N/A'}</p>
+                  <p className="font-medium">
+                    {selectedUser.alias && selectedUser.alias !== 'N/A'
+                      ? getDisambiguatedAlias(aliasDisplayMap, selectedUser.uid, selectedUser.alias)
+                      : selectedUser.displayName || 'N/A'}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Email</Label>

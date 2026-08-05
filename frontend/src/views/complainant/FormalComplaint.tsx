@@ -27,7 +27,7 @@ import { useToast } from "../../hooks/use-toast";
 import { useNavigate } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import { ComplaintFormData, ComplaintType, PersonType, HarassmentDegree } from "../../types/complaints";
-import { FORMAL_COMPLAINT_CATEGORIES } from "../../constants/formalComplaintCategories";
+import { FORMAL_COMPLAINT_CATEGORIES, buildComplaintTitle } from "../../constants/formalComplaintCategories";
 import { collection, addDoc, Timestamp, doc, updateDoc, query, where, getDocs, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { NotificationService } from '../../services/notificationService';
@@ -36,7 +36,6 @@ import LocationMapPicker from "../../components/forms/LocationMapPicker";
 import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/FormAssistant";
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
 import { EvidenceSubmissionModal, EvidenceData } from "../../components/modals/EvidenceSubmissionModal";
-import { generateAIResponse } from "../../services/gemini.service";
 import { sanitizePhMobileInput, validatePhMobile, isValidPhMobile } from "../../utils/phoneValidation";
 
 // ✅ SAFE CLOUDINARY CONFIG 
@@ -494,8 +493,8 @@ const FormalComplaint = () => {
   const [unknownRespondent, setUnknownRespondent] = useState(false);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [evidenceLinks, setEvidenceLinks] = useState<string[]>([]);
-  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
-  const [titleGenerated, setTitleGenerated] = useState(false);
+  /** When false, title stays synced to selected complaint type / date. */
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
 
@@ -766,10 +765,10 @@ const FormalComplaint = () => {
       return;
     }
 
-    // Validate description to prevent special characters (allow letters, numbers, basic punctuation)
+    // Description is free-text narrative — allow quotes and common symbols (e.g. "Called me…").
+    // Only strip control characters; do not block punctuation complainants need when quoting what was said.
     if (field === "description") {
-      // Allow letters, numbers, spaces, and basic punctuation (.,!?;:()-)
-      const cleanDescription = value.replace(/[^a-zA-Z0-9\s.,!?;:()\-\u00C0-\u00FF]/g, '');
+      const cleanDescription = value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
       setFormData(prev => ({ ...prev, [field]: cleanDescription }));
       return;
     }
@@ -871,27 +870,16 @@ const FormalComplaint = () => {
     }));
   };
 
-  // Generate title based on complaint type
-  const generateTitle = () => {
-    const complaintTypeLabel = FORMAL_COMPLAINT_CATEGORIES.find(t => t.value === formData.type)?.label || "Complaint";
-    const date = formData.incidentDate ? new Date(formData.incidentDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "";
-    
-    let generatedTitle = "";
-    
-    if (formData.type === "other" && otherTypeDetail.trim()) {
-      generatedTitle = `${otherTypeDetail} - ${date || "Incident Report"}`;
-    } else {
-      generatedTitle = `${complaintTypeLabel} - ${date || "Incident Report"}`;
-    }
-    
-    handleInputChange("title", generatedTitle);
-    setTitleGenerated(true);
-    
-    toast({
-      title: "Title generated",
-      description: "You can edit it if needed.",
-    });
-  };
+  // Keep complaint title in sync with type (and date / "other" detail) unless the user edited it
+  useEffect(() => {
+    if (titleManuallyEdited) return;
+    const nextTitle = buildComplaintTitle(
+      formData.type,
+      formData.incidentDate || null,
+      formData.type === "other" ? otherTypeDetail : undefined
+    );
+    setFormData((prev) => (prev.title === nextTitle ? prev : { ...prev, title: nextTitle }));
+  }, [formData.type, formData.incidentDate, otherTypeDetail, titleManuallyEdited]);
 
   // Evidence Modal Handler
   const handleEvidenceSubmit = (evidence: EvidenceData) => {
@@ -1580,6 +1568,9 @@ const FormalComplaint = () => {
                 <p className="text-xs text-blue-700 mt-0.5">
                   Your identity will not be disclosed to the respondent. Investigators will reference your case ID only.
                 </p>
+                <p className="text-xs text-blue-700 mt-1.5">
+                  Note: If your case proceeds to formal investigation or hearing, your personal information may still be required by CODI/DEIU so they can contact you and process the case properly.
+                </p>
               </div>
             </div>
 
@@ -1866,96 +1857,17 @@ const FormalComplaint = () => {
       case 3:
         return (
           <div className="space-y-4">
-            {/* Description — moved first so Generate button can activate */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-gray-700">Description *</label>
-              </div>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => {
-                  handleInputChange("description", e.target.value);
-                  if (titleGenerated) setTitleGenerated(false);
-                }}
-                placeholder="Describe what happened..."
-                rows={5}
-                className={`w-full text-sm px-3 py-2.5 border rounded-lg bg-white text-gray-900 resize-y min-h-[120px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
-                  formData.description.trim().length > 0 && formData.description.trim().length < 20
-                    ? "border-red-400"
-                    : formData.description.trim().length >= 20
-                    ? "border-[#1D9E75]"
-                    : "border-gray-300"
-                }`}
-              />
-              <div className="flex items-center justify-between mt-1.5">
-                <div>
-                  {formData.description.trim().length > 0 && formData.description.trim().length < 20 && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      {20 - formData.description.trim().length} more characters needed
-                    </p>
-                  )}
-                </div>
-                <span className={`text-xs font-medium ${
-                  formData.description.trim().length === 0 ? "text-gray-400" :
-                  formData.description.trim().length < 20 ? "text-red-500" :
-                  "text-[#1D9E75]"
-                }`}>
-                  {formData.description.trim().length >= 20 
-                    ? `${formData.description.trim().length} chars ✓` 
-                    : `${formData.description.trim().length} / 20 minimum`}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Include who was involved, what happened, and any relevant context.</p>
-            </div>
-
-            {/* Title with Generate button */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">
-                Complaint title *
-                <span className="ml-2 font-normal text-gray-400">Auto-generated from Type of complaint</span>
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  value={formData.title}
-                  onChange={(e) => { handleInputChange("title", e.target.value); setTitleGenerated(false); }}
-                  placeholder="Write or auto-generate a title based on complaint type"
-                  className={`flex-1 text-sm px-3 py-2 border rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${titleGenerated ? "border-[#1D9E75] bg-green-50" : "border-gray-300"}`}
-                />
-                <button
-                  type="button"
-                  onClick={generateTitle}
-                  disabled={!formData.type || isGeneratingTitle}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-[#1D9E75] hover:bg-[#178F65] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors duration-150 flex-shrink-0"
-                >
-                  {isGeneratingTitle ? (
-                    <>
-                      <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate"
-                  )}
-                </button>
-              </div>
-              {titleGenerated && (
-                <p className="text-xs text-[#1D9E75] mt-1">✓ Title generated — you may edit it freely.</p>
-              )}
-            </div>
-
-            {/* Type */}
+            {/* Type — first for hierarchy; title auto-fills from selection */}
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1.5">Type of complaint *</label>
               <select
                 value={formData.type}
                 onChange={e => {
-                  handleInputChange("type", e.target.value);
-                  if (e.target.value !== "other") setOtherTypeDetail("");
-                  // Reset harassment degree if not sexual harassment
-                  if (e.target.value !== "sexual_harassment") {
+                  const nextType = e.target.value;
+                  setTitleManuallyEdited(false);
+                  handleInputChange("type", nextType);
+                  if (nextType !== "other") setOtherTypeDetail("");
+                  if (nextType !== "sexual_harassment") {
                     handleInputChange("harassmentDegree", "");
                   }
                 }}
@@ -1966,7 +1878,6 @@ const FormalComplaint = () => {
                 ))}
               </select>
 
-              {/* Harassment Degree - Only show for sexual harassment */}
               {formData.type === "sexual_harassment" && (
                 <div className="mt-3">
                   <label className="text-sm font-medium text-gray-700 block mb-1.5">
@@ -2000,7 +1911,10 @@ const FormalComplaint = () => {
                 <input
                   type="text"
                   value={otherTypeDetail}
-                  onChange={e => setOtherTypeDetail(e.target.value)}
+                  onChange={e => {
+                    setTitleManuallyEdited(false);
+                    setOtherTypeDetail(e.target.value);
+                  }}
                   placeholder="Please specify the type of complaint"
                   className="mt-2 w-full text-sm px-3 py-2 border border-[#1D9E75]/60 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
                 />
@@ -2011,6 +1925,66 @@ const FormalComplaint = () => {
                 </svg>
                 <p>This complaint form covers offenses under the <a href="https://www.officialgazette.gov.ph/downloads/2019/04apr/20190417-RA-11313-RRD.pdf" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-blue-900">Safe Spaces Act (RA 11313)</a> and the <a href="https://www.officialgazette.gov.ph/1995/02/14/republic-act-no-7877/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-blue-900">Anti-Sexual Harassment Act (RA 7877)</a>.</p>
               </div>
+            </div>
+
+            {/* Title — auto from type; editable without a generate button */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1.5">
+                Complaint title *
+                <span className="ml-2 font-normal text-gray-400">Filled from type of complaint — editable</span>
+              </label>
+              <Input
+                value={formData.title}
+                onChange={(e) => {
+                  setTitleManuallyEdited(true);
+                  handleInputChange("title", e.target.value);
+                }}
+                placeholder="Title based on selected complaint type"
+                className="w-full text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Updates automatically when you change the complaint type. You can edit the title anytime.
+              </p>
+            </div>
+
+            {/* Description */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">Description *</label>
+              </div>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                placeholder="Describe what happened..."
+                rows={5}
+                className={`w-full text-sm px-3 py-2.5 border rounded-lg bg-white text-gray-900 resize-y min-h-[120px] leading-relaxed focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent ${
+                  formData.description.trim().length > 0 && formData.description.trim().length < 20
+                    ? "border-red-400"
+                    : formData.description.trim().length >= 20
+                    ? "border-[#1D9E75]"
+                    : "border-gray-300"
+                }`}
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                <div>
+                  {formData.description.trim().length > 0 && formData.description.trim().length < 20 && (
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {20 - formData.description.trim().length} more characters needed
+                    </p>
+                  )}
+                </div>
+                <span className={`text-xs font-medium ${
+                  formData.description.trim().length === 0 ? "text-gray-400" :
+                  formData.description.trim().length < 20 ? "text-red-500" :
+                  "text-[#1D9E75]"
+                }`}>
+                  {formData.description.trim().length >= 20 
+                    ? `${formData.description.trim().length} chars ✓` 
+                    : `${formData.description.trim().length} / 20 minimum`}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Include who was involved, what happened, and any relevant context.</p>
             </div>
 
             {/* Date + Time row */}

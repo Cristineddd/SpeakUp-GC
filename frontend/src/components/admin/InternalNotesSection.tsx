@@ -1,6 +1,6 @@
 /**
  * Internal Notes Section
- * Private notes/comments for Admin and Case Handlers only
+ * Private notes/comments for Admin and CODI members only
  * NOT visible to complainants
  */
 
@@ -13,6 +13,8 @@ import { useToast } from '../../hooks/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { CaseNoteService } from '../../services/caseNoteService';
+import { CaseActivityService } from '../../services/caseActivityService';
+import { toActivityActorRole } from '../../types/caseActivity';
 import type { CaseNote } from '../../types/caseNote';
 import { Lock, Send, MessageSquare, User, UserPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -148,7 +150,7 @@ export function InternalNotesSection({
     if (!role) {
       toast({
         title: 'Permission Denied',
-        description: 'Only Admin and Case Handlers can post internal notes. You need to be registered in the representatives collection. Current user: ' + (currentUser.email || 'Unknown'),
+        description: 'Only Admin and CODI members can post internal notes. You need to be registered in the representatives collection. Current user: ' + (currentUser.email || 'Unknown'),
         variant: 'destructive',
         duration: 10000
       });
@@ -159,48 +161,51 @@ export function InternalNotesSection({
     try {
       setSubmitting(true);
 
+      const noteMessage = newNote.trim();
       const noteData = {
         caseId,
         userId: currentUser.uid,
         userName: representativeData?.displayName || currentUser.displayName || currentUser.email || 'Unknown',
         userRole: role as 'admin' | 'handler',
         userEmail: currentUser.email || '',
-        message: newNote.trim()
+        message: noteMessage
       };
 
-      // Determine recipient for notification
-      let recipientId = '';
-      let recipientRole: 'admin' | 'handler' | null = null;
+      const noteId = await CaseNoteService.createNote(noteData);
+
+      // Mirror the note into the Activity timeline (internal-only)
+      try {
+        await CaseActivityService.logInternalNote(
+          caseId,
+          noteMessage,
+          currentUser.uid,
+          noteData.userName,
+          toActivityActorRole(role),
+          noteId
+        );
+      } catch (activityError) {
+        console.warn('⚠️ Note saved but activity log failed:', activityError);
+      }
 
       if (role === 'admin' && assignedToId && assignedToRole) {
-        // Admin posting -> notify handler
-        console.log('Admin posting note - notifying handler:', assignedToId);
-        
-        // Create the note and capture the ID
-        const noteId = await CaseNoteService.createNote(noteData);
-        
-        // Send notification to handler with noteId
+        // Admin posting -> notify assigned CODI member
         try {
-          // Get handler's userId from representatives collection
           const RepServiceModule = await import('../../services/representativeService');
           const RepService = RepServiceModule.default;
           const handler = await RepService.getById(assignedToId);
           
           if (!handler || !handler.userId) {
-            console.error('❌ Handler not found or missing userId:', assignedToId);
-            throw new Error('Handler userId not found');
+            console.error('❌ CODI member not found or missing userId:', assignedToId);
+            throw new Error('CODI member userId not found');
           }
-          
-          console.log('✅ Found handler userId:', handler.userId);
           
           const { NotificationService } = await import('../../services/notificationService');
           
-          // IMPORTANT: Use 'new_comment' type for internal notes
           await NotificationService.createNotification(
             handler.userId,
             'new_comment',
             'New Internal Note from Admin',
-            `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
+            `${noteData.userName} posted a note on case "${caseTitle}": ${noteMessage.substring(0, 100)}${noteMessage.length > 100 ? '...' : ''}`,
             {
               priority: 'normal',
               actionUrl: `/admin/reports?reportId=${caseId}&noteId=${noteId}`,
@@ -209,26 +214,17 @@ export function InternalNotesSection({
                 caseTitle,
                 noteId,
                 noteAuthor: noteData.userName,
-                notePreview: newNote.trim().substring(0, 200),
-                isInternalNote: true  // Flag to identify internal notes
+                notePreview: noteMessage.substring(0, 200),
+                isInternalNote: true
               }
             }
           );
-          
-          console.log('✅ Notification sent to handler:', handler.displayName);
         } catch (notifError) {
-          console.error('❌ Failed to notify handler:', notifError);
+          console.error('❌ Failed to notify CODI member:', notifError);
         }
-      } else if (role === 'handler') {
-        // Handler posting -> notify ALL admins
-        console.log('Handler posted note - notifying all admins');
-        
-        // First, create the note and capture the ID
-        const noteId = await CaseNoteService.createNote(noteData);
-        
-        // Then notify all admins
+      } else if (role === 'handler' || role === 'codi') {
+        // CODI member posting -> notify ALL admins
         try {
-          // Dynamic import to ensure proper module loading
           const RepServiceModule = await import('../../services/representativeService');
           const RepService = RepServiceModule.default;
           const admins = await RepService.getAllAdmins();
@@ -236,12 +232,11 @@ export function InternalNotesSection({
           
           for (const admin of admins) {
             if (admin.userId) {
-              // IMPORTANT: Use 'new_comment' type for internal notes
               await NotificationService.createNotification(
                 admin.userId,
                 'new_comment',
-                'New Internal Note from Handler',
-                `${noteData.userName} posted a note on case "${caseTitle}": ${newNote.trim().substring(0, 100)}${newNote.trim().length > 100 ? '...' : ''}`,
+                'New Internal Note from CODI Member',
+                `${noteData.userName} posted a note on case "${caseTitle}": ${noteMessage.substring(0, 100)}${noteMessage.length > 100 ? '...' : ''}`,
                 {
                   priority: 'normal',
                   actionUrl: `/admin/reports?reportId=${caseId}&noteId=${noteId}`,
@@ -250,8 +245,8 @@ export function InternalNotesSection({
                     caseTitle,
                     noteId,
                     noteAuthor: noteData.userName,
-                    notePreview: newNote.trim().substring(0, 200),
-                    isInternalNote: true  // Flag to identify internal notes
+                    notePreview: noteMessage.substring(0, 200),
+                    isInternalNote: true
                   }
                 }
               );
@@ -260,14 +255,12 @@ export function InternalNotesSection({
         } catch (notifError) {
           console.error('Failed to notify admins:', notifError);
         }
-      } else {
-        await CaseNoteService.createNote(noteData);
       }
 
       setNewNote('');
       toast({
         title: 'Note Posted',
-        description: 'Your internal note has been added to the case'
+        description: 'Your internal note has been added to the case and Activity feed'
       });
       
       // Refresh reports to update notesCount
@@ -330,7 +323,7 @@ export function InternalNotesSection({
           <div className="flex-1">
             <CardTitle className="text-xl font-bold text-gray-900">Internal Notes</CardTitle>
             <p className="text-sm text-gray-600 mt-1">
-              Private communication between Admin and Case Handler • Not visible to complainant
+              Private communication between Admin and CODI member • Not visible to complainant
             </p>
           </div>
           <Badge variant="outline" className="bg-gray-100 border-gray-300">
@@ -371,7 +364,7 @@ export function InternalNotesSection({
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-semibold text-gray-900">{note.userName}</span>
                       <Badge className={`text-xs ${getRoleBadgeColor(note.userRole)}`}>
-                        {note.userRole === 'admin' ? 'Admin' : 'Handler'}
+                        {note.userRole === 'admin' ? 'Admin' : 'CODI member'}
                       </Badge>
                       <span className="text-xs text-gray-500">
                         {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
@@ -429,13 +422,13 @@ export function InternalNotesSection({
                   Posting as: {representativeData?.displayName || currentUser?.displayName || 'You'}
                 </span>
                 <Badge className={`text-xs ${getRoleBadgeColor(role as 'admin' | 'handler')}`}>
-                  {role === 'admin' ? 'Admin' : 'Handler'}
+                  {role === 'admin' ? 'Admin' : 'CODI member'}
                 </Badge>
               </div>
             )}
 
             <Textarea
-              placeholder="Type your internal note here... (visible only to Admin and Case Handler)"
+              placeholder="Type your internal note here... (visible only to Admin and CODI members)"
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               rows={4}
@@ -446,7 +439,7 @@ export function InternalNotesSection({
             <div className="flex justify-between items-center">
               <p className="text-xs text-gray-500">
                 <Lock className="h-3 w-3 inline mr-1" />
-                This note will only be visible to Admin and Case Handler
+                This note will only be visible to Admin and CODI members
               </p>
               <Button
                 onClick={handleSubmitNote}

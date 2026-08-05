@@ -101,6 +101,13 @@ export function NotificationAlertProvider({
           variant: 'destructive',
         });
       }
+    } catch (err: any) {
+      console.error('[NotificationAlertProvider] enable push failed', err);
+      toast({
+        title: 'Could not enable push',
+        description: err?.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setRequesting(false);
     }

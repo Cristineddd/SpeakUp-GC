@@ -356,49 +356,49 @@ export default function GBVAwarenessHub() {
   ];
 
   return (
-    <div className="min-h-full w-full">
+    // -mt-4 cancels main shell pt-4 on mobile so the sticky tab bar can sit flush under the app top bar
+    <div className="min-h-full w-full -mt-4 md:mt-0">
 
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-[#0f2d1a] via-[#163d25] to-[#1e5c38] px-6 py-8 relative overflow-hidden rounded-2xl mb-6 w-full">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
-          <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 w-56 h-56 text-white" strokeWidth={1} />
-        </div>
-        <div className="max-w-5xl mx-auto w-full">
-          {/* Top row: badge */}
-          <div className="flex items-center mb-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-white/70" />
-              <span className="text-white/70 text-xs font-bold uppercase tracking-widest">Know Your Rights</span>
-            </div>
+      {/* Hero — restore the cancelled top inset */}
+      <div className="pt-4 md:pt-0">
+        <div className="bg-gradient-to-br from-[#0f2d1a] via-[#163d25] to-[#1e5c38] px-6 py-8 relative overflow-hidden rounded-2xl mb-4 w-full">
+          <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
+            <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 w-56 h-56 text-white" strokeWidth={1} />
           </div>
-
-          {/* Main hero row */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">
-                GBV Awareness &amp; Rights Hub
-              </h1>
-              <p className="text-white/75 text-sm leading-relaxed max-w-lg">
-                Philippine legal protections, reporting guidance, and victim support
-                for the Gordon College community.
-              </p>
+          <div className="max-w-5xl mx-auto w-full">
+            <div className="flex items-center mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-white/70" />
+                <span className="text-white/70 text-xs font-bold uppercase tracking-widest">Know Your Rights</span>
+              </div>
             </div>
-            <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
-              <button
-                onClick={() => navigate("/complaints/new")}
-                className="flex items-center gap-2 bg-white text-[#178F65] text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-green-50 transition-colors shadow-sm whitespace-nowrap"
-              >
-                <FileText className="h-4 w-4" />File a Complaint
-              </button>
 
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">
+                  GBV Awareness &amp; Rights Hub
+                </h1>
+                <p className="text-white/75 text-sm leading-relaxed max-w-lg">
+                  Philippine legal protections, reporting guidance, and victim support
+                  for the Gordon College community.
+                </p>
+              </div>
+              <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
+                <button
+                  onClick={() => navigate("/complaints/new")}
+                  className="flex items-center gap-2 bg-white text-[#178F65] text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-green-50 transition-colors shadow-sm whitespace-nowrap"
+                >
+                  <FileText className="h-4 w-4" />File a Complaint
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Tab bar — visible on mobile only; desktop uses sidebar sub-nav */}
-      <div className="md:hidden sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4">
+      {/* Tab bar — flush under ComplainantTopBar; z above step markers so numbers don't paint over it */}
+      <div className="md:hidden sticky top-0 z-30 -mx-6 bg-white border-b border-gray-200">
+        <div className="px-2">
           <div className="flex overflow-x-auto scrollbar-none">
             {tabs.map(tab => {
               const Icon = tab.icon;
@@ -408,7 +408,7 @@ export default function GBVAwarenessHub() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-3.5 text-sm font-semibold transition-all whitespace-nowrap border-b-2 flex-shrink-0",
+                    "flex items-center gap-2 px-4 py-3 text-sm font-semibold transition-all whitespace-nowrap border-b-2 flex-shrink-0",
                     active
                       ? "border-[#1D9E75] text-[#1D9E75]"
                       : "border-transparent text-gray-400 hover:text-gray-700 hover:bg-gray-50"
@@ -424,7 +424,7 @@ export default function GBVAwarenessHub() {
       </div>
 
       {/* Tab content */}
-      <div className="space-y-6">
+      <div className="space-y-6 pt-4">
 
         {/* LEGAL RIGHTS */}
         {activeTab === "laws" && (
@@ -454,17 +454,18 @@ export default function GBVAwarenessHub() {
                 Reporting can feel overwhelming. This guide walks you through each stage so you know what to expect. You are supported at every step.
               </p>
             </div>
-            <div className="relative">
-              {/* Vertical connector */}
-              <div className="absolute left-[23px] top-10 bottom-10 w-0.5 bg-gradient-to-b from-[#1D9E75] to-[#1D9E75]/10 pointer-events-none" />
+            <div className="relative isolate">
+              {/* Vertical connector — aligned to circle centers; stays under sticky tabs */}
+              <div className="absolute left-5 top-8 bottom-8 w-0.5 bg-gradient-to-b from-[#1D9E75] to-[#1D9E75]/10 pointer-events-none -z-10" />
               <div className="space-y-4">
                 {REPORTING_STEPS.map(s => (
                   <div key={s.step} className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#1D9E75] text-white flex items-center justify-center flex-shrink-0 font-extrabold text-base shadow-md ring-4 ring-white z-10">
+                    {/* mt-5 matches card p-5 so the number lines up with the step title */}
+                    <div className="mt-5 w-10 h-10 rounded-full bg-[#1D9E75] text-white flex items-center justify-center flex-shrink-0 font-extrabold text-sm shadow-md ring-4 ring-white">
                       {s.step}
                     </div>
-                    <div className="flex-1 bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-[#1D9E75]/20 transition-colors mb-1">
-                      <h3 className="text-base font-bold text-gray-900 mb-2">{s.title}</h3>
+                    <div className="flex-1 min-w-0 bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-[#1D9E75]/20 transition-colors">
+                      <h3 className="text-base font-bold text-gray-900 mb-2 leading-snug">{s.title}</h3>
                       <p className="text-sm text-gray-600 leading-relaxed mb-4">{s.description}</p>
                       <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">What to do</p>

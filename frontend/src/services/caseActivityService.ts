@@ -207,7 +207,7 @@ export class CaseActivityService {
           complaintId,
           activityType: ActivityType.DOCUMENT_REVIEW,
           description: 'Formal complaint submitted',
-          findings: 'Complaint received and recorded. Awaiting case handler assignment.',
+          findings: 'Complaint received and recorded. Awaiting CODI member assignment.',
           metadata: { event: 'complaint_submitted' },
         },
         SYSTEM_ACTOR.id,
@@ -220,7 +220,7 @@ export class CaseActivityService {
   }
 
   /**
-   * Auto-log handler assignment
+   * Auto-log CODI member assignment
    */
   static async logHandlerAssignment(
     complaintId: string,
@@ -238,14 +238,14 @@ export class CaseActivityService {
       const actorRole = isSystemAction ? SYSTEM_ACTOR.role : 'admin';
 
       const publicDescription = maskHandlerIdentity
-        ? 'Case handler assigned'
+        ? 'CODI member assigned'
         : isSystemAction
           ? `Case automatically assigned to CODI member ${handlerName} for review.`
-          : 'Case handler assigned';
+          : 'CODI member assigned';
 
       const publicFindings = maskHandlerIdentity
-        ? 'A case handler has been assigned to your report. You will be contacted when the investigation begins.'
-        : `${handlerName} has been assigned to handle this case. The investigation will begin once the handler reviews the complaint.`;
+        ? 'A CODI member has been assigned to your report. You will be contacted when the investigation begins.'
+        : `${handlerName} has been assigned to this case. The investigation will begin once the CODI member reviews the complaint.`;
 
       await this.createActivity(
         {
@@ -266,7 +266,46 @@ export class CaseActivityService {
         maskHandlerIdentity ? undefined : handlerName
       );
     } catch (error) {
-      console.error('❌ Error logging handler assignment:', error);
+      console.error('❌ Error logging CODI member assignment:', error);
+    }
+  }
+
+  /**
+   * Log an internal note in the case activity feed (admin/CODI only — not shown to complainants).
+   */
+  static async logInternalNote(
+    complaintId: string,
+    noteMessage: string,
+    userId: string,
+    userName: string,
+    userRole: ActivityActorRole,
+    noteId?: string
+  ): Promise<void> {
+    try {
+      const preview =
+        noteMessage.length > 280 ? `${noteMessage.slice(0, 280).trim()}…` : noteMessage.trim();
+
+      await this.createActivity(
+        {
+          complaintId,
+          activityType: ActivityType.INTERNAL_NOTE,
+          description: 'Internal note added',
+          findings: preview,
+          metadata: {
+            event: 'internal_note',
+            noteId: noteId || null,
+            isInternalNote: true,
+          },
+        },
+        userId,
+        userName,
+        userRole,
+        undefined,
+        undefined,
+        true // isInternal
+      );
+    } catch (error) {
+      console.error('❌ Error logging internal note activity:', error);
     }
   }
 }

@@ -48,13 +48,69 @@ async function getMessagingInstance(): Promise<Messaging | null> {
   return messagingPromise;
 }
 
+/** Wait for a specific registration's worker to activate (never use navigator.serviceWorker.ready — that waits for a page-controlling SW and can hang forever with the FCM-only scope). */
+async function waitForRegistrationActive(
+  registration: ServiceWorkerRegistration,
+  timeoutMs = 15000
+): Promise<void> {
+  if (registration.active) return;
+
+  const worker = registration.installing || registration.waiting;
+  if (!worker) {
+    // Already active, or update in flight — brief settle
+    if (registration.active) return;
+    await new Promise((r) => setTimeout(r, 100));
+    if (registration.active) return;
+    throw new Error('Service worker failed to activate');
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error('Service worker activation timed out'));
+    }, timeoutMs);
+
+    const onStateChange = () => {
+      if (worker.state === 'activated' || registration.active) {
+        window.clearTimeout(timer);
+        worker.removeEventListener('statechange', onStateChange);
+        resolve();
+      } else if (worker.state === 'redundant') {
+        window.clearTimeout(timer);
+        worker.removeEventListener('statechange', onStateChange);
+        reject(new Error('Service worker became redundant'));
+      }
+    };
+
+    worker.addEventListener('statechange', onStateChange);
+    onStateChange();
+  });
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`${label} timed out`)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+
 export async function registerMessagingServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
 
   try {
     const existing = await navigator.serviceWorker.getRegistration(FCM_SW_SCOPE);
-    if (existing) return existing;
-    return await navigator.serviceWorker.register(SW_PATH, { scope: FCM_SW_SCOPE });
+    const registration =
+      existing ?? (await navigator.serviceWorker.register(SW_PATH, { scope: FCM_SW_SCOPE }));
+    await waitForRegistrationActive(registration);
+    return registration;
   } catch (err) {
     console.warn('[FCM] SW registration failed', err);
     return null;
@@ -106,17 +162,25 @@ export async function enablePushNotifications(userId: string): Promise<{
   if (!messaging) return { ok: false, reason: 'Messaging unavailable' };
 
   const registration = await registerMessagingServiceWorker();
-  if (!registration) return { ok: false, reason: 'Service worker failed' };
-
-  // Wait until SW is active
-  await navigator.serviceWorker.ready;
+  if (!registration) {
+    return {
+      ok: false,
+      reason: 'Service worker failed — try installing SpeakUp GC to your home screen, then enable again.',
+    };
+  }
 
   let token: string;
   try {
-    token = await getToken(messaging, {
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: registration,
-    });
+    // Do NOT await navigator.serviceWorker.ready — FCM SW scope does not control the page,
+    // so ready can hang forever (especially in dev where the PWA SW is disabled).
+    token = await withTimeout(
+      getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration,
+      }),
+      20000,
+      'Getting push token'
+    );
   } catch (err: any) {
     console.error('[FCM] getToken failed', err);
     return { ok: false, reason: err?.message || 'Could not get push token' };
@@ -164,6 +228,7 @@ export async function disablePushNotifications(userId?: string): Promise<void> {
     }
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
+  // Device-level only — do not flip user-wide pushEnabled (other devices may still be subscribed).
   void userId;
 }
 
@@ -187,5 +252,9 @@ export async function listenForForegroundPush(
 export async function syncPushTokenIfGranted(userId: string): Promise<void> {
   if (!userId || !isPushSupported() || !VAPID_KEY) return;
   if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-  await enablePushNotifications(userId);
+  try {
+    await enablePushNotifications(userId);
+  } catch (err) {
+    console.warn('[FCM] syncPushTokenIfGranted failed', err);
+  }
 }

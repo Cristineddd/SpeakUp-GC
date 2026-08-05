@@ -12,6 +12,7 @@ import {
   Clock,
   FileText,
   Loader2,
+  MessageSquare,
   UserPlus,
   UserMinus,
   RefreshCw,
@@ -29,7 +30,7 @@ interface CaseActivityTimelineProps {
 interface TimelineEntry {
   id: string;
   timestamp: Date;
-  category: 'filed' | 'status' | 'assignment' | 'escalation' | 'investigation';
+  category: 'filed' | 'status' | 'assignment' | 'escalation' | 'note' | 'investigation';
   title: string;
   description?: string;
   actor?: string;
@@ -47,8 +48,27 @@ const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   [ActivityType.STATUS_UPDATE]: 'Status Update',
   [ActivityType.ASSIGNMENT]: 'Assignment',
   [ActivityType.COMMUNICATION]: 'Communication',
+  [ActivityType.INTERNAL_NOTE]: 'Internal Note',
   [ActivityType.OTHER]: 'Other',
 };
+
+function formatAssignmentRoleLabel(role?: string): string | undefined {
+  if (!role) return undefined;
+  const normalized = role.toLowerCase();
+  if (normalized === 'handler' || normalized === 'codi') return 'CODI member';
+  if (normalized === 'admin') return 'Admin';
+  return role.replace(/_/g, ' ');
+}
+
+/** Normalize legacy "case handler" wording in stored activity text for CODI UI. */
+function toCodiMemberWording(text?: string): string | undefined {
+  if (!text) return text;
+  return text
+    .replace(/case handlers?/gi, 'CODI member')
+    .replace(/\bthe handler\b/gi, 'the CODI member')
+    .replace(/\ba handler\b/gi, 'a CODI member')
+    .replace(/\bhandler\b/gi, 'CODI member');
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Pending',
@@ -140,6 +160,7 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
   (report.handlerHistory || []).forEach((entry, index) => {
     const assignedAt = safeToDate(entry.assignedAt);
     if (assignedAt) {
+      const roleLabel = formatAssignmentRoleLabel(entry.handlerRole);
       addEntry({
         id: `handler_assigned_${index}_${assignedAt.getTime()}`,
         timestamp: assignedAt,
@@ -147,7 +168,7 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
         title: `CODI member assigned: ${entry.handlerName}`,
         description: entry.notes?.trim() || `Assigned by ${entry.assignedByName || entry.assignedBy || 'Admin'}.`,
         actor: entry.assignedByName || entry.assignedBy || 'Admin',
-        meta: entry.handlerRole ? `Role: ${entry.handlerRole}` : undefined,
+        meta: roleLabel ? `Role: ${roleLabel}` : undefined,
       });
     }
 
@@ -158,7 +179,7 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
         timestamp: unassignedAt,
         category: 'assignment',
         title: `CODI member unassigned: ${entry.handlerName}`,
-        description: entry.unassignedReason?.trim() || 'Case handler was removed from this case.',
+        description: entry.unassignedReason?.trim() || 'CODI member was removed from this case.',
         actor: entry.unassignedBy || 'Admin',
       });
     }
@@ -183,7 +204,14 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
 
   activities.forEach((activity) => {
     const createdAt = safeToDate(activity.createdAt) || new Date();
-    const typeLabel = ACTIVITY_TYPE_LABELS[activity.activityType] || 'Activity';
+    const isInternalNote =
+      activity.activityType === ActivityType.INTERNAL_NOTE ||
+      activity.isInternal === true ||
+      activity.metadata?.isInternalNote === true ||
+      activity.metadata?.event === 'internal_note';
+    const typeLabel = isInternalNote
+      ? 'Internal Note'
+      : ACTIVITY_TYPE_LABELS[activity.activityType] || 'Activity';
 
     addEntry({
       id: `case_activity_${activity.id}`,
@@ -193,9 +221,11 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
           ? 'status'
           : activity.activityType === ActivityType.ASSIGNMENT
             ? 'assignment'
-            : 'investigation',
-      title: activity.description || typeLabel,
-      description: activity.findings?.trim() || undefined,
+            : isInternalNote
+              ? 'note'
+              : 'investigation',
+      title: toCodiMemberWording(activity.description || typeLabel) || typeLabel,
+      description: toCodiMemberWording(activity.findings?.trim()) || undefined,
       actor: activity.performedByName || 'Staff',
       actorRole: activity.performedByRole,
       meta: typeLabel,
@@ -215,6 +245,8 @@ function CategoryIcon({ category }: { category: TimelineEntry['category'] }) {
       return <UserPlus className="h-4 w-4" />;
     case 'escalation':
       return <AlertTriangle className="h-4 w-4" />;
+    case 'note':
+      return <MessageSquare className="h-4 w-4" />;
     default:
       return <Activity className="h-4 w-4" />;
   }
@@ -230,6 +262,8 @@ function categoryStyles(category: TimelineEntry['category']): string {
       return 'bg-violet-100 text-violet-700 border-violet-200';
     case 'escalation':
       return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'note':
+      return 'bg-teal-100 text-teal-700 border-teal-200';
     default:
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
@@ -273,7 +307,7 @@ export function CaseActivityTimeline({ report }: CaseActivityTimelineProps) {
         <Activity className="mx-auto mb-3 h-10 w-10 text-emerald-400" />
         <p className="font-medium text-gray-700">No activity recorded yet</p>
         <p className="mt-1 text-sm text-gray-500">
-          Case actions such as status updates, assignments, and investigations will appear here.
+          Case actions such as status updates, CODI member assignments, internal notes, and investigations will appear here.
         </p>
       </div>
     );

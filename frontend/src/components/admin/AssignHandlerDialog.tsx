@@ -482,13 +482,13 @@ export function AssignCODIMemberDialog({
               </div>
             ) : representatives.length === 0 ? (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
-                <p className="text-sm font-medium text-amber-900">⚠️ No Case Handlers Available</p>
+                <p className="text-sm font-medium text-amber-900">⚠️ No CODI Members Available</p>
                 <p className="text-xs text-amber-700">
-                  No active case handlers found. Please add representatives with "Handler" role.
+                  No active CODI members found. Please add representatives with the CODI role.
                 </p>
                 <ul className="text-xs text-amber-700 list-disc list-inside space-y-1">
                   <li>Go to <strong>Admin → Representatives Management</strong></li>
-                  <li>Add representatives with role <strong>"Handler"</strong></li>
+                  <li>Add representatives with role <strong>"CODI"</strong></li>
                   <li>Make sure they are marked as <strong>Active</strong></li>
                   <li><em>Note: Administrators cannot be assigned cases</em></li>
                 </ul>
@@ -496,7 +496,7 @@ export function AssignCODIMemberDialog({
             ) : (
               <div className="space-y-3">
                 <div className="text-xs text-muted-foreground p-2 bg-blue-50 rounded">
-                  <strong>Showing:</strong> Case Handlers only (Administrators manage but are not assigned cases)
+                  <strong>Showing:</strong> CODI members only (Administrators manage but are not assigned cases)
                 </div>
                 <div className="grid gap-2 max-h-60 overflow-y-auto">
                   {representatives.map((rep) => (
@@ -572,7 +572,7 @@ export function AssignCODIMemberDialog({
               onClick={handleUnassign}
               disabled={loading}
             >
-              Unassign Handler
+              Unassign CODI Member
             </Button>
           )}
           <Button

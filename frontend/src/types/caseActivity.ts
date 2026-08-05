@@ -8,6 +8,7 @@ export enum ActivityType {
   STATUS_UPDATE = 'status_update',
   ASSIGNMENT = 'assignment',
   COMMUNICATION = 'communication',
+  INTERNAL_NOTE = 'internal_note',
   OTHER = 'other'
 }
 

@@ -98,10 +98,10 @@ export async function takeCase(params: TakeCaseParams): Promise<void> {
     await NotificationService.createNotification(
       params.complainantUserId,
       'handler_assigned',
-      sensitive ? 'Case Handler Assigned' : 'Case Handler Assigned',
+      'CODI Member Assigned',
       sensitive
         ? `${GENERIC_HANDLER_ASSIGNED_MESSAGE}. You will be contacted for updates regarding "${params.complaintTitle || 'your complaint'}".`
-        : `A case handler has been assigned to your complaint: "${params.complaintTitle || 'your complaint'}". You will be contacted for updates.`,
+        : `A CODI member has been assigned to your complaint: "${params.complaintTitle || 'your complaint'}". You will be contacted for updates.`,
       {
         priority: 'high',
         actionUrl: `/case-tracking/${params.complaintId}`,
@@ -156,7 +156,7 @@ export async function maybeStartInvestigation(
     complaintId,
     status,
     'inProgress',
-    'Investigation started following the case handler\'s first update.',
+    'Investigation started following the CODI member\'s first update.',
     userId,
     userName,
     'handler',

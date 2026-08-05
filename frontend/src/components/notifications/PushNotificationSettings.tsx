@@ -62,6 +62,13 @@ export function PushNotificationSettings({ className }: { className?: string }) 
           });
         }
       }
+    } catch (err: any) {
+      console.error('[PushNotificationSettings] toggle failed', err);
+      toast({
+        title: 'Could not update push',
+        description: err?.message || 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setPushBusy(false);
     }

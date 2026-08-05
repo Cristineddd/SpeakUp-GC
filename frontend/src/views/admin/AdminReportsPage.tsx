@@ -1262,11 +1262,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 await takeCase({
                   complaintId: report.id,
                   handlerRepId: representativeId,
-                  handlerName: representativeData?.displayName || currentUser.displayName || currentUser.email || 'Case Handler',
+                  handlerName: representativeData?.displayName || currentUser.displayName || currentUser.email || 'CODI member',
                   handlerRole: representativeData?.role || 'handler',
                   handlerUserId: currentUser.uid,
                   assignedByUserId: currentUser.uid,
-                  assignedByName: currentUser.displayName || currentUser.email || 'Case Handler',
+                  assignedByName: currentUser.displayName || currentUser.email || 'CODI member',
                   complaintType: report.category,
                   complainantUserId: report.userId,
                   complaintTitle: report.title,

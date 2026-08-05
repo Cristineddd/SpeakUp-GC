@@ -22,6 +22,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { Shield, Bell, User, CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
+import { resolveUniqueAlias } from "../services/aliasService";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Step = "alias" | "terms" | "privacy" | "done";
@@ -121,10 +122,14 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
     if (!privacyAccepted || !currentUser?.uid) return;
     setSaving(true);
     try {
+      // If another user already has this alias, store Alias(1) / Alias(2) like duplicate file names
+      const { alias: uniqueAlias } = await resolveUniqueAlias(alias.trim(), currentUser.uid);
+      setAlias(uniqueAlias);
+
       const ref = doc(db, "users", currentUser.uid);
       const snap = await getDoc(ref);
       const payload = {
-        alias: alias.trim(),
+        alias: uniqueAlias,
         notificationPreference: notifPref,
         termsAccepted: true,
         privacyAccepted: true,
@@ -194,7 +199,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
         {/* Scrollable body */}
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           {/* AI Bubble */}
-          <div className="px-6 -mt-4 pt-1 pb-2">
+          <div className="px-6 -mt-4 pt-1 pb-4">
             <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex gap-3">
             <div className="shrink-0 w-10 h-10 rounded-xl overflow-hidden border border-[#1D9E75]/20 bg-[#E8F5EE]">
               <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
@@ -210,7 +215,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
         </div>
 
           {/* Step Content */}
-          <div className="px-6 pt-2 pb-4 space-y-4">
+          <div className="px-6 pt-1 pb-6 space-y-5">
 
           {/* ── ALIAS ── */}
           {step === "alias" && (
@@ -240,37 +245,49 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
 
           {/* ── TERMS & CONDITIONS ── */}
           {step === "terms" && (
-            <div className="space-y-3">
-              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
-                <p className="font-semibold text-[#178F65] text-sm">Terms & Conditions — SpeakUp GC</p>
-                
-                <p className="font-semibold text-gray-700 mt-3">1. Acceptable Use</p>
-                <p>
-                  SpeakUp GC is a platform for reporting gender-based violence and harassment incidents in accordance with Philippine law. You agree to use this platform only for legitimate reporting purposes and not for false, malicious, or defamatory complaints.
-                </p>
+            <div className="space-y-5">
+              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl px-5 pt-5 pb-6 text-xs text-gray-600 leading-relaxed max-h-[min(42vh,280px)] overflow-y-auto">
+                <div className="space-y-3 pb-2">
+                  <p className="font-semibold text-[#178F65] text-sm mb-1">Terms & Conditions — SpeakUp GC</p>
 
-                <p className="font-semibold text-gray-700 mt-3">2. Eligibility</p>
-                <p>
-                  This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Committee on Decorum and Investigation (CODI).
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">1. Acceptable Use</p>
+                    <p>
+                      SpeakUp GC is a platform for reporting gender-based violence and harassment incidents in accordance with Philippine law. You agree to use this platform only for legitimate reporting purposes and not for false, malicious, or defamatory complaints.
+                    </p>
+                  </div>
 
-                <p className="font-semibold text-gray-700 mt-3">3. Prohibited Actions</p>
-                <p>
-                  You may not use SpeakUp GC to: (a) submit false or fabricated reports; (b) harass, threaten, or defame any individual; (c) violate any applicable laws or regulations; or (d) interfere with the proper functioning of the platform.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">2. Eligibility</p>
+                    <p>
+                      This platform is available to students, faculty, staff, and authorized personnel of Gordon College. By using SpeakUp GC, you confirm that you are eligible to file complaints under the Gordon College Committee on Decorum and Investigation (CODI).
+                    </p>
+                  </div>
 
-                <p className="font-semibold text-gray-700 mt-3">4. Governing Law</p>
-                <p>
-                  This platform operates under <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, <strong>Republic Act No. 7877 (Anti-Sexual Harassment Act)</strong>, and the <strong>Gordon College Committee on Decorum and Investigation (GC-CODI)</strong> procedures. All complaints are subject to investigation and resolution in accordance with these legal frameworks.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">3. Prohibited Actions</p>
+                    <p>
+                      You may not use SpeakUp GC to: (a) submit false or fabricated reports; (b) harass, threaten, or defame any individual; (c) violate any applicable laws or regulations; or (d) interfere with the proper functioning of the platform.
+                    </p>
+                  </div>
 
-                <p className="font-semibold text-gray-700 mt-3">5. Modifications</p>
-                <p>
-                  Gordon College reserves the right to modify these terms at any time. Continued use of the platform constitutes acceptance of any changes.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">4. Governing Law</p>
+                    <p>
+                      This platform operates under <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, <strong>Republic Act No. 7877 (Anti-Sexual Harassment Act)</strong>, and the <strong>Gordon College Committee on Decorum and Investigation (GC-CODI)</strong> procedures. All complaints are subject to investigation and resolution in accordance with these legal frameworks.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">5. Modifications</p>
+                    <p>
+                      Gordon College reserves the right to modify these terms at any time. Continued use of the platform constitutes acceptance of any changes.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-3 cursor-pointer group pt-1">
                 <input
                   type="checkbox"
                   checked={termsAccepted}
@@ -286,32 +303,42 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
 
           {/* ── PRIVACY POLICY ── */}
           {step === "privacy" && (
-            <div className="space-y-3">
-              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl p-4 text-xs text-gray-600 leading-relaxed space-y-2 max-h-[min(35vh,240px)] overflow-y-auto">
-                <p className="font-semibold text-[#178F65] text-sm">Privacy Policy — SpeakUp GC</p>
-                
-                <p className="font-semibold text-gray-700 mt-3">Data Collection & Use</p>
-                <p>
-                  All complaints submitted through SpeakUp GC are handled with <strong>strict confidentiality</strong> by the Diversity, Equity, and Inclusion Unit (DEIU) of Gordon College. Your identity will <strong>never be disclosed</strong> to respondents or any other party without your explicit consent.
-                </p>
+            <div className="space-y-5">
+              <div className="bg-[#F0FDF4] border border-[#1D9E75]/20 rounded-xl px-5 pt-5 pb-6 text-xs text-gray-600 leading-relaxed max-h-[min(42vh,280px)] overflow-y-auto">
+                <div className="space-y-3 pb-2">
+                  <p className="font-semibold text-[#178F65] text-sm mb-1">Privacy Policy — SpeakUp GC</p>
 
-                <p className="font-semibold text-gray-700 mt-3">Legal Compliance</p>
-                <p>
-                  This system complies with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, and the <strong>Gordon College Committee on Decorum and Investigation (CODI)</strong>.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">Data Collection & Use</p>
+                    <p>
+                      All complaints submitted through SpeakUp GC are handled with <strong>strict confidentiality</strong> by the Diversity, Equity, and Inclusion Unit (DEIU) of Gordon College. Your identity will <strong>never be disclosed</strong> to respondents or any other party without your explicit consent.
+                    </p>
+                  </div>
 
-                <p className="font-semibold text-gray-700 mt-3">Data Security</p>
-                <p>
-                  You may file complaints as an identified complainant or anonymously. Your data is stored securely using industry-standard encryption and accessed only by authorized DEIU personnel for investigation purposes.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">Legal Compliance</p>
+                    <p>
+                      This system complies with <strong>Republic Act No. 10173 (Data Privacy Act of 2012)</strong>, <strong>Republic Act No. 11313 (Safe Spaces Act)</strong>, and the <strong>Gordon College Committee on Decorum and Investigation (CODI)</strong>.
+                    </p>
+                  </div>
 
-                <p className="font-semibold text-gray-700 mt-3">Your Rights</p>
-                <p>
-                  Under RA 10173, you have the right to access, correct, and request deletion of your personal data. You may also withdraw consent at any time, subject to legal and contractual restrictions.
-                </p>
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">Data Security</p>
+                    <p>
+                      You may file complaints as an identified complainant or anonymously. Your data is stored securely using industry-standard encryption and accessed only by authorized DEIU personnel for investigation purposes.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <p className="font-semibold text-gray-700">Your Rights</p>
+                    <p>
+                      Under RA 10173, you have the right to access, correct, and request deletion of your personal data. You may also withdraw consent at any time, subject to legal and contractual restrictions.
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-3 cursor-pointer group pt-1">
                 <input
                   type="checkbox"
                   checked={privacyAccepted}
@@ -350,7 +377,7 @@ export default function ProfileSetupModal({ isOpen, onComplete }: ProfileSetupMo
         </div>
 
         {/* Sticky footer — buttons always visible */}
-        <div className="shrink-0 px-6 pb-6 pt-3 border-t border-gray-100 bg-white">
+        <div className="shrink-0 px-6 pb-6 pt-4 border-t border-gray-100 bg-white">
           {step === "alias" && (
             <Button
               onClick={handleAliasNext}

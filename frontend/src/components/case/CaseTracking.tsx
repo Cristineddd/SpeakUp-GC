@@ -537,7 +537,12 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
     };
 
     const fromLogged: InvestigationActivity[] = realActivities
-      .filter((ra) => !ra.isInternal)
+      .filter(
+        (ra) =>
+          !ra.isInternal &&
+          ra.activityType !== ActivityType.INTERNAL_NOTE &&
+          ra.metadata?.isInternalNote !== true
+      )
       .map((ra) => ({
       id: `case_activity_${ra.id}`,
       complaintId: ra.complaintId,

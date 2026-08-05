@@ -24,6 +24,7 @@ import { db } from "../firebase";
 import { cn } from "../lib/utils";
 import { NotificationService } from "../services/notificationService";
 import { PushNotificationSettings } from "../components/notifications/PushNotificationSettings";
+import { resolveUniqueAlias } from "../services/aliasService";
 
 type NotifPref = "email" | "in-app" | "both";
 
@@ -90,10 +91,18 @@ const Account = () => {
     setAliasError("");
     setSavingAlias(true);
     try {
-      await updateDoc(doc(db, "users", currentUser!.uid), { alias: trimmed });
-      setAlias(trimmed);
+      // If taken by another user, save as Alias(1) / Alias(2) so identities stay distinct
+      const { alias: uniqueAlias, wasAdjusted } = await resolveUniqueAlias(trimmed, currentUser!.uid);
+      await updateDoc(doc(db, "users", currentUser!.uid), { alias: uniqueAlias });
+      setAlias(uniqueAlias);
+      setAliasInput(uniqueAlias);
       setEditingAlias(false);
-      toast({ title: "Alias updated", description: `Your alias is now "${trimmed}".` });
+      toast({
+        title: "Alias updated",
+        description: wasAdjusted
+          ? `"${trimmed}" was already in use, so your alias is now "${uniqueAlias}".`
+          : `Your alias is now "${uniqueAlias}".`,
+      });
     } catch {
       toast({ title: "Error", description: "Could not update alias. Please try again.", variant: "destructive" });
     } finally {
