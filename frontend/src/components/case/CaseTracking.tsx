@@ -59,6 +59,22 @@ function activityNotesDedupKey(notes: string, date: Date): string {
   return `${notes.trim().toLowerCase()}|${Math.floor(date.getTime() / ACTIVITY_DEDUP_WINDOW_MS)}`;
 }
 
+/** Rewrite legacy "case handler" / assignment copy for complainant-facing UI. */
+function toComplainantFacingWording(text?: string): string {
+  if (!text) return '';
+  return text
+    .replace(/Case handler assigned/gi, 'Case taken by a CODI member')
+    .replace(/A case handler has been assigned to your report/gi, 'A CODI member has taken your case')
+    .replace(/has been assigned to your report/gi, 'has taken your case')
+    .replace(/has been assigned to this case/gi, 'has taken this case')
+    .replace(/has been assigned to your complaint/gi, 'has taken your case')
+    .replace(/CODI member assigned/gi, 'Case taken by a CODI member')
+    .replace(/Case Handler \(CODI\)/gi, 'CODI member')
+    .replace(/Case Handler assigned/gi, 'CODI member')
+    .replace(/case handlers?/gi, 'CODI member')
+    .replace(/Case Handlers?/gi, 'CODI member');
+}
+
 interface CaseTrackingProps {
   complaintId: string;
 }
@@ -236,7 +252,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               actor: "Complainant",
               timestamp: complaint.filingDate,
               attachments: [],
-              details: `Complaint filed regarding ${complaint.type.replace(/_/g, ' ')} incident. Your report is pending review and case handler assignment.`
+              details: `Complaint filed regarding ${complaint.type.replace(/_/g, ' ')} incident. Your report is pending review by a CODI member.`
             });
 
             const statusHistory = c.statusHistory;
@@ -264,18 +280,18 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
             const isAssigned = complaint.assignedCODI?.[0] && complaint.assignedCODI[0] !== 'Not yet assigned';
             if (isAssigned && c.assignedAt) {
-              const handlerLabel = sensitive ? 'Case Handler' : (c.assignedToName || 'Case Handler');
+              const handlerLabel = sensitive ? 'CODI member' : (c.assignedToName || 'CODI member');
               events.push({
                 id: "handler_assignment",
                 stage: ComplaintStage.ACTION_ON_COMPLAINT,
                 status: complaint.status,
-                description: "Case handler assigned",
+                description: "Case taken by a CODI member",
                 actor: handlerLabel,
                 timestamp: c.assignedAt,
                 attachments: [],
                 details: sensitive
                   ? GENERIC_HANDLER_ASSIGNED_MESSAGE
-                  : `${c.assignedToName || 'A case handler'} has been assigned to handle this case.`
+                  : `${c.assignedToName || 'A CODI member'} has taken this case.`
               });
             }
 
@@ -285,7 +301,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 stage: ComplaintStage.FINAL_DECISION,
                 status: complaint.status,
                 description: complaint.status === ComplaintStatus.RESOLVED ? "Case resolved" : "Case dismissed",
-                actor: sensitive ? 'Case Handler' : (c.assignedToName || 'Disciplining Authority'),
+                actor: sensitive ? 'CODI member' : (c.assignedToName || 'Disciplining Authority'),
                 timestamp: complaint.updatedAt > complaint.filingDate ? complaint.updatedAt : complaint.filingDate,
                 attachments: [],
                 details: complaint.adminNotes || (complaint.status === ComplaintStatus.RESOLVED
@@ -347,7 +363,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 status: isAfter(now, investigationStart) ? "overdue" : "pending",
                 responsibleParty: complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
                   ? complaint.assignedCODI[0] 
-                  : "Case Handler",
+                  : "CODI member",
                 notificationsSent: [],
                 description: "Begin preliminary investigation"
               });
@@ -365,7 +381,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 status: isAfter(now, investigationEnd) ? "overdue" : "pending",
                 responsibleParty: complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
                   ? complaint.assignedCODI[0] 
-                  : "Case Handler",
+                  : "CODI member",
                 notificationsSent: [],
                 description: "Complete evidence gathering and investigation"
               });
@@ -383,7 +399,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                 status: isAfter(now, reportDeadline) ? "overdue" : "pending",
                 responsibleParty: complaint.assignedCODI && complaint.assignedCODI[0] !== 'Not yet assigned' 
                   ? complaint.assignedCODI[0] 
-                  : "Case Handler",
+                  : "CODI member",
                 notificationsSent: [],
                 description: "Submit investigation report"
               });
@@ -442,7 +458,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
               activities.push({
                 id: "decision_making",
                 complaintId: complaint.id,
-                investigatorId: sensitive ? 'Case Handler' : authority,
+                investigatorId: sensitive ? 'CODI member' : authority,
                 activityType: "deliberation",
                 description: "Final decision rendered",
                 findings: complaint.status === ComplaintStatus.RESOLVED
@@ -661,7 +677,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
 
       toast({
         title: 'Follow-up requested',
-        description: 'Your case handler has been notified to review your case.',
+        description: 'A CODI member has been notified to review your case.',
       });
     } catch (error) {
       toast({
@@ -1044,7 +1060,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                     {(complaint as Complaint & { followUpRequestedAt?: Date }).followUpRequestedAt
                       ? ` on ${format((complaint as Complaint & { followUpRequestedAt?: Date }).followUpRequestedAt!, 'MMMM d, yyyy')}`
                       : ''}
-                    . Your case handler will review your request.
+                    . A CODI member will review your request.
                   </p>
                 ) : (
                   <p className="mt-1 text-xs text-gray-600">
@@ -1166,7 +1182,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                         </time>
                       </div>
                       <h4 className={`text-sm font-semibold mb-0.5 ${style.titleClass}`}>
-                        {event.description}
+                        {toComplainantFacingWording(event.description)}
                         {event.isProjected && (
                           <span className="ml-2 text-xs font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">
                             Projected
@@ -1174,12 +1190,12 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                         )}
                       </h4>
                       <p className="text-xs text-gray-500 mb-1">
-                        By: <span className="font-medium">{getCachedUserDisplayName(event.actor, event.actor)}</span>
-                        {event.actorRole && <span className="text-gray-400 ml-1">({event.actorRole})</span>}
+                        By: <span className="font-medium">{toComplainantFacingWording(getCachedUserDisplayName(event.actor, 'CODI member'))}</span>
+                        {event.actorRole && <span className="text-gray-400 ml-1">({toComplainantFacingWording(event.actorRole)})</span>}
                       </p>
                       {event.details && (
                         <p className={`text-xs text-gray-600 leading-relaxed rounded-lg px-3 py-2 mt-1 border ${style.detailsBg} ${style.detailsBorder}`}>
-                          {event.details}
+                          {toComplainantFacingWording(event.details)}
                         </p>
                       )}
                       {event.attachments && event.attachments.length > 0 && (
@@ -1239,12 +1255,12 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   </span>
                                   <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm:ss a")}</time>
                                 </div>
-                                <p className="text-sm text-gray-700 font-medium mt-1">{activity.description}</p>
-                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{getCachedUserDisplayName(activity.investigatorId, activity.investigatorId)}</span></p>
+                                <p className="text-sm text-gray-700 font-medium mt-1">{toComplainantFacingWording(activity.description)}</p>
+                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{toComplainantFacingWording(getCachedUserDisplayName(activity.investigatorId, 'CODI member'))}</span></p>
                                 {activity.findings && (
                                   <div className="mt-2 bg-[#1D9E75]/5 border-l-4 border-[#1D9E75] rounded-r-lg p-3">
                                     <p className="text-xs font-semibold text-[#178F65] mb-0.5">Key Findings:</p>
-                                    <p className="text-xs text-gray-700">{activity.findings}</p>
+                                    <p className="text-xs text-gray-700">{toComplainantFacingWording(activity.findings)}</p>
                                   </div>
                                 )}
                                 {activity.attachments && activity.attachments.length > 0 && (
@@ -1280,8 +1296,8 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
                                   </span>
                                   <time className="text-xs text-gray-400">{format(activity.date, "MMM d, yyyy · h:mm:ss a")}</time>
                                 </div>
-                                <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
-                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{activity.investigatorId}</span></p>
+                                <p className="text-xs text-gray-600 mt-1">{toComplainantFacingWording(activity.description)}</p>
+                                <p className="text-xs text-gray-500 mt-1">By: <span className="font-medium">{toComplainantFacingWording(activity.investigatorId)}</span></p>
                               </div>
                             </div>
                           );
@@ -1314,7 +1330,7 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             {[
               { label: "Type", value: complaint.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), icon: FileText },
               { label: "Filed", value: format(complaint.filingDate, "MMM d, yyyy"), icon: Calendar },
-              { label: "Handler", value: isSensitiveCase && isHandlerAssigned ? 'Case Handler (CODI)' : (handlerDisplayName || (isHandlerAssigned ? 'Case Handler assigned' : 'Pending assignment')), icon: User },
+              { label: "CODI member", value: isSensitiveCase && isHandlerAssigned ? 'CODI member' : (handlerDisplayName || (isHandlerAssigned ? 'CODI member' : 'Waiting for a CODI member')), icon: User },
             ].map(item => (
               <div key={item.label} className="bg-white border border-gray-200 rounded-xl p-3">
                 <p className="text-xs text-gray-400 mb-1">{item.label}</p>
@@ -1431,13 +1447,13 @@ const CaseTracking: React.FC<CaseTrackingProps> = ({ complaintId }) => {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-gray-400 mb-0.5">Case Handler (CODI)</p>
+                <p className="text-xs text-gray-400 mb-0.5">CODI member</p>
                 {isHandlerAssigned ? (
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
                       {isSensitiveCase
-                        ? 'Case Handler (CODI)'
-                        : handlerDisplayName || 'Case Handler assigned'}
+                        ? 'CODI member'
+                        : handlerDisplayName || 'CODI member'}
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       Committee on Decorum and Investigation (CODI)

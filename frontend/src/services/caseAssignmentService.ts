@@ -98,10 +98,10 @@ export async function takeCase(params: TakeCaseParams): Promise<void> {
     await NotificationService.createNotification(
       params.complainantUserId,
       'handler_assigned',
-      'CODI Member Assigned',
+      'Case Taken',
       sensitive
         ? `${GENERIC_HANDLER_ASSIGNED_MESSAGE}. You will be contacted for updates regarding "${params.complaintTitle || 'your complaint'}".`
-        : `A CODI member has been assigned to your complaint: "${params.complaintTitle || 'your complaint'}". You will be contacted for updates.`,
+        : `A CODI member has taken your complaint: "${params.complaintTitle || 'your complaint'}". You will be contacted for updates.`,
       {
         priority: 'high',
         actionUrl: `/case-tracking/${params.complaintId}`,

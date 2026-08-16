@@ -13,14 +13,14 @@ export function isSensitiveCaseType(type?: string | null): boolean {
 
 /** Generic label shown to complainants for sensitive cases instead of handler name/ID. */
 export const GENERIC_HANDLER_ASSIGNED_MESSAGE =
-  'A case handler has been assigned to your report';
+  'A CODI member has taken your case';
 
 export function getComplainantHandlerLabel(
   type: string | undefined,
   assigned: boolean,
   assignedToName?: string
 ): string {
-  if (!assigned) return 'Pending assignment';
+  if (!assigned) return 'Waiting for a CODI member';
   if (isSensitiveCaseType(type)) return GENERIC_HANDLER_ASSIGNED_MESSAGE;
-  return assignedToName || 'Case Handler assigned';
+  return assignedToName || 'Case taken by a CODI member';
 }

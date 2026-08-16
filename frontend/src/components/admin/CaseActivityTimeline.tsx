@@ -46,7 +46,7 @@ const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   [ActivityType.REPORT_PREPARATION]: 'Report Preparation',
   [ActivityType.DELIBERATION]: 'Deliberation',
   [ActivityType.STATUS_UPDATE]: 'Status Update',
-  [ActivityType.ASSIGNMENT]: 'Assignment',
+  [ActivityType.ASSIGNMENT]: 'Case taken',
   [ActivityType.COMMUNICATION]: 'Communication',
   [ActivityType.INTERNAL_NOTE]: 'Internal Note',
   [ActivityType.OTHER]: 'Other',
@@ -60,10 +60,16 @@ function formatAssignmentRoleLabel(role?: string): string | undefined {
   return role.replace(/_/g, ' ');
 }
 
-/** Normalize legacy "case handler" wording in stored activity text for CODI UI. */
+/** Normalize legacy "case handler" / assignment wording in stored activity text for CODI UI. */
 function toCodiMemberWording(text?: string): string | undefined {
   if (!text) return text;
   return text
+    .replace(/CODI member assigned/gi, 'Case taken by a CODI member')
+    .replace(/has been assigned to this case/gi, 'has taken this case')
+    .replace(/has been assigned to your report/gi, 'has taken your case')
+    .replace(/has been assigned to your complaint/gi, 'has taken your case')
+    .replace(/Case automatically assigned to CODI member/gi, 'Case taken by CODI member')
+    .replace(/A CODI member has been assigned/gi, 'A CODI member has taken this case')
     .replace(/case handlers?/gi, 'CODI member')
     .replace(/\bthe handler\b/gi, 'the CODI member')
     .replace(/\ba handler\b/gi, 'a CODI member')
@@ -165,9 +171,9 @@ function buildTimelineEntries(report: AdminReport, activities: CaseActivity[]): 
         id: `handler_assigned_${index}_${assignedAt.getTime()}`,
         timestamp: assignedAt,
         category: 'assignment',
-        title: `CODI member assigned: ${entry.handlerName}`,
-        description: entry.notes?.trim() || `Assigned by ${entry.assignedByName || entry.assignedBy || 'Admin'}.`,
-        actor: entry.assignedByName || entry.assignedBy || 'Admin',
+        title: `Case taken by ${entry.handlerName}`,
+        description: entry.notes?.trim() || undefined,
+        actor: entry.handlerName || entry.assignedByName || 'CODI member',
         meta: roleLabel ? `Role: ${roleLabel}` : undefined,
       });
     }

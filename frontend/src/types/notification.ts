@@ -261,8 +261,8 @@ export function isNotificationTypeEnabled(
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   complaint_created: 'Complaint Created',
-  complaint_assigned: 'Complaint Assigned',
-  case_assigned: 'Case Assigned',
+  complaint_assigned: 'Case Taken',
+  case_assigned: 'Case Taken',
   status_update: 'Status Updated',
   complaint_resolved: 'Complaint Resolved',
   complaint_escalated: 'Complaint Escalated',
@@ -276,7 +276,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   message_read: 'Message Read',
   evidence_uploaded: 'Evidence Uploaded',
   comment_added: 'Comment Added',
-  handler_assigned: 'Handler Assigned',
+  handler_assigned: 'Case Taken',
   handler_changed: 'Handler Changed',
   deadline_approaching: 'Deadline Approaching',
   deadline_passed: 'Deadline Passed',

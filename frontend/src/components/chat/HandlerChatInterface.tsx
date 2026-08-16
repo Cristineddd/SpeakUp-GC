@@ -63,6 +63,7 @@ interface ExtendedAdminReport {
   userName?: string;
   userEmail?: string;
   assignedToName?: string | null;
+  isAnonymous?: boolean;
 }
 
 interface HandlerChatInterfaceProps {
@@ -113,8 +114,12 @@ export function CODIMemberChatInterface({
   const scrollToBottomRef = useRef<() => void>(() => {});
   const { toast } = useToast();
 
-  // Check if complaint is anonymous
-  const isAnonymous = complaint.complainantName === 'Anonymous' || complaint.userName === 'Anonymous';
+  // Check if complaint is anonymous — use the filing flag, not just the display name
+  const isAnonymous = Boolean(
+    complaint.isAnonymous ||
+    complaint.complainantName === 'Anonymous' ||
+    complaint.userName === 'Anonymous'
+  );
   
   // Get safe property values with anonymity protection
   const complainantName = isAnonymous ? 'Anonymous' : getSafeProperty(complaint, 'userName', 'complainantName', 'Complainant');
@@ -253,13 +258,21 @@ export function CODIMemberChatInterface({
             console.log('🔄 Chat room updated');
             setChatRoom(updatedRoom);
             
-            // Update typing indicators
+            // Update typing indicators — never leak complainant identity on anonymous cases
             const typingWithNames = (updatedRoom.typingUsers || [])
-              .filter(userId => userId !== currentUser.uid) // Don't show self as typing
-              .map(userId => ({
-                id: userId,
-                name: updatedRoom.participants?.[userId]?.name || 'User'
-              }));
+              .filter(userId => userId !== currentUser.uid)
+              .map(userId => {
+                const participant = updatedRoom.participants?.[userId];
+                const isComplainant =
+                  userId === updatedRoom.complainantId || participant?.role === 'complainant';
+                return {
+                  id: userId,
+                  name:
+                    isAnonymous && isComplainant
+                      ? 'Anonymous'
+                      : participant?.name || (isComplainant ? 'Complainant' : 'User'),
+                };
+              });
               
             setTypingUsers(typingWithNames);
           }
@@ -302,7 +315,7 @@ export function CODIMemberChatInterface({
         ).catch(console.error);
       }
     };
-  }, [complaintId, currentUser, complaint, toast, complainantId, complainantName, codiPublicName]);
+  }, [complaintId, currentUser, complaint, toast, complainantId, complainantName, codiPublicName, isAnonymous]);
 
   // Auto-scroll when messages change
   useEffect(() => {

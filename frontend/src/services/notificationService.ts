@@ -83,8 +83,8 @@ export class NotificationService {
     return this.createNotification(
       userId,
       'complaint_assigned' as NotificationType,
-      'CODI Member Assigned',
-      `Your complaint "${complaintTitle}" has been assigned to ${handlerName} for resolution.`,
+      'Case Taken',
+      `Your complaint "${complaintTitle}" has been taken by ${handlerName} for resolution.`,
       {
         priority: 'high',
         complaintId: complaintId,

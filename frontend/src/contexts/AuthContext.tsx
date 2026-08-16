@@ -538,8 +538,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
-    } catch (error) {
-      throw error;
+    } finally {
+      // Hard-redirect to a clean landing URL. ProtectedRoute otherwise sends
+      // /login → /?auth=login, which can leave the login modal stuck.
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.location.assign('/');
+      }
     }
   };
 

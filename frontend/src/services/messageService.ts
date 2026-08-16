@@ -1157,7 +1157,7 @@ export class MessageService {
         await this.sendSystemMessage(
           chatRoomId,
           chatRoom.complaintId,
-          `${handlerName} has been assigned to handle your case.`
+          `${handlerName} has taken your case.`
         );
       } else if (nameChanged) {
         // Name-only correction — no duplicate assignment notice

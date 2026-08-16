@@ -5,6 +5,7 @@ import {
   ArrowRight, ShieldCheck, Users,
 } from "lucide-react";
 import { Link, useLocation, useSearchParams } from "../compat/router";
+import { useRouter } from "next/navigation";
 import WalkthroughModal from "../components/WalkthroughModal";
 
 function useInView(options: IntersectionObserverInit = {}) {
@@ -64,17 +65,20 @@ const Landing = () => {
   const [walkthroughInitialView, setWalkthroughInitialView] = useState<
     "choose" | "login" | "signup-email" | undefined
   >(undefined);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const consumedAuthRef = useRef(false);
 
   useEffect(() => {
+    if (consumedAuthRef.current) return;
     const authParam = searchParams.get("auth");
     if (authParam === "login" || authParam === "signup") {
+      consumedAuthRef.current = true;
       setWalkthroughInitialView(authParam === "login" ? "login" : "signup-email");
       setShowWalkthrough(true);
-      searchParams.delete("auth");
-      setSearchParams(searchParams, { replace: true });
+      router.replace("/", { scroll: false });
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     const hasSeen = localStorage.getItem("speakup_walkthrough_seen");

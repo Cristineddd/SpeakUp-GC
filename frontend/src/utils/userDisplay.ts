@@ -15,10 +15,10 @@ const userDisplayNameCache = new Map<string, string>();
  * Get a readable display name for a user ID
  * 
  * @param userId - The user ID (Firebase auth UID)
- * @param fallback - Fallback text if user not found (default: "Case Handler")
+ * @param fallback - Fallback text if user not found (default: "CODI member")
  * @returns Promise resolving to the user's display name
  */
-export async function getUserDisplayName(userId: string, fallback: string = 'Case Handler'): Promise<string> {
+export async function getUserDisplayName(userId: string, fallback: string = 'CODI member'): Promise<string> {
   // Check cache first
   if (userDisplayNameCache.has(userId)) {
     return userDisplayNameCache.get(userId)!;
@@ -56,7 +56,7 @@ export async function getUserDisplayName(userId: string, fallback: string = 'Cas
  * @param fallback - Fallback text if user not found
  * @returns The cached display name or fallback
  */
-export function getCachedUserDisplayName(userId: string, fallback: string = 'Case Handler'): string {
+export function getCachedUserDisplayName(userId: string, fallback: string = 'CODI member'): string {
   // Check cache first
   if (userDisplayNameCache.has(userId)) {
     return userDisplayNameCache.get(userId)!;

@@ -216,7 +216,7 @@ export const MESSAGE_STATUS_LABELS: Record<MessageStatus, string> = {
  */
 export const SYSTEM_MESSAGES = {
   CASE_ASSIGNED: (handlerName: string) => 
-    `${handlerName} has been assigned to handle your case.`,
+    `${handlerName} has taken your case.`,
   
   CASE_REASSIGNED: (oldHandler: string, newHandler: string) => 
     `Case handler changed from ${oldHandler} to ${newHandler}.`,

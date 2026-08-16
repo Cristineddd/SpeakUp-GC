@@ -247,8 +247,8 @@ export const updateComplaintStatus = functions.https.onCall(
               ...baseNotif,
               type: 'complaint_assigned',
               priority: 'high',
-              title: 'Case Handler Assigned',
-              message: `Your complaint "${complaintTitle}" has been assigned to ${assignedToName || 'a case handler'} for review.`,
+              title: 'Case Taken',
+              message: `Your complaint "${complaintTitle}" has been taken by ${assignedToName || 'a CODI member'} for review.`,
             });
           } else if (newStatus === 'ongoing') {
             await notifRef.add({

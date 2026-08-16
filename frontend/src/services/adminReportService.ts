@@ -574,7 +574,7 @@ export class AdminReportService {
           reportData.userId,
           'complaint_assigned',
           'Complaint Update',
-          `Your complaint has been assigned to ${adminName}`,
+          `Your complaint has been taken by ${adminName}`,
           {
             priority: 'high',
             complaintId: reportId,

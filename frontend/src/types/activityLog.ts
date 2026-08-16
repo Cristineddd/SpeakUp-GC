@@ -150,7 +150,7 @@ export const ACTIVITY_ACTION_LABELS: Record<ActivityAction, string> = {
   complaint_viewed: 'Complaint Viewed',
   complaint_updated: 'Complaint Updated',
   complaint_status_changed: 'Status Changed',
-  complaint_assigned: 'Complaint Assigned',
+  complaint_assigned: 'Case Taken',
   complaint_reassigned: 'Complaint Reassigned',
   complaint_escalated: 'Complaint Escalated',
   complaint_resolved: 'Complaint Resolved',
@@ -158,7 +158,7 @@ export const ACTIVITY_ACTION_LABELS: Record<ActivityAction, string> = {
   complaint_reopened: 'Complaint Reopened',
   
   // Handler actions
-  handler_assigned: 'Handler Assigned',
+  handler_assigned: 'Case Taken',
   handler_removed: 'Handler Removed',
   handler_note_added: 'Note Added',
   handler_timeline_updated: 'Timeline Updated',

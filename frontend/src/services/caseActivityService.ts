@@ -238,14 +238,14 @@ export class CaseActivityService {
       const actorRole = isSystemAction ? SYSTEM_ACTOR.role : 'admin';
 
       const publicDescription = maskHandlerIdentity
-        ? 'CODI member assigned'
+        ? 'Case taken by a CODI member'
         : isSystemAction
-          ? `Case automatically assigned to CODI member ${handlerName} for review.`
-          : 'CODI member assigned';
+          ? `Case taken by CODI member ${handlerName} for review.`
+          : `Case taken by ${handlerName}`;
 
       const publicFindings = maskHandlerIdentity
-        ? 'A CODI member has been assigned to your report. You will be contacted when the investigation begins.'
-        : `${handlerName} has been assigned to this case. The investigation will begin once the CODI member reviews the complaint.`;
+        ? 'A CODI member has taken your case. You will be contacted when the investigation begins.'
+        : `${handlerName} has taken this case. The investigation will begin once the CODI member reviews the complaint.`;
 
       await this.createActivity(
         {

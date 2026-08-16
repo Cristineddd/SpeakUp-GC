@@ -21,7 +21,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
     return (
       <Card className="p-4">
         <p className="text-sm text-muted-foreground text-center">
-          No CODI member assignments yet
+          No CODI member has taken this case yet
         </p>
       </Card>
     );
@@ -31,7 +31,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
     <Card className="p-4">
       <h3 className="font-semibold mb-4 flex items-center gap-2">
         <Clock className="h-4 w-4" />
-        CODI Member Assignment History
+        CODI Member History
       </h3>
       
       <div className="space-y-4">
@@ -100,7 +100,7 @@ export function HandlerTimeline({ complaint }: HandlerTimelineProps) {
                   {/* Assigned */}
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">Assigned:</span>
+                    <span className="text-muted-foreground">Taken:</span>
                     <span className="font-medium">{format(assignedDate, 'PPp')}</span>
                   </div>
                   

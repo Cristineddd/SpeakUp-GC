@@ -60,7 +60,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       setSignupData({ email: "", password: "", confirmPassword: "", agreeTerms: false });
       setSignupStep("email");
     }
-  }, [isOpen]);
+  }, [isOpen, initialView]);
 
   // Lock body scroll when open
   useEffect(() => {
