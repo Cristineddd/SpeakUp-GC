@@ -182,9 +182,9 @@ export default function GBVChatbot() {
     return null;
   }
 
-  // Sit above the mobile/tablet bottom nav (lg:hidden) — do not drop to bottom-6 until lg when the side nav takes over.
+  // Sit above the floating mobile bottom nav (lg:hidden) — do not drop to bottom-6 until lg when the side nav takes over.
   return (
-    <div className="fixed bottom-24 lg:bottom-6 right-4 lg:right-5 z-50 flex flex-col items-end gap-2">
+    <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-5 z-50 flex flex-col items-end gap-2">
 
       {/* Greeting bubble */}
       {!open && showBubble && (

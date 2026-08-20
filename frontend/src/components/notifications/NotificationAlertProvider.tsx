@@ -123,7 +123,7 @@ export function NotificationAlertProvider({
       {children}
 
       {showPrompt && (
-        <div className="fixed bottom-4 left-4 right-4 z-[9998] mx-auto max-w-md sm:left-auto sm:right-6">
+        <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-[9998] mx-auto max-w-md sm:left-auto sm:right-6 lg:bottom-4">
           <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-white p-4 shadow-lg">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
               {isPushSupported() ? (

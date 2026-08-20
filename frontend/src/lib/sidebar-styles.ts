@@ -63,12 +63,24 @@ export function complainantTopBarClass() {
   );
 }
 
+/**
+ * Fixed dock holding the floating mobile bottom nav. Transparent and
+ * pointer-events-none so only the pill itself intercepts taps.
+ */
+export function mobileNavDockClass() {
+  return cn(
+    'lg:hidden fixed inset-x-0 bottom-0 z-50 pointer-events-none',
+    'px-3 pb-[max(0.625rem,env(safe-area-inset-bottom))]'
+  );
+}
+
 export function mainContentClass() {
   return cn(
     'flex-1 overflow-y-auto bg-white',
     'pt-4 lg:pt-6',
     APP_CONTENT_X,
-    'pb-20 lg:pb-8'
+    // clears the floating bottom nav (≈76px) plus the iOS home indicator
+    'pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-8'
   );
 }
 

@@ -36,9 +36,19 @@ import {
   navIconClass,
   sidebarUserAvatar,
   complainantNavAccents,
+  mobileNavDockClass,
   APP_SHELL_TOP,
 } from "../../lib/sidebar-styles";
 const gcLogo = '/LOGO.png';
+
+/** Shorter labels so five tabs still fit on a 360px screen */
+const MOBILE_NAV_LABELS: Record<string, string> = {
+  "Dashboard": "Home",
+  "File a Complaint": "Report",
+  "My Cases": "Cases",
+  "Know Your Rights": "Rights",
+  "My Profile": "Profile",
+};
 
 interface NavItem {
   name: string;
@@ -174,10 +184,13 @@ export default function Sidebar() {
       </aside>
       
       {/* Mobile loading skeleton */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-around items-center h-16 px-2">
+      <div className={mobileNavDockClass()}>
+        <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-0.5 rounded-[26px] border border-gray-200/70 bg-white/85 p-1.5 shadow-[0_12px_32px_-10px_rgba(16,48,36,0.35)] backdrop-blur-xl">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="w-12 h-12 bg-gray-200 rounded animate-pulse"></div>
+            <div key={i} className="flex flex-1 flex-col items-center gap-1.5 px-1 py-2">
+              <div className="h-5 w-5 animate-pulse rounded-md bg-gray-200"></div>
+              <div className="h-2 w-8 animate-pulse rounded bg-gray-100"></div>
+            </div>
           ))}
         </div>
       </div>
@@ -363,41 +376,52 @@ export default function Sidebar() {
       </div>
     </aside>
 
-    {/* ── Mobile bottom nav ── */}
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex items-center justify-around px-1 py-2 safe-area-inset-bottom">
-      {navigation.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item.href);
-        const mobileLabel: Record<string, string> = {
-          "Dashboard": "Home",
-          "File a Complaint": "Report",
-          "My Cases": "Cases",
-          "Know Your Rights": "Rights",
-          "My Profile": "Profile",
-        };
-        const label = mobileLabel[item.name] ?? item.name;
-        return (
-          <Link
-            key={item.name}
-            to={item.href}
-            className={cn(
-              "flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all relative",
-              active
-                ? "text-[#1D9E75] bg-green-50"
-                : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-            )}
-          >
-            <Icon className={cn("h-5 w-5 flex-shrink-0", active && "text-[#1D9E75]")} />
-            <span className={cn("text-[10px] font-semibold leading-tight text-center", active && "text-gray-900")}>{label}</span>
-            {item.badge !== undefined && item.badge > 0 && (
-              <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
-                {item.badge > 9 ? '9+' : item.badge}
+    {/* ── Mobile bottom nav — floating pill ── */}
+    <div className={mobileNavDockClass()}>
+      <nav
+        aria-label="Primary"
+        className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-0.5 rounded-[26px] border border-gray-200/70 bg-white/85 p-1.5 shadow-[0_12px_32px_-10px_rgba(16,48,36,0.35)] backdrop-blur-xl"
+      >
+        {navigation.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+          const label = MOBILE_NAV_LABELS[item.name] ?? item.name;
+          const showBadge = item.badge !== undefined && item.badge > 0;
+          return (
+            <Link
+              key={item.name}
+              to={item.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "relative flex flex-1 flex-col items-center gap-1 rounded-[20px] px-1 py-2 transition-colors duration-200",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D9E75]/40",
+                active ? "bg-[#1D9E75]/10" : "active:bg-gray-100"
+              )}
+            >
+              <span className="relative flex h-6 w-6 items-center justify-center">
+                <Icon
+                  className={cn("h-5 w-5 flex-shrink-0 transition-colors", active ? "text-[#1D9E75]" : "text-gray-400")}
+                  strokeWidth={active ? 2.4 : 1.9}
+                />
+                {showBadge && (
+                  <span className="absolute -right-2 -top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
+                    {item.badge! > 9 ? '9+' : item.badge}
+                  </span>
+                )}
               </span>
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+              <span
+                className={cn(
+                  "text-[10px] leading-none transition-colors",
+                  active ? "font-bold text-[#1D9E75]" : "font-semibold text-gray-500"
+                )}
+              >
+                {label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
 
     {/* Sign-out confirmation */}
     <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

@@ -26,6 +26,8 @@ function useInView(options: IntersectionObserverInit = {}) {
   return { ref, inView };
 }
 
+const SHELL = "w-full px-4 sm:px-6 lg:px-10 xl:px-16 2xl:px-24";
+
 const QUICK_ACTIONS = [
   { icon: ClipboardList, title: "File a Complaint", desc: "Submit securely under RA 11313 & RA 7877." },
   { icon: Activity, title: "Track Your Case", desc: "Real-time status updates at every milestone." },
@@ -113,8 +115,8 @@ const Landing = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     return (
       <header className="fixed top-0 z-50 w-full">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="flex h-14 items-center justify-between bg-white border border-gray-300 rounded-2xl px-5 shadow-lg">
+        <div className={`${SHELL} pt-4`}>
+          <div className="flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl px-5 shadow-lg shadow-gray-900/5">
             <Link to="/" className="flex items-center gap-3">
               <img src="/LOGO.png" alt="GC Logo" className="w-10 h-10 object-contain" />
               <span className="text-lg font-bold text-gray-900 tracking-tight">SpeakUp GC</span>
@@ -163,41 +165,55 @@ const Landing = () => {
       <Header />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
-      <section className="pt-24 pb-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm">
-            {/* Subtle dot pattern — left side only, fades out toward the card */}
-            <div
-              className="absolute inset-y-0 left-0 w-1/2 pointer-events-none opacity-[0.35]"
-              style={{
-                backgroundImage: "radial-gradient(circle, #1D9E75 0.5px, transparent 0.5px)",
-                backgroundSize: "20px 20px",
-                maskImage: "linear-gradient(to right, black 40%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to right, black 40%, transparent 100%)",
-              }}
-            />
-            <div className="relative px-6 py-8 sm:px-10 sm:py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      <section className="relative overflow-hidden bg-white border-b border-gray-200 pt-28 pb-10 lg:pt-36 lg:pb-16">
+        {/* Soft mint mesh — organic blobs sitting behind the headline */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div
+            className="absolute -left-32 -top-24 h-[26rem] w-[38rem] bg-gradient-to-br from-[#1D9E75]/25 via-emerald-200/40 to-transparent blur-3xl"
+            style={{ borderRadius: "58% 42% 46% 54% / 52% 44% 56% 48%" }}
+          />
+          <div
+            className="absolute -left-10 top-40 h-[22rem] w-[30rem] bg-gradient-to-tr from-teal-200/40 via-[#1D9E75]/15 to-transparent blur-3xl"
+            style={{ borderRadius: "44% 56% 62% 38% / 48% 58% 42% 52%" }}
+          />
+          <div
+            className="absolute -right-24 -top-28 h-[30rem] w-[30rem] bg-gradient-to-bl from-emerald-100/60 via-[#1D9E75]/10 to-transparent blur-3xl"
+            style={{ borderRadius: "50% 50% 42% 58% / 56% 46% 54% 44%" }}
+          />
+        </div>
+        {/* Subtle dot pattern — fades out toward the right of the viewport */}
+        <div
+          className="absolute inset-y-0 left-0 w-2/3 pointer-events-none opacity-[0.35]"
+          style={{
+            backgroundImage: "radial-gradient(circle, #1D9E75 0.5px, transparent 0.5px)",
+            backgroundSize: "20px 20px",
+            maskImage: "linear-gradient(to right, black 30%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to right, black 30%, transparent 100%)",
+          }}
+        />
+        <div className={`relative ${SHELL}`}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-20 items-center">
               {/* Left: Text */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 mb-2">SpeakUp GC</h1>
-                <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-4">
+              <div className="max-w-2xl">
+                <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-gray-900 mb-4">SpeakUp GC</h1>
+                <p className="text-base sm:text-lg text-gray-500 leading-relaxed mb-7">
                   A confidential platform for Gordon College students to file complaints, track cases, and communicate directly with DEIU — anonymously if you choose. Protected under Philippine law.
                 </p>
-                <div className="flex flex-wrap gap-2 mb-6">
+                <div className="flex flex-wrap gap-3 mb-8">
                   <button
                     onClick={() => openWalkthrough()}
-                    className="inline-flex items-center gap-1.5 bg-[#1D9E75] hover:bg-[#178F65] text-white font-semibold text-sm px-5 py-2 rounded-xl transition-colors"
+                    className="inline-flex items-center gap-2 bg-[#1D9E75] hover:bg-[#178F65] text-white font-semibold text-sm px-6 py-3 rounded-xl shadow-lg shadow-[#1D9E75]/20 transition-colors"
                   >
-                    Get Started <ArrowRight className="w-3.5 h-3.5" />
+                    Get Started <ArrowRight className="w-4 h-4" />
                   </button>
                   <a
                     href="#about"
-                    className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 font-medium text-sm px-5 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 font-medium text-sm px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
                   >
                     Learn more
                   </a>
                 </div>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-5">
                   {[
                     { icon: ShieldCheck, label: "Encrypted" },
                     { icon: EyeOff, label: "Anonymous" },
@@ -211,7 +227,7 @@ const Landing = () => {
               </div>
 
               {/* Right: Dashboard Illustration */}
-              <div className="hidden lg:block">
+              <div className="hidden lg:block w-full max-w-xl ml-auto">
                 <div className="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-200 overflow-hidden">
                   <div className="bg-green-50 border-b border-green-200 px-5 py-3 flex items-start gap-3">
                     <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -266,13 +282,12 @@ const Landing = () => {
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* ── Quick Actions ──────────────────────────────────────────── */}
-      <section id="features" className="pb-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section id="features" className="pt-8 pb-6">
+        <div className={SHELL}>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {QUICK_ACTIONS.map((item) => (
               <button
                 key={item.title}
@@ -292,7 +307,7 @@ const Landing = () => {
 
       {/* ── Trust Banner ───────────────────────────────────────────── */}
       <section className="pb-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className={SHELL}>
           <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
               <ShieldCheck className="w-5 h-5 text-[#1D9E75]" />
@@ -320,11 +335,11 @@ const Landing = () => {
 
       {/* ── How It Works ───────────────────────────────────────────── */}
       <section className="pb-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
+        <div className={SHELL}>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
             <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Process</p>
-            <h2 className="text-base font-black text-gray-900 mb-4">Three steps to resolution</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <h2 className="text-lg font-black text-gray-900 mb-4">Three steps to resolution</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {STEPS.map((s) => (
                 <div key={s.n} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-2xl font-black text-[#1D9E75]/30 leading-none mb-1">{s.n}</p>
@@ -341,7 +356,7 @@ const Landing = () => {
       <section id="about" className="pb-6">
         <div
           ref={aboutRef.ref as React.RefObject<HTMLDivElement>}
-          className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+          className={SHELL}
         >
           <div className={`bg-white border border-gray-200 rounded-xl p-5 sm:p-6 transition-all duration-500 ${aboutRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -378,12 +393,12 @@ const Landing = () => {
 
       {/* ── Did You Know (compact) ─────────────────────────────────── */}
       <section className="pb-6">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className={SHELL}>
           <div className="mb-4">
             <h2 className="text-lg font-black text-gray-900">Did You Know?</h2>
             <p className="text-xs text-gray-500">Important facts about your rights under Philippine law</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {DID_YOU_KNOW.map((card) => {
               const colorMap = {
                 green: { bg: "bg-green-50", icon: "text-green-600", check: "text-green-600" },
@@ -430,7 +445,7 @@ const Landing = () => {
 
       {/* ── Compact Footer ─────────────────────────────────────────── */}
       <footer className="bg-white border-t border-gray-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <div className={`${SHELL} py-8`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3 min-w-0">
               <img src="/LOGO.png" alt="GC Logo" className="w-8 h-8 object-contain flex-shrink-0" />

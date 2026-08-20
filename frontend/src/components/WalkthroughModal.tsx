@@ -11,6 +11,7 @@ import { validatePassword } from "../utils/passwordValidation";
 import { TermsModal } from "./TermsModal";
 import { auth } from "../firebase";
 import { signOut, signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { GOOGLE_SIGN_IN_ENABLED } from "../config";
 
 interface WalkthroughModalProps {
   isOpen: boolean;
@@ -352,7 +353,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           style={{ background: colors.inputBg, border: `1.5px solid ${colors.inputBorder}`, color: colors.heading }}
                           onFocus={(e) => e.currentTarget.style.borderColor = colors.inputFocus}
                           onBlur={(e) => e.currentTarget.style.borderColor = colors.inputBorder}
-                          placeholder="Enter your email"
+                          placeholder="you@gordoncollege.edu.ph"
                           required
                           disabled={isLoginLoading || isGoogleLoading}
                         />
@@ -393,23 +394,27 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                     </button>
                   </form>
 
-                  {/* Divider */}
-                  <div className="relative my-5">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full" style={{ borderTop: `1px solid ${colors.divider}` }} /></div>
-                    <div className="relative flex justify-center text-xs"><span className="px-2 font-medium" style={{ background: colors.modalBg, color: colors.muted }}>OR</span></div>
-                  </div>
+                  {GOOGLE_SIGN_IN_ENABLED && (
+                    <>
+                      {/* Divider */}
+                      <div className="relative my-5">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full" style={{ borderTop: `1px solid ${colors.divider}` }} /></div>
+                        <div className="relative flex justify-center text-xs"><span className="px-2 font-medium" style={{ background: colors.modalBg, color: colors.muted }}>OR</span></div>
+                      </div>
 
-                  <button
-                    type="button"
-                    disabled={isGoogleLoading || isLoginLoading}
-                    onClick={handleGoogleLogin}
-                    className="w-full h-11 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 hover:shadow-sm"
-                    style={{ background: "#fff", border: `1.5px solid ${colors.cardBorder}`, color: colors.heading }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = colors.cardBg}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
-                  >
-                    {isGoogleLoading ? <><Loader className="animate-spin h-4 w-4" /> Signing in…</> : <><GoogleIcon /> Continue with Google</>}
-                  </button>
+                      <button
+                        type="button"
+                        disabled={isGoogleLoading || isLoginLoading}
+                        onClick={handleGoogleLogin}
+                        className="w-full h-11 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 hover:shadow-sm"
+                        style={{ background: "#fff", border: `1.5px solid ${colors.cardBorder}`, color: colors.heading }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = colors.cardBg}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
+                      >
+                        {isGoogleLoading ? <><Loader className="animate-spin h-4 w-4" /> Signing in…</> : <><GoogleIcon /> Continue with Google</>}
+                      </button>
+                    </>
+                  )}
 
                   <p className="text-sm mt-5 text-center" style={{ color: colors.body }}>
                     Need an account?{" "}
@@ -435,7 +440,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           onChange={(e) => setSignupData(p => ({ ...p, email: e.target.value }))}
                           className="w-full h-11 pl-10 pr-3 rounded-lg text-sm focus:outline-none focus:ring-2 transition-all"
                           style={{ background: colors.inputBg, border: `1px solid ${colors.inputBorder}`, color: colors.heading }}
-                          placeholder="you@email.com"
+                          placeholder="you@gordoncollege.edu.ph"
                           required
                         />
                       </div>
@@ -470,21 +475,25 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                     </button>
                   </form>
 
-                  {/* Divider */}
-                  <div className="relative my-5">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full" style={{ borderTop: `1px solid ${colors.divider}` }} /></div>
-                    <div className="relative flex justify-center text-xs"><span className="px-2" style={{ background: colors.modalBg, color: colors.muted }}>OR</span></div>
-                  </div>
+                  {GOOGLE_SIGN_IN_ENABLED && (
+                    <>
+                      {/* Divider */}
+                      <div className="relative my-5">
+                        <div className="absolute inset-0 flex items-center"><div className="w-full" style={{ borderTop: `1px solid ${colors.divider}` }} /></div>
+                        <div className="relative flex justify-center text-xs"><span className="px-2" style={{ background: colors.modalBg, color: colors.muted }}>OR</span></div>
+                      </div>
 
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignup}
-                    disabled={isSignupGoogleLoading}
-                    className="w-full h-11 font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                    style={{ background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, color: colors.heading }}
-                  >
-                    {isSignupGoogleLoading ? <><Loader className="animate-spin h-4 w-4" /> Signing up…</> : <><GoogleIcon /> Continue with Google</>}
-                  </button>
+                      <button
+                        type="button"
+                        onClick={handleGoogleSignup}
+                        disabled={isSignupGoogleLoading}
+                        className="w-full h-11 font-medium text-sm rounded-lg transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        style={{ background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, color: colors.heading }}
+                      >
+                        {isSignupGoogleLoading ? <><Loader className="animate-spin h-4 w-4" /> Signing up…</> : <><GoogleIcon /> Continue with Google</>}
+                      </button>
+                    </>
+                  )}
 
                   <p className="text-sm mt-4 text-center" style={{ color: colors.body }}>
                     Already have an account?{" "}
