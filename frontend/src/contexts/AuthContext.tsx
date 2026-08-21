@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { 
   User, 
   UserCredential,
-  sendEmailVerification as firebaseSendEmailVerification, 
   reload, 
   createUserWithEmailAndPassword, 
   deleteUser, 
@@ -28,6 +27,7 @@ import {
   getDocs 
 } from 'firebase/firestore';
 import { validatePassword } from '../utils/passwordValidation';
+import { sendVerificationEmailForUser } from '../lib/sendVerificationEmail';
 import { isAdminEmail } from '../utils/admin/adminConfig';
 import { MessageService } from '../services/messageService';
 
@@ -335,8 +335,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Continue even if Firestore fails - user can still authenticate
         }
 
-        // Send email verification immediately after registration
-        await firebaseSendEmailVerification(user);
+        // Send branded verification email (falls back to Firebase template)
+        await sendVerificationEmailForUser(user);
         console.log('✅ Verification email sent to:', user.email);
       }
       
@@ -350,7 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendEmailVerification = async () => {
     if (currentUser && auth.currentUser) {
       try {
-        await firebaseSendEmailVerification(auth.currentUser);
+        await sendVerificationEmailForUser(auth.currentUser);
       } catch (error) {
         console.error('Error sending email verification:', error);
         throw error;

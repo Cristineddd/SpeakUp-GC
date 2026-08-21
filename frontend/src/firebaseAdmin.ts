@@ -1,4 +1,5 @@
 import { initializeApp, cert, getApps, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 
@@ -48,4 +49,8 @@ export const adminDb = (() => {
 
 export function getAdminMessaging() {
   return getMessaging(getAdminApp());
+}
+
+export function getAdminAuth() {
+  return getAuth(getAdminApp());
 }

@@ -16,7 +16,8 @@ import { PasswordStrengthChecker } from "../../components/auth/PasswordStrengthC
 import { validatePassword } from "../../utils/passwordValidation";
 import { TermsModal } from "../../components/TermsModal";
 import { auth } from "../../firebase";
-import { signOut, signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { signOut, signInWithEmailAndPassword } from "firebase/auth";
+import { sendVerificationEmailForUser } from "../../lib/sendVerificationEmail";
 const logoImage = "/LOGO.png";
 
 export default function SignUp() {
@@ -215,7 +216,7 @@ export default function SignUp() {
                       if (!formData.email || !formData.password) { toast({ title: 'Missing credentials', description: 'Please re-enter your credentials.', variant: 'destructive' }); return; }
                       await signInWithEmailAndPassword(auth, formData.email, formData.password);
                       const u = auth.currentUser;
-                      if (u) { await sendEmailVerification(u); toast({ title: 'Verification Sent', description: 'A new verification email was sent.' }); await signOut(auth); }
+                      if (u) { await sendVerificationEmailForUser(u); toast({ title: 'Verification Sent', description: 'A new verification email was sent.' }); await signOut(auth); }
                     } catch (err: any) { toast({ title: 'Resend Failed', description: err.message, variant: 'destructive' }); }
                     finally { setLoading(false); }
                   }}

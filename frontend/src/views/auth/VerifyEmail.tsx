@@ -11,6 +11,7 @@ export default function VerifyEmail() {
   const { user, sendEmailVerification, reloadCurrentUser, isLoading } = useAuth();
   const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -25,10 +26,14 @@ export default function VerifyEmail() {
     }
   }, [user?.emailVerified, navigate, toast]);
 
-  // Remove the second useEffect that was causing issues
-  // The above useEffect now handles all redirection logic
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   const handleResend = async () => {
+    if (resendCooldown > 0) return;
     if (!user) {
       toast({
         title: "Error",
@@ -41,6 +46,7 @@ export default function VerifyEmail() {
     try {
       setSending(true);
       await sendEmailVerification();
+      setResendCooldown(60);
       toast({
         title: "Email sent!",
         description: "Verification email has been sent to your inbox.",
@@ -107,8 +113,8 @@ export default function VerifyEmail() {
           We sent a verification link to <span className="font-medium">{user?.email}</span>. Open your inbox and click the link to verify. After that, come back and press "I've verified".
         </p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <Button onClick={handleResend} disabled={sending} variant="outline">
-            {sending ? "Sending..." : "Resend email"}
+          <Button onClick={handleResend} disabled={sending || resendCooldown > 0} variant="outline">
+            {sending ? "Sending..." : resendCooldown > 0 ? `Resend email (${resendCooldown}s)` : "Resend email"}
           </Button>
           <Button onClick={handleCheck} disabled={checking}>
             {checking ? "Checking..." : "I've verified"}

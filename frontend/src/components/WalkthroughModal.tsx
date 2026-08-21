@@ -10,7 +10,8 @@ import { PasswordStrengthChecker } from "./auth/PasswordStrengthChecker";
 import { validatePassword } from "../utils/passwordValidation";
 import { TermsModal } from "./TermsModal";
 import { auth } from "../firebase";
-import { signOut, signInWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { signOut, signInWithEmailAndPassword } from "firebase/auth";
+import { sendVerificationEmailForUser } from "../lib/sendVerificationEmail";
 import { GOOGLE_SIGN_IN_ENABLED } from "../config";
 
 interface WalkthroughModalProps {
@@ -51,6 +52,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   const [isSignupGoogleLoading, setIsSignupGoogleLoading] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Reset on open
   useEffect(() => {
@@ -100,6 +102,16 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     const timeout = setTimeout(finishRedirect, 8000);
     return () => clearTimeout(timeout);
   }, [pendingRedirect, isAuthenticated, currentUser, isLoading, isAdmin, onClose, navigate]);
+
+  useEffect(() => {
+    if (view === "signup-done") setResendCooldown(60);
+  }, [view]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   if (!isOpen) return null;
 
@@ -630,20 +642,26 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                     </button>
                     <button
                       onClick={async () => {
+                        if (resendCooldown > 0) return;
                         try {
                           setIsSignupLoading(true);
                           if (!signupData.email || !signupData.password) { toast({ title: "Missing credentials", variant: "destructive" }); return; }
                           await signInWithEmailAndPassword(auth, signupData.email, signupData.password);
                           const u = auth.currentUser;
-                          if (u) { await sendEmailVerification(u); toast({ title: "Verification Sent" }); await signOut(auth); }
+                          if (u) {
+                            await sendVerificationEmailForUser(u);
+                            toast({ title: "Verification Sent" });
+                            setResendCooldown(60);
+                            await signOut(auth);
+                          }
                         } catch (err: any) { toast({ title: "Resend Failed", description: err.message, variant: "destructive" }); }
                         finally { setIsSignupLoading(false); }
                       }}
-                      disabled={isSignupLoading}
-                      className="flex-1 h-10 font-medium text-sm rounded-lg transition-colors disabled:opacity-50"
+                      disabled={isSignupLoading || resendCooldown > 0}
+                      className="flex-1 h-10 font-medium text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ background: colors.cardBg, border: `1px solid ${colors.cardBorder}`, color: colors.body }}
                     >
-                      Resend Email
+                      {resendCooldown > 0 ? `Resend Email (${resendCooldown}s)` : "Resend Email"}
                     </button>
                   </div>
 
