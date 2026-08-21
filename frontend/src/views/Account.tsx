@@ -17,8 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../components/ui/alert-dialog";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../firebase";
+import { sendBrandedPasswordResetEmail } from "../lib/sendPasswordResetEmail";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { cn } from "../lib/utils";
@@ -158,7 +157,7 @@ const Account = () => {
     }
     setIsResetting(true);
     try {
-      await sendPasswordResetEmail(auth, user.email);
+      await sendBrandedPasswordResetEmail(user.email);
       setShowResetDialog(false);
       toast({
         title: "✨ Reset Email Sent!",

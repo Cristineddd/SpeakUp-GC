@@ -7,9 +7,9 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth } from '../firebase';
+import { sendBrandedPasswordResetEmail } from '../lib/sendPasswordResetEmail';
 
 /** True when the signed-in user authenticated with email + password (not Google-only). */
 export function hasPasswordProvider(): boolean {
@@ -47,5 +47,5 @@ export async function sendPasswordResetToCurrentUser(): Promise<void> {
   if (!user?.email) {
     throw new Error('No email address found for your account.');
   }
-  await sendPasswordResetEmail(auth, user.email);
+  await sendBrandedPasswordResetEmail(user.email);
 }

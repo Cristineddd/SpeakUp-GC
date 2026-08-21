@@ -22,8 +22,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { Link, useLocation, useNavigate } from "../../compat/router";
 import { cn } from "../../lib/utils";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../../firebase";
+import { sendBrandedPasswordResetEmail } from "../../lib/sendPasswordResetEmail";
 
 interface SubMenuItem {
   name: string;
@@ -161,7 +160,7 @@ const Header = () => {
     try {
       setIsResettingPassword(true);
       if (user?.email) {
-        await sendPasswordResetEmail(auth, user.email);
+        await sendBrandedPasswordResetEmail(user.email);
         setShowPasswordConfirmDialog(false);
         setShowPasswordResetDialog(true);
       }

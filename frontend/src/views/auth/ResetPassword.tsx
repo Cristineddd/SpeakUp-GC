@@ -5,6 +5,35 @@ import { auth } from "../../firebase";
 import { useToast } from "../../hooks/use-toast";
 import { ArrowLeft, Lock, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+const LOGIN_HREF = "/?auth=login";
+
+function AuthShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[#f8faf9] text-gray-900 font-sans flex flex-col">
+      <header className="w-full px-4 sm:px-6 pt-4 z-10">
+        <div className="flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl px-5 shadow-lg shadow-gray-900/5">
+          <Link to="/" className="flex items-center gap-2.5 min-w-0">
+            <img src="/LOGO.png" alt="SpeakUp GC" className="w-8 h-8 object-contain flex-shrink-0" />
+            <span className="font-bold text-gray-900 text-sm truncate">SpeakUp GC</span>
+          </Link>
+          <Link to={LOGIN_HREF} className="text-sm font-medium text-[#1D9E75] hover:text-[#178F65] transition-colors">
+            Log In
+          </Link>
+        </div>
+      </header>
+      <main className="relative flex-1 flex items-center justify-center p-4 sm:p-6">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div className="absolute -left-24 -top-20 h-[22rem] w-[28rem] bg-gradient-to-br from-[#1D9E75]/20 via-emerald-200/35 to-transparent blur-3xl" />
+          <div className="absolute -right-20 bottom-0 h-[20rem] w-[24rem] bg-gradient-to-tl from-teal-200/35 via-[#1D9E75]/10 to-transparent blur-3xl" />
+        </div>
+        <div className="relative w-full max-w-md bg-white border border-[#d4e4db] rounded-2xl shadow-xl shadow-gray-900/5 p-6 sm:p-8">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -147,246 +176,201 @@ const ResetPassword = () => {
 
   if (isCheckingCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Verifying Reset Link...
-            </h2>
-            <p className="text-gray-600">
-              Please wait while we verify your password reset link.
-            </p>
-          </div>
+      <AuthShell>
+        <div className="text-center py-6">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#1D9E75] border-t-transparent mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-[#1a2e1f] mb-1">Verifying reset link</h2>
+          <p className="text-sm text-[#7a8f82]">Please wait a moment…</p>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   if (resetComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="mx-auto h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-              <CheckCircle className="h-10 w-10 text-green-600" />
-            </div>
-            
-            <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Password Reset Complete! 🎉
-            </h2>
-            
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <p className="text-green-800">
-                Your password has been successfully updated for:
-              </p>
-              <p className="font-semibold text-green-700 text-lg mt-1">
-                {email}
-              </p>
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 text-sm">
-                You can now login to SpeakUp GC with your new password. 
-                Make sure to keep it secure and don't share it with anyone.
-              </p>
-            </div>
-
-            <Link
-              to="/login"
-              className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-            >
-              Continue to Login
-            </Link>
+      <AuthShell>
+        <div className="text-center">
+          <div className="mx-auto h-14 w-14 bg-emerald-50 rounded-full flex items-center justify-center mb-5">
+            <CheckCircle className="h-7 w-7 text-[#1D9E75]" />
           </div>
+          <h2 className="text-2xl font-extrabold text-[#1a2e1f] mb-2">Password updated</h2>
+          <p className="text-sm text-[#4b5e52] mb-4">You can now sign in with your new password for</p>
+          <div className="bg-[#f0f7f3] border border-[#d4e4db] rounded-xl px-4 py-3 mb-6">
+            <p className="font-semibold text-[#1D9E75] text-sm break-all">{email}</p>
+          </div>
+          <Link
+            to={LOGIN_HREF}
+            className="w-full inline-flex items-center justify-center gap-2 h-11 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Continue to Login
+          </Link>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   if (!isValidCode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-            <div className="mx-auto h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
-              <AlertCircle className="h-10 w-10 text-red-600" />
-            </div>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Invalid Reset Link
-            </h2>
-            
-            <p className="text-gray-600 mb-6">
-              This password reset link is invalid or has expired. Please request a new password reset.
-            </p>
-
-            <div className="space-y-3">
-              <Link
-                to="/forgot-password"
-                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-              >
-                Request New Reset Link
-              </Link>
-              
-              <Link
-                to="/login"
-                className="w-full inline-flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-              >
-                <ArrowLeft size={16} />
-                Back to Login
-              </Link>
-            </div>
+      <AuthShell>
+        <div className="text-center">
+          <div className="mx-auto h-14 w-14 bg-red-50 rounded-full flex items-center justify-center mb-5">
+            <AlertCircle className="h-7 w-7 text-red-500" />
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  const passwordValidation = validatePassword(newPassword);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="mx-auto h-20 w-20 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-              <Lock className="h-10 w-10 text-purple-600" />
-            </div>
-            <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-              Set New Password
-            </h2>
-            <p className="text-gray-600">
-              Create a strong password for your SpeakUp GC account
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-              <p className="text-sm text-blue-800">
-                Resetting password for: <strong>{email}</strong>
-              </p>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* New Password */}
-            <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                New Password
-              </label>
-              <div className="relative">
-                <input
-                  id="newPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter your new password"
-                  className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm New Password
-              </label>
-              <div className="relative">
-                <input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your new password"
-                  className="w-full pr-12 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Password Requirements */}
-            {newPassword && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
-                <div className="space-y-1 text-xs">
-                  <div className={`flex items-center gap-2 ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                    <CheckCircle size={12} className={passwordValidation.minLength ? 'opacity-100' : 'opacity-30'} />
-                    At least 8 characters
-                  </div>
-                  <div className={`flex items-center gap-2 ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-red-600'}`}>
-                    <CheckCircle size={12} className={passwordValidation.hasUpperCase ? 'opacity-100' : 'opacity-30'} />
-                    One uppercase letter
-                  </div>
-                  <div className={`flex items-center gap-2 ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-red-600'}`}>
-                    <CheckCircle size={12} className={passwordValidation.hasLowerCase ? 'opacity-100' : 'opacity-30'} />
-                    One lowercase letter
-                  </div>
-                  <div className={`flex items-center gap-2 ${passwordValidation.hasNumbers ? 'text-green-600' : 'text-red-600'}`}>
-                    <CheckCircle size={12} className={passwordValidation.hasNumbers ? 'opacity-100' : 'opacity-30'} />
-                    One number
-                  </div>
-                  <div className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-red-600'}`}>
-                    <CheckCircle size={12} className={passwordValidation.hasSpecialChar ? 'opacity-100' : 'opacity-30'} />
-                    One special character
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Password Match Indicator */}
-            {confirmPassword && (
-              <div className={`text-sm ${newPassword === confirmPassword ? 'text-green-600' : 'text-red-600'}`}>
-                {newPassword === confirmPassword ? '✓ Passwords match' : '✗ Passwords do not match'}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading || !passwordValidation.isValid || newPassword !== confirmPassword}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-4 focus:ring-purple-200 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Updating Password...
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Update Password
-                </div>
-              )}
-            </button>
-          </form>
-
-          {/* Back to Login */}
-          <div className="text-center mt-6">
+          <h2 className="text-2xl font-extrabold text-[#1a2e1f] mb-2">Invalid reset link</h2>
+          <p className="text-sm text-[#4b5e52] mb-6">
+            This password reset link is invalid or has expired. Please request a new one.
+          </p>
+          <div className="space-y-2">
             <Link
-              to="/login"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+              to="/forgot-password"
+              className="w-full inline-flex items-center justify-center h-11 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-semibold rounded-xl transition-colors"
+            >
+              Request a new link
+            </Link>
+            <Link
+              to={LOGIN_HREF}
+              className="w-full inline-flex items-center justify-center gap-2 h-11 text-[#4b5e52] hover:text-[#1a2e1f] text-sm font-medium transition-colors"
             >
               <ArrowLeft size={16} />
               Back to Login
             </Link>
           </div>
         </div>
+      </AuthShell>
+    );
+  }
+
+  const passwordValidation = validatePassword(newPassword);
+
+  return (
+    <AuthShell>
+      <div className="flex flex-col items-center mb-6">
+        <img src="/LOGO.png" alt="" className="w-10 h-10 object-contain mb-2" />
+        <span className="text-sm font-semibold text-[#7a8f82]">SpeakUp GC</span>
       </div>
-    </div>
+      <h2 className="text-2xl sm:text-3xl font-extrabold text-center text-[#1a2e1f] mb-1">
+        Set a new password
+      </h2>
+      <p className="text-sm text-center text-[#7a8f82] mb-5">
+        Create a strong password for your account
+      </p>
+      <div className="bg-[#f0f7f3] border border-[#d4e4db] rounded-xl px-4 py-3 mb-6 text-center">
+        <p className="text-xs text-[#7a8f82] mb-0.5">Resetting password for</p>
+        <p className="text-sm font-semibold text-[#1D9E75] break-all">{email}</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <label htmlFor="newPassword" className="text-xs font-semibold uppercase tracking-wide text-[#4b5e52]">
+            New Password
+          </label>
+          <div className="relative">
+            <input
+              id="newPassword"
+              type={showPassword ? "text" : "password"}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter your new password"
+              className="w-full h-11 pl-3 pr-10 rounded-xl text-sm text-[#1a2e1f] placeholder-[#9ca8a0] bg-[#f5f9f7] border-[1.5px] border-[#d4e4db] focus:outline-none focus:border-[#1D9E75] transition-colors"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a8f82] hover:text-[#1a2e1f]"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="confirmPassword" className="text-xs font-semibold uppercase tracking-wide text-[#4b5e52]">
+            Confirm New Password
+          </label>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your new password"
+              className="w-full h-11 pl-3 pr-10 rounded-xl text-sm text-[#1a2e1f] placeholder-[#9ca8a0] bg-[#f5f9f7] border-[1.5px] border-[#d4e4db] focus:outline-none focus:border-[#1D9E75] transition-colors"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7a8f82] hover:text-[#1a2e1f]"
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        {newPassword && (
+          <div className="bg-[#f8faf9] border border-[#e2ece7] rounded-xl p-4">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-[#4b5e52] mb-2">Password requirements</h4>
+            <div className="space-y-1 text-xs">
+              <div className={`flex items-center gap-2 ${passwordValidation.minLength ? "text-[#1D9E75]" : "text-red-500"}`}>
+                <CheckCircle size={12} className={passwordValidation.minLength ? "opacity-100" : "opacity-30"} />
+                At least 8 characters
+              </div>
+              <div className={`flex items-center gap-2 ${passwordValidation.hasUpperCase ? "text-[#1D9E75]" : "text-red-500"}`}>
+                <CheckCircle size={12} className={passwordValidation.hasUpperCase ? "opacity-100" : "opacity-30"} />
+                One uppercase letter
+              </div>
+              <div className={`flex items-center gap-2 ${passwordValidation.hasLowerCase ? "text-[#1D9E75]" : "text-red-500"}`}>
+                <CheckCircle size={12} className={passwordValidation.hasLowerCase ? "opacity-100" : "opacity-30"} />
+                One lowercase letter
+              </div>
+              <div className={`flex items-center gap-2 ${passwordValidation.hasNumbers ? "text-[#1D9E75]" : "text-red-500"}`}>
+                <CheckCircle size={12} className={passwordValidation.hasNumbers ? "opacity-100" : "opacity-30"} />
+                One number
+              </div>
+              <div className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? "text-[#1D9E75]" : "text-red-500"}`}>
+                <CheckCircle size={12} className={passwordValidation.hasSpecialChar ? "opacity-100" : "opacity-30"} />
+                One special character
+              </div>
+            </div>
+          </div>
+        )}
+
+        {confirmPassword && (
+          <p className={`text-sm ${newPassword === confirmPassword ? "text-[#1D9E75]" : "text-red-500"}`}>
+            {newPassword === confirmPassword ? "Passwords match" : "Passwords do not match"}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={isLoading || !passwordValidation.isValid || newPassword !== confirmPassword}
+          className="w-full h-11 bg-[#1D9E75] hover:bg-[#178F65] text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-[#1D9E75]/20"
+        >
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              Updating…
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" />
+              Update Password
+            </>
+          )}
+        </button>
+      </form>
+
+      <div className="text-center mt-5">
+        <Link
+          to={LOGIN_HREF}
+          className="inline-flex items-center gap-2 text-sm text-[#4b5e52] hover:text-[#1a2e1f] font-medium transition-colors"
+        >
+          <ArrowLeft size={16} />
+          Back to Login
+        </Link>
+      </div>
+    </AuthShell>
   );
 };
 

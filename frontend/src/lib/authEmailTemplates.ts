@@ -6,43 +6,27 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function buildVerificationEmail(input: {
+function brandedEmailLayout(input: {
+  previewText: string;
+  title: string;
+  heading: string;
+  introHtml: string;
+  buttonLabel: string;
+  link: string;
+  notice: string;
+  logoBlock: string;
   toName: string;
-  verificationLink: string;
-  logoUrl?: string;
-}): { subject: string; html: string; text: string } {
-  const toName = escapeHtml(input.toName);
-  const link = escapeHtml(input.verificationLink);
-  const logoUrl = input.logoUrl ? escapeHtml(input.logoUrl) : '';
-
-  const logoBlock = logoUrl
-    ? `<img src="${logoUrl}" width="56" height="56" alt="SpeakUp GC" style="display:block;margin:0 auto 14px;border:0;border-radius:12px;background:#fff;" />`
-    : '';
-
-  return {
-    subject: 'Verify your email — SpeakUp GC',
-    text: `Hi ${input.toName},
-
-Welcome to SpeakUp GC, Gordon College's DEIU reporting platform.
-
-Verify your email so you can sign in:
-${input.verificationLink}
-
-This link expires in 24 hours. If you did not create this account, you can ignore this email.
-
-Thank you,
-The SpeakUp GC team
-Gordon College — Diversity, Equity, and Inclusion Unit`,
-    html: `<!DOCTYPE html>
+}): string {
+  return `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verify your email</title>
+    <title>${input.title}</title>
   </head>
   <body style="margin:0;padding:0;background:#f3f4f6;">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
-      Verify your SpeakUp GC account to finish signing up.
+      ${input.previewText}
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px;">
       <tr>
@@ -50,23 +34,23 @@ Gordon College — Diversity, Equity, and Inclusion Unit`,
           <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
             <tr>
               <td style="background:#16A34A;background:linear-gradient(135deg,#16A34A 0%,#15803D 100%);padding:36px 32px;text-align:center;border-radius:16px 16px 0 0;">
-                ${logoBlock}
+                ${input.logoBlock}
                 <h1 style="margin:0;color:#ffffff;font-size:26px;line-height:1.2;font-weight:700;">SpeakUp GC</h1>
                 <p style="margin:8px 0 0;color:#dcfce7;font-size:14px;letter-spacing:0.02em;">Gordon College DEIU</p>
               </td>
             </tr>
             <tr>
               <td style="background:#ffffff;padding:36px 32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
-                <h2 style="margin:0 0 8px;color:#166534;font-size:22px;line-height:1.3;">Verify your email address</h2>
-                <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">Hi ${toName},</p>
+                <h2 style="margin:0 0 8px;color:#166534;font-size:22px;line-height:1.3;">${input.heading}</h2>
+                <p style="margin:0 0 16px;color:#374151;font-size:15px;line-height:1.6;">Hi ${input.toName},</p>
                 <p style="margin:0 0 24px;color:#374151;font-size:15px;line-height:1.6;">
-                  Thank you for creating a SpeakUp GC account. Confirm this email to finish setup and access the DEIU reporting platform.
+                  ${input.introHtml}
                 </p>
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 8px;">
                   <tr>
                     <td align="center" bgcolor="#16A34A" style="background:#16A34A;border-radius:8px;">
-                      <a href="${link}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">
-                        Verify Email Address
+                      <a href="${input.link}" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;">
+                        ${input.buttonLabel}
                       </a>
                     </td>
                   </tr>
@@ -74,13 +58,13 @@ Gordon College — Diversity, Equity, and Inclusion Unit`,
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;">
                   <tr>
                     <td style="background:#fffbeb;border-left:4px solid #f59e0b;padding:14px 16px;border-radius:4px;color:#92400e;font-size:13px;line-height:1.5;">
-                      <strong>Security notice:</strong> This link expires in 24 hours. If you did not create this account, you can ignore this email.
+                      ${input.notice}
                     </td>
                   </tr>
                 </table>
                 <p style="margin:24px 0 0;color:#6b7280;font-size:12px;line-height:1.6;">
                   If the button does not work, copy and paste this link into your browser:<br />
-                  <a href="${link}" style="color:#16A34A;word-break:break-all;">${link}</a>
+                  <a href="${input.link}" style="color:#16A34A;word-break:break-all;">${input.link}</a>
                 </p>
               </td>
             </tr>
@@ -96,6 +80,87 @@ Gordon College — Diversity, Equity, and Inclusion Unit`,
       </tr>
     </table>
   </body>
-</html>`,
+</html>`;
+}
+
+function logoBlock(logoUrl?: string): string {
+  if (!logoUrl) return '';
+  const src = escapeHtml(logoUrl);
+  return `<img src="${src}" width="56" height="56" alt="SpeakUp GC" style="display:block;margin:0 auto 14px;border:0;border-radius:12px;background:#fff;" />`;
+}
+
+export function buildVerificationEmail(input: {
+  toName: string;
+  verificationLink: string;
+  logoUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const toName = escapeHtml(input.toName);
+  const link = escapeHtml(input.verificationLink);
+
+  return {
+    subject: 'Verify your email — SpeakUp GC',
+    text: `Hi ${input.toName},
+
+Welcome to SpeakUp GC, Gordon College's DEIU reporting platform.
+
+Verify your email so you can sign in:
+${input.verificationLink}
+
+This link expires in 24 hours. If you did not create this account, you can ignore this email.
+
+Thank you,
+The SpeakUp GC team
+Gordon College — Diversity, Equity, and Inclusion Unit`,
+    html: brandedEmailLayout({
+      previewText: 'Verify your SpeakUp GC account to finish signing up.',
+      title: 'Verify your email',
+      heading: 'Verify your email address',
+      introHtml:
+        'Thank you for creating a SpeakUp GC account. Confirm this email to finish setup and access the DEIU reporting platform.',
+      buttonLabel: 'Verify Email Address',
+      link,
+      notice:
+        '<strong>Security notice:</strong> This link expires in 24 hours. If you did not create this account, you can ignore this email.',
+      logoBlock: logoBlock(input.logoUrl),
+      toName,
+    }),
+  };
+}
+
+export function buildPasswordResetEmail(input: {
+  toName: string;
+  resetLink: string;
+  logoUrl?: string;
+}): { subject: string; html: string; text: string } {
+  const toName = escapeHtml(input.toName);
+  const link = escapeHtml(input.resetLink);
+
+  return {
+    subject: 'Reset your password — SpeakUp GC',
+    text: `Hi ${input.toName},
+
+We received a request to reset your SpeakUp GC password.
+
+Reset your password:
+${input.resetLink}
+
+This link expires in 1 hour. If you did not request a reset, you can ignore this email and your password will stay the same.
+
+Thank you,
+The SpeakUp GC team
+Gordon College — Diversity, Equity, and Inclusion Unit`,
+    html: brandedEmailLayout({
+      previewText: 'Reset your SpeakUp GC password. This link expires in 1 hour.',
+      title: 'Reset your password',
+      heading: 'Reset your password',
+      introHtml:
+        'We received a request to reset the password for your SpeakUp GC account. Click the button below to choose a new password.',
+      buttonLabel: 'Reset Password',
+      link,
+      notice:
+        '<strong>Security notice:</strong> This link expires in 1 hour. If you did not request a reset, you can ignore this email and your password will stay the same.',
+      logoBlock: logoBlock(input.logoUrl),
+      toName,
+    }),
   };
 }
