@@ -15,6 +15,7 @@ import { useSystemSettings } from '../../hooks/useSystemSettings';
 import { setChatbotEnabled as setChatbotEnabledSetting, setMaintenanceMode as setMaintenanceModeSetting } from '../../services/systemSettingsService';
 import { changePassword, sendPasswordResetToCurrentUser } from '../../services/authPasswordService';
 import { validatePassword } from '../../utils/passwordValidation';
+import { getAuthErrorMessage } from '../../utils/auth/firebaseErrorMessages';
 import { PushNotificationSettings } from '../../components/notifications/PushNotificationSettings';
 
 const Settings = () => {
@@ -152,19 +153,16 @@ const Settings = () => {
         description: 'Your password has been changed successfully.'
       });
       setPasswordData({ current: '', new: '', confirm: '' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating password:', error);
-      let description = 'Failed to update password. Please try again.';
-      if (error.code === 'auth/wrong-password') {
-        description = 'Current password is incorrect.';
-      } else if (error.code === 'auth/weak-password') {
-        description = 'New password is too weak.';
-      } else if (error.code === 'auth/requires-recent-login') {
-        description = 'Please sign out and sign in again, then retry changing your password.';
-      } else if (error.message) {
-        description = error.message;
-      }
-      toast({ title: 'Error', description, variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: getAuthErrorMessage(error, 'Failed to update password. Please try again.', {
+          'auth/invalid-credential': 'Current password is incorrect.',
+          'auth/wrong-password': 'Current password is incorrect.',
+        }),
+        variant: 'destructive',
+      });
     } finally {
       setUpdatingPassword(false);
     }

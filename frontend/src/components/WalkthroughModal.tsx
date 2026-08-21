@@ -13,6 +13,7 @@ import { auth } from "../firebase";
 import { signOut, signInWithEmailAndPassword } from "firebase/auth";
 import { sendVerificationEmailForUser } from "../lib/sendVerificationEmail";
 import { GOOGLE_SIGN_IN_ENABLED } from "../config";
+import { getAuthErrorMessage } from "../utils/auth/firebaseErrorMessages";
 
 interface WalkthroughModalProps {
   isOpen: boolean;
@@ -140,14 +141,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       await login(loginData.email, loginData.password);
       toast({ title: "Login Successful", description: "Welcome back! Redirecting..." });
       setPendingRedirect(true);
-    } catch (error: any) {
-      let msg = "Login failed. Please try again.";
-      if (error.code === "auth/user-not-found") msg = "No account found with this email.";
-      else if (error.code === "auth/wrong-password") msg = "Incorrect password.";
-      else if (error.code === "auth/too-many-requests") msg = "Too many attempts. Try later.";
-      else if (error.code === "auth/invalid-email") msg = "Invalid email address.";
-      else if (error.message) msg = error.message;
-      toast({ title: "Login failed", description: msg, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Login failed",
+        description: getAuthErrorMessage(error, "Invalid email or password. Please try again."),
+        variant: "destructive",
+      });
       setIsLoginLoading(false);
     }
   };
@@ -158,12 +157,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       await loginWithGoogle();
       toast({ title: "Login Successful", description: "Welcome back! Redirecting..." });
       setPendingRedirect(true);
-    } catch (error: any) {
-      let msg = "Google Sign-In failed.";
-      if (error.message?.includes('@gordoncollege.edu.ph')) msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
-      else if (error.message?.includes("not registered")) msg = "This Google account is not registered. Please sign up first.";
-      else if (error.message) msg = error.message;
-      toast({ title: "Sign-In Failed", description: msg, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Sign-In Failed",
+        description: getAuthErrorMessage(error, "Google Sign-In failed. Please try again."),
+        variant: "destructive",
+      });
       setIsGoogleLoading(false);
     }
   };
@@ -202,12 +201,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       await signOut(auth);
       goTo("signup-done");
       toast({ title: "Account created!", description: "Please check your email to verify your account." });
-    } catch (error: any) {
-      let msg = "Failed to create account.";
-      if (error.code === "auth/email-already-in-use") msg = "This email is already registered. Please sign in instead.";
-      else if (error.code === "auth/weak-password") msg = "Password is too weak.";
-      else if (error.code === "auth/invalid-email") msg = "Invalid email address.";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: getAuthErrorMessage(error, "Failed to create account."),
+        variant: "destructive",
+      });
     } finally {
       setIsSignupLoading(false);
     }
@@ -219,12 +218,12 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       await signUpWithGoogle();
       toast({ title: "Account Created!", description: "Welcome to SpeakUp GC!" });
       setPendingRedirect(true);
-    } catch (error: any) {
-      let msg = error.message || "Failed to sign up with Google";
-      if (error.message?.includes('@gordoncollege.edu.ph')) {
-        msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
-      }
-      toast({ title: "Sign Up Failed", description: msg, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Sign Up Failed",
+        description: getAuthErrorMessage(error, "Failed to sign up with Google. Please try again."),
+        variant: "destructive",
+      });
       setIsSignupGoogleLoading(false);
     }
   };
@@ -392,6 +391,17 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          navigate("/forgot-password");
+                        }}
+                        className="text-xs font-medium hover:underline"
+                        style={{ color: colors.primary }}
+                      >
+                        Forgot your password?
+                      </button>
                     </div>
 
                     <button
@@ -629,7 +639,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                             if (u.emailVerified) { toast({ title: "Email Verified", description: "Redirecting to dashboard." }); setPendingRedirect(true); return; }
                             else { toast({ title: "Not Verified", description: "Email not yet verified.", variant: "destructive" }); await signOut(auth); }
                           }
-                        } catch (err: any) { toast({ title: "Check Failed", description: err.message, variant: "destructive" }); }
+                        } catch (err: unknown) { toast({ title: "Check Failed", description: getAuthErrorMessage(err, "Could not check verification. Please try again."), variant: "destructive" }); }
                         finally { setIsSignupLoading(false); }
                       }}
                       disabled={isSignupLoading}
@@ -654,7 +664,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                             setResendCooldown(60);
                             await signOut(auth);
                           }
-                        } catch (err: any) { toast({ title: "Resend Failed", description: err.message, variant: "destructive" }); }
+                        } catch (err: unknown) { toast({ title: "Resend Failed", description: getAuthErrorMessage(err, "Could not resend verification email. Please try again."), variant: "destructive" }); }
                         finally { setIsSignupLoading(false); }
                       }}
                       disabled={isSignupLoading || resendCooldown > 0}

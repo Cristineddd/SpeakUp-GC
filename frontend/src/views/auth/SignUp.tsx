@@ -18,6 +18,7 @@ import { TermsModal } from "../../components/TermsModal";
 import { auth } from "../../firebase";
 import { signOut, signInWithEmailAndPassword } from "firebase/auth";
 import { sendVerificationEmailForUser } from "../../lib/sendVerificationEmail";
+import { getAuthErrorMessage } from "../../utils/auth/firebaseErrorMessages";
 const logoImage = "/LOGO.png";
 
 export default function SignUp() {
@@ -85,8 +86,8 @@ export default function SignUp() {
       setLoading(true);
       setStep('password');
       toast({ title: "Email Accepted!", description: "Please create a secure password for your account." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "An error occurred. Please try again.", variant: "destructive" });
+    } catch (error: unknown) {
+      toast({ title: "Error", description: getAuthErrorMessage(error, "An error occurred. Please try again."), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -112,12 +113,12 @@ export default function SignUp() {
       await signOut(auth);
       setAccountCreated(true);
       toast({ title: "Account created!", description: "Please check your email to verify your account before signing in." });
-    } catch (error: any) {
-      let errorMessage = "Failed to create account. Please try again.";
-      if (error.code === "auth/email-already-in-use") errorMessage = "This email is already registered. Please sign in instead.";
-      else if (error.code === "auth/weak-password") errorMessage = "Password is too weak. Please use a stronger password.";
-      else if (error.code === "auth/invalid-email") errorMessage = "Invalid email address.";
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } catch (error: unknown) {
+      toast({
+        title: "Error",
+        description: getAuthErrorMessage(error, "Failed to create account. Please try again."),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -204,7 +205,7 @@ export default function SignUp() {
                         if (u.emailVerified) { toast({ title: 'Email Verified', description: 'Redirecting to dashboard.' }); setPendingRedirect(true); return; }
                         else { toast({ title: 'Not Verified', description: 'Email not yet verified.', variant: 'destructive' }); await signOut(auth); }
                       }
-                    } catch (err: any) { toast({ title: 'Check Failed', description: err.message, variant: 'destructive' }); }
+                    } catch (err: unknown) { toast({ title: 'Check Failed', description: getAuthErrorMessage(err, 'Could not check verification. Please try again.'), variant: 'destructive' }); }
                     finally { setLoading(false); }
                   }}
                   className="flex-1 h-10 bg-[#1D9E75] hover:bg-[#178F65] text-white font-medium text-sm rounded-[4px] transition-colors"
@@ -217,7 +218,7 @@ export default function SignUp() {
                       await signInWithEmailAndPassword(auth, formData.email, formData.password);
                       const u = auth.currentUser;
                       if (u) { await sendVerificationEmailForUser(u); toast({ title: 'Verification Sent', description: 'A new verification email was sent.' }); await signOut(auth); }
-                    } catch (err: any) { toast({ title: 'Resend Failed', description: err.message, variant: 'destructive' }); }
+                    } catch (err: unknown) { toast({ title: 'Resend Failed', description: getAuthErrorMessage(err, 'Could not resend verification email. Please try again.'), variant: 'destructive' }); }
                     finally { setLoading(false); }
                   }}
                   className="flex-1 h-10 bg-[#2b2d31] hover:bg-[#35373c] text-[#b5bac1] font-medium text-sm rounded-[4px] border border-[#3f4147] transition-colors"
@@ -271,12 +272,8 @@ export default function SignUp() {
                     await signUpWithGoogle(); 
                     setPendingRedirect(true);
                   }
-                  catch (error: any) { 
-                    let msg = error.message || "Failed to sign up with Google";
-                    if (error.message?.includes('@gordoncollege.edu.ph')) {
-                      msg = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
-                    }
-                    toast({ title: "Sign Up Failed", description: msg, variant: "destructive" }); 
+                  catch (error: unknown) { 
+                    toast({ title: "Sign Up Failed", description: getAuthErrorMessage(error, "Failed to sign up with Google. Please try again."), variant: "destructive" }); 
                     setIsGoogleLoading(false);
                   }
                 }}

@@ -3,6 +3,7 @@ import { Shield, Eye, EyeOff, Mail, Lock, ArrowLeft, MessageSquare } from "lucid
 import { useNavigate, Link } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../hooks/use-toast";
+import { getAuthErrorMessage } from "../../utils/auth/firebaseErrorMessages";
 const logoImage = "/LOGO.png";
 
 const Login = () => {
@@ -83,8 +84,6 @@ const Login = () => {
         variant: "default",
       });
     } catch (error: any) {
-      let errorMessage = "Login failed. Please try again.";
-      
       if (error.message?.includes('verify your email')) {
         toast({
           title: "Email Not Verified",
@@ -104,19 +103,10 @@ const Login = () => {
         });
         return;
       }
-      
-      switch (error.code) {
-        case "auth/user-not-found": errorMessage = "No account found with this email."; break;
-        case "auth/wrong-password": errorMessage = "Incorrect password."; break;
-        case "auth/too-many-requests": errorMessage = "Too many attempts. Try later."; break;
-        case "auth/invalid-email": errorMessage = "Invalid email address."; break;
-        case "auth/user-disabled": errorMessage = "This account has been disabled."; break;
-        default: errorMessage = error.message || errorMessage;
-      }
-      
+
       toast({
         title: "Login failed",
-        description: errorMessage,
+        description: getAuthErrorMessage(error, "Invalid email or password. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -135,25 +125,9 @@ const Login = () => {
         variant: "default",
       });
     } catch (error: any) {
-      let errorMessage = "Google Sign-In failed. Please try again.";
-      
-      if (error.message?.includes('@gordoncollege.edu.ph')) {
-        errorMessage = "Only @gordoncollege.edu.ph email addresses are allowed. Please use your Gordon College email.";
-      } else if (error.message?.includes('not registered')) {
-        errorMessage = "This Google account is not registered. Please sign up first.";
-      } else if (error.message?.includes('No account found')) {
-        errorMessage = "No account found. Please sign up first using Google on the signup page.";
-      } else if (error.message?.includes('cancelled')) {
-        errorMessage = "Sign-in was cancelled.";
-      } else if (error.message?.includes('popup blocked')) {
-        errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
       toast({
         title: "Sign-In Failed",
-        description: errorMessage,
+        description: getAuthErrorMessage(error, "Google Sign-In failed. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -310,18 +284,10 @@ const Login = () => {
             )}
           </button>
 
-          {/* Footer links */}
           <p className="text-sm text-[#b5bac1] mt-4">
             Need an account?{" "}
             <Link to="/signup" className="text-[#3a9d68] hover:underline font-medium">
               Register
-            </Link>
-          </p>
-
-          <p className="text-[11px] text-[#72767d] mt-3">
-            Staff or Administrator?{" "}
-            <Link to="/admin/login" className="text-[#3a9d68] hover:underline">
-              Login here
             </Link>
           </p>
         </div>

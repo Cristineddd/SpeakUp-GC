@@ -5,6 +5,7 @@ import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import RepresentativeService from '../../services/representativeService';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { getAuthErrorMessage } from '../../utils/auth/firebaseErrorMessages';
 
 export default function AdminLogin() {
   const [formData, setFormData] = useState({
@@ -66,8 +67,8 @@ export default function AdminLogin() {
       setLoading(true);
       await login(formData.email, formData.password); // Login and check admin status
       // Will automatically redirect if successful
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } catch (err: unknown) {
+      setError(getAuthErrorMessage(err, 'Invalid email or password. Please try again.'));
       console.error('Admin login error:', err);
     } finally {
       setLoading(false);
@@ -155,6 +156,12 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-[#3a9d68] hover:underline"
+              >
+                Forgot your password?
+              </Link>
             </div>
 
             <button
