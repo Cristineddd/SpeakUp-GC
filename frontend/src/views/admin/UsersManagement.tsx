@@ -65,7 +65,7 @@ interface User {
   alias?: string;
   isAdmin: boolean;
   createdAt: string;
-  emailVerified: boolean;
+  emailVerified?: boolean;
   representativeRole?: RepresentativeRole | null;
   department?: string;
   position?: string;
@@ -164,7 +164,7 @@ const UsersManagement = () => {
 
     // Apply status filter
     if (statusFilter === 'active') {
-      result = result.filter(user => !user.isSuspended);
+      result = result.filter(user => !user.isSuspended && user.emailVerified !== false);
     } else if (statusFilter === 'suspended') {
       result = result.filter(user => user.isSuspended);
     }
@@ -200,7 +200,7 @@ const UsersManagement = () => {
     activeToday: regularUsers.filter(user => {
       if (!user.reportsCount || user.reportsCount === 0) return false;
       // This is a simplified check - in production you'd check actual report timestamps
-      return !user.isSuspended;
+      return !user.isSuspended && user.emailVerified !== false;
     }).length,
     newThisMonth: regularUsers.filter(user => {
       if (!user.createdAt) return false;
@@ -762,6 +762,11 @@ const UsersManagement = () => {
                       <Ban className="h-3 w-3 mr-1" />
                       Suspended
                     </Badge>
+                  ) : user.emailVerified === false ? (
+                    <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 px-3 py-1 text-xs font-bold">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pending Verification
+                    </Badge>
                   ) : (
                     <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700 px-3 py-1 text-xs font-bold">
                       <CheckCircle className="h-3 w-3 mr-1" />
@@ -857,6 +862,10 @@ const UsersManagement = () => {
                     {selectedUser.isSuspended ? (
                       <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">
                         Suspended
+                      </Badge>
+                    ) : selectedUser.emailVerified === false ? (
+                      <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                        Pending Verification
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">

@@ -74,6 +74,20 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// Firebase Auth keeps emailVerified outside Firestore, so the admin dashboard
+// cannot read it. Mirror it onto the user document whenever it changes.
+const syncEmailVerified = async (user: User) => {
+  try {
+    await setDoc(
+      doc(db, 'users', user.uid),
+      { emailVerified: user.emailVerified },
+      { merge: true }
+    );
+  } catch (error) {
+    console.warn('Could not sync email verification status:', error);
+  }
+};
+
 // Helper function to delete user data from Firestore
 const deleteUserData = async (userId: string, userEmail: string) => {
   try {
@@ -270,6 +284,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (userData?.isAdmin) {
             (user as AuthUser).isAdmin = true;
           }
+          if (userData?.emailVerified !== user.emailVerified) {
+            await syncEmailVerified(user);
+          }
         } catch (error) {
           console.warn('Could not fetch user document, using email-based admin check');
           // Fallback to email-based admin check
@@ -328,7 +345,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isRegistered: true,
             isActive: true,
             isDeleted: false,
-            ...additionalData
+            ...additionalData,
+            emailVerified: user.emailVerified
           });
         } catch (dbError) {
           console.warn('Could not create user documents, but auth user was created:', dbError);
@@ -367,6 +385,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Trigger a re-render to check the updated emailVerified status
         const updatedUser = auth.currentUser;
         if (updatedUser) {
+          await syncEmailVerified(updatedUser);
           setCurrentUser(updatedUser as AuthUser);
           return updatedUser as AuthUser;
         }
@@ -429,7 +448,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               provider: 'google',
               isRegistered: true,
               isActive: true,
-              isDeleted: false
+              isDeleted: false,
+              emailVerified: user.emailVerified
             });
           } else {
             console.log('User document exists, checking admin status');
@@ -440,6 +460,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.log('User is admin');
             } else {
               console.log('User is not admin');
+            }
+            if (userData?.emailVerified !== user.emailVerified) {
+              await syncEmailVerified(user);
             }
           }
           
@@ -521,8 +544,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               provider: 'google',
               isRegistered: true,
               isActive: true,
-              isDeleted: false
+              isDeleted: false,
+              emailVerified: user.emailVerified
             });
+          } else {
+            await syncEmailVerified(user);
           }
         } catch (dbError) {
           console.warn('Database operations failed during Google sign-up:', dbError);
@@ -610,11 +636,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               isDeleted: false,
               createdAt: new Date().toISOString(),
               provider: user.providerData[0]?.providerId || 'unknown',
+              emailVerified: user.emailVerified,
             });
           } else {
             const patch: Record<string, unknown> = {};
             if (!('isActive' in (userData || {}))) patch.isActive = true;
             if (!('isDeleted' in (userData || {}))) patch.isDeleted = false;
+            if (userData?.emailVerified !== user.emailVerified) patch.emailVerified = user.emailVerified;
             if (Object.keys(patch).length > 0) {
               await setDoc(doc(db, 'users', user.uid), patch, { merge: true });
             }

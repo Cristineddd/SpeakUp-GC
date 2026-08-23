@@ -20,7 +20,8 @@ import {
 import { collection, query, onSnapshot, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from '../../compat/router';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, formatDistanceToNow } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, formatDistanceToNow, addDays, differenceInCalendarDays } from 'date-fns';
+import { getDisplayCaseNumber } from '../../utils/caseId';
 
 // Green theme colors
 const COLORS = {
@@ -30,6 +31,9 @@ const COLORS = {
   warning: '#F59E0B',
   gray: '#6B7280',
 };
+
+// CODI must act on a filed case within this window, counted from the filing date.
+const RESPONSE_DEADLINE_DAYS = 7;
 
 interface MetricCardProps {
   title: string;
@@ -161,19 +165,20 @@ const AdminDashboardRedesign = () => {
       const deadlines = reports
         .filter((r: any) => r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress')
         .map((r: any) => {
-          const createdAt = r.createdAt?.toDate() || new Date();
-          const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-          const deadlineDays = 7; // 7-day response deadline
-          const daysUntilDeadline = deadlineDays - daysSinceCreation;
+          const filedAt = r.createdAt?.toDate() || r.reportedAt?.toDate() || null;
+          const dueDate = filedAt ? addDays(filedAt, RESPONSE_DEADLINE_DAYS) : null;
+          const daysUntilDeadline = dueDate ? differenceInCalendarDays(dueDate, now) : null;
 
           return {
             ...r,
+            filedAt,
+            dueDate,
             daysUntilDeadline,
-            isOverdue: daysUntilDeadline < 0,
-            isUrgent: daysUntilDeadline <= 2 && daysUntilDeadline >= 0,
+            isOverdue: daysUntilDeadline !== null && daysUntilDeadline < 0,
+            isUrgent: daysUntilDeadline !== null && daysUntilDeadline <= 2 && daysUntilDeadline >= 0,
           };
         })
-        .filter((r: any) => r.daysUntilDeadline <= 3)
+        .filter((r: any) => r.daysUntilDeadline !== null && r.daysUntilDeadline <= 3)
         .sort((a: any, b: any) => a.daysUntilDeadline - b.daysUntilDeadline)
         .slice(0, 5);
       setUpcomingDeadlines(deadlines);
@@ -200,7 +205,7 @@ const AdminDashboardRedesign = () => {
         const createdAt = r.createdAt?.toDate();
         if (!createdAt) return false;
         const daysSinceCreation = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && daysSinceCreation > 7;
+        return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && daysSinceCreation > RESPONSE_DEADLINE_DAYS;
       }).length;
 
       const followUpRequests = reports.filter((r: any) => r.followUpRequested === true).length;
@@ -699,7 +704,9 @@ const AdminDashboardRedesign = () => {
           <Card className="bg-white border-0 shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
-              <p className="text-xs text-gray-500 mt-1">Cases requiring immediate attention</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Based on the {RESPONSE_DEADLINE_DAYS}-day response deadline from the filing date
+              </p>
             </CardHeader>
             <CardContent>
               {upcomingDeadlines.length === 0 ? (
@@ -722,14 +729,23 @@ const AdminDashboardRedesign = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-gray-900 truncate mb-1">
-                            Report #{deadline.id.slice(-3)}
+                            {getDisplayCaseNumber({
+                              caseId: deadline.caseId,
+                              firestoreId: deadline.id,
+                              filedAt: deadline.filedAt,
+                            })}
                           </p>
                           <p className="text-xs text-gray-500 truncate">
                             {deadline.title || deadline.description?.substring(0, 30) || 'Untitled'}
                           </p>
+                          {deadline.dueDate && (
+                            <p className="text-[10px] text-gray-400 mt-1">
+                              Due {format(deadline.dueDate, 'MMM d, yyyy')}
+                            </p>
+                          )}
                         </div>
                         <Badge
-                          className={`text-[10px] font-medium border-0 ${
+                          className={`shrink-0 whitespace-nowrap text-[10px] font-medium border-0 ${
                             deadline.isOverdue
                               ? 'bg-red-500 text-white'
                               : deadline.isUrgent
@@ -743,7 +759,7 @@ const AdminDashboardRedesign = () => {
                             ? 'Due Today'
                             : deadline.daysUntilDeadline === 1
                             ? 'Due Tomorrow'
-                            : `${deadline.daysUntilDeadline} days`}
+                            : `Due in ${deadline.daysUntilDeadline} days`}
                         </Badge>
                       </div>
                     </div>
