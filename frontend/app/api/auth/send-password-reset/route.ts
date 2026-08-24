@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAuth } from '../../../../src/firebaseAdmin';
 import { buildPasswordResetEmail } from '../../../../src/lib/authEmailTemplates';
 import { sendTransactionalEmail } from '../../../../src/lib/sendTransactionalEmail';
+import { sendFirebasePasswordResetOob } from '../../../../src/lib/sendFirebasePasswordReset';
 import { getAppBaseUrl } from '../../../../src/utils/appUrl';
 import { isAdminEmail } from '../../../../src/utils/admin/adminConfig';
 
@@ -74,14 +75,19 @@ export async function POST(request: NextRequest) {
       logoUrl: `${appBase}/LOGO.png`,
     });
 
-    const result = await sendTransactionalEmail({
-      to: email,
-      subject,
-      html,
-      text,
-    });
-
-    return NextResponse.json({ success: true, provider: result.provider });
+    try {
+      const result = await sendTransactionalEmail({
+        to: email,
+        subject,
+        html,
+        text,
+      });
+      return NextResponse.json({ success: true, provider: result.provider });
+    } catch (emailError) {
+      console.warn('[send-password-reset] Branded email failed, falling back to Firebase:', emailError);
+      await sendFirebasePasswordResetOob(email, `${appBase}/reset-password`);
+      return NextResponse.json({ success: true, provider: 'firebase' });
+    }
   } catch (error) {
     console.error('[send-password-reset] Error:', error);
     return NextResponse.json(

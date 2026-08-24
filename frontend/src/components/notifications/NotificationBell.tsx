@@ -147,7 +147,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
       console.log('🔔 [BELL] Cleaning up notification listener');
       unsubscribe();
     };
-  }, [currentUser]);
+  }, [currentUser?.uid]);
 
   const handleMarkAsRead = async (notificationId: string, e: React.MouseEvent) => {
     e.stopPropagation();

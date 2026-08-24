@@ -7,8 +7,14 @@ export async function sendTransactionalEmail(input: {
   html: string;
   text?: string;
 }): Promise<{ provider: 'gmail' | 'resend' }> {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const gmailUser = process.env.GMAIL_USER?.trim();
+  const gmailPass = process.env.GMAIL_APP_PASSWORD?.trim();
+
+  if (gmailUser && !gmailPass) {
+    console.warn(
+      '[email] GMAIL_USER is set but GMAIL_APP_PASSWORD is missing. Add a Google App Password to send from Gmail.'
+    );
+  }
 
   if (gmailUser && gmailPass) {
     const transporter = nodemailer.createTransport({

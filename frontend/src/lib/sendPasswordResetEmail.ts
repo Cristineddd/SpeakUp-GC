@@ -1,6 +1,6 @@
 /**
  * Sends the branded SpeakUp GC password reset email via the API.
- * Does not fall back to Firebase's default template — those often never arrive.
+ * Falls back to Firebase's default template if Gmail/Resend cannot send.
  */
 export async function sendBrandedPasswordResetEmail(email: string): Promise<void> {
   const res = await fetch('/api/auth/send-password-reset', {

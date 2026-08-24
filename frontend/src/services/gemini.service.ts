@@ -294,7 +294,9 @@ ${conversationContext}
 
 User message: ${message}
 
-Response (be supportive, specific, and accurate about SpeakUp GC features):`
+Reply in 2–4 short sentences unless they asked for steps. One follow-up question max. Do not dump hotlines, laws, or the filing process unless they asked or it is an emergency. Match their language.
+
+Response:`
             }
           ]
         }
@@ -303,7 +305,7 @@ Response (be supportive, specific, and accurate about SpeakUp GC features):`
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 2048, // Increased to allow complete responses
+        maxOutputTokens: 400,
         // Removed stopSequences to prevent premature truncation
       },
       safetySettings: [

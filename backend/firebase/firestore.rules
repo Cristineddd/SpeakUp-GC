@@ -148,6 +148,14 @@ service cloud.firestore {
     // COLLECTION RULES
     // ========================================
     
+    // LAYA CHATS (private complainant conversations with the AI assistant)
+    match /layaConversations/{chatId} {
+      allow read, update, delete: if isAuthenticated() &&
+                                    resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid;
+    }
+
     // USERS COLLECTION
     match /users/{userId} {
       // Owners can always get their own doc (including when missing — needed for
@@ -356,14 +364,15 @@ service cloud.firestore {
 
     // FCM / PWA PUSH TOKENS
     match /fcmTokens/{tokenId} {
-      allow read: if isAuthenticated() &&
-                    (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated() &&
-                      request.resource.data.userId == request.auth.uid &&
-                      request.resource.data.keys().hasAll(['userId', 'token']);
-      allow update: if isAuthenticated() &&
-                      resource.data.userId == request.auth.uid &&
-                      request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (
+                    resource == null ||
+                    isAdmin() ||
+                    resource.data.userId == request.auth.uid
+                  );
+      // Device tokens can move between accounts on the same browser.
+      allow create, update: if isAuthenticated() &&
+                              request.resource.data.userId == request.auth.uid &&
+                              request.resource.data.token is string;
       allow delete: if isAuthenticated() &&
                       (isAdmin() || resource.data.userId == request.auth.uid);
     }

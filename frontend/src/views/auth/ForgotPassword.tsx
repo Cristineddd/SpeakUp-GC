@@ -74,21 +74,6 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-gray-900 font-sans flex flex-col">
-      <header className="w-full px-4 sm:px-6 pt-4 z-10">
-        <div className="flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl px-5 shadow-lg shadow-gray-900/5">
-          <Link to="/" className="flex items-center gap-2.5 min-w-0">
-            <img src="/LOGO.png" alt="SpeakUp GC" className="w-8 h-8 object-contain flex-shrink-0" />
-            <span className="font-bold text-gray-900 text-sm truncate">SpeakUp GC</span>
-          </Link>
-          <Link
-            to={LOGIN_HREF}
-            className="text-sm font-medium text-[#1D9E75] hover:text-[#178F65] transition-colors"
-          >
-            Log In
-          </Link>
-        </div>
-      </header>
-
       <main className="relative flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
           <div className="absolute -left-24 -top-20 h-[22rem] w-[28rem] bg-gradient-to-br from-[#1D9E75]/20 via-emerald-200/35 to-transparent blur-3xl" />

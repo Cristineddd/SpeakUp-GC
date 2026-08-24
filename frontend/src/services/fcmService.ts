@@ -4,7 +4,7 @@
  */
 import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
 import { doc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { app, db } from '../firebase';
+import { app, auth, db } from '../firebase';
 import { NotificationService } from './notificationService';
 import {
   isBrowserNotificationSupported,
@@ -188,11 +188,16 @@ export async function enablePushNotifications(userId: string): Promise<{
 
   if (!token) return { ok: false, reason: 'Empty FCM token' };
 
+  const uid = auth.currentUser?.uid;
+  if (!uid || uid !== userId) {
+    return { ok: false, reason: 'Not signed in' };
+  }
+
   try {
     await setDoc(
       doc(db, 'fcmTokens', tokenDocId(token)),
       {
-        userId,
+        userId: uid,
         token,
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
