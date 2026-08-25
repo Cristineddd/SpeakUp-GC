@@ -3,13 +3,14 @@
  * Saves device tokens under fcmTokens/{tokenHash} and refreshes on login.
  */
 import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
-import { doc, setDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { app, auth, db } from '../firebase';
 import { NotificationService } from './notificationService';
 import {
   isBrowserNotificationSupported,
   requestBrowserNotificationPermission,
 } from '../utils/browserNotifications';
+import { fcmTokenDocId } from '../utils/fcmTokenId';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || '';
 const SW_PATH = '/firebase-messaging-sw.js';
@@ -20,13 +21,7 @@ const TOKEN_STORAGE_KEY = 'speakup_fcm_token';
 let messagingPromise: Promise<Messaging | null> | null = null;
 
 function tokenDocId(token: string): string {
-  // Firestore doc ids have length limits; keep stable & safe charset
-  let hash = 0;
-  for (let i = 0; i < token.length; i++) {
-    hash = (hash << 5) - hash + token.charCodeAt(i);
-    hash |= 0;
-  }
-  return `t_${Math.abs(hash)}_${token.slice(-12).replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return fcmTokenDocId(token);
 }
 
 async function getMessagingInstance(): Promise<Messaging | null> {
@@ -188,24 +183,30 @@ export async function enablePushNotifications(userId: string): Promise<{
 
   if (!token) return { ok: false, reason: 'Empty FCM token' };
 
-  const uid = auth.currentUser?.uid;
-  if (!uid || uid !== userId) {
+  const current = auth.currentUser;
+  if (!current || current.uid !== userId) {
     return { ok: false, reason: 'Not signed in' };
   }
 
   try {
-    await setDoc(
-      doc(db, 'fcmTokens', tokenDocId(token)),
-      {
-        userId: uid,
+    const idToken = await current.getIdToken();
+    const res = await fetch('/api/notifications/save-fcm-token', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
         token,
-        updatedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
         platform: typeof navigator !== 'undefined' ? navigator.platform : '',
-      },
-      { merge: true }
-    );
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error((await res.json().catch(() => ({}))).error || 'Could not save token');
+    }
+
     localStorage.setItem(TOKEN_STORAGE_KEY, token);
 
     try {

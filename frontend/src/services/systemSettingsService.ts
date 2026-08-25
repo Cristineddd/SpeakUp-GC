@@ -18,7 +18,8 @@ import {
   Timestamp,
   Unsubscribe,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, db } from '../firebase';
 
 const SYSTEM_SETTINGS_COLLECTION = 'systemSettings';
 const GENERAL_SETTINGS_DOC = 'general';
@@ -39,6 +40,17 @@ const DEFAULT_SETTINGS: SystemSettings = {
 
 const settingsDocRef = () => doc(db, SYSTEM_SETTINGS_COLLECTION, GENERAL_SETTINGS_DOC);
 
+function settingsFromSnap(data: Record<string, unknown> | undefined): SystemSettings {
+  if (!data) return { ...DEFAULT_SETTINGS };
+  return {
+    chatbotEnabled: (data.chatbotEnabled as boolean | undefined) ?? true,
+    maintenanceMode: (data.maintenanceMode as boolean | undefined) ?? false,
+    updatedBy: data.updatedBy as string | undefined,
+    updatedByName: data.updatedByName as string | undefined,
+    updatedAt: (data.updatedAt as Timestamp | null | undefined) ?? null,
+  };
+}
+
 /**
  * One-time fetch of the system settings document.
  * Falls back to defaults (chatbot enabled) if the document doesn't exist yet.
@@ -49,16 +61,12 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     if (!snap.exists()) {
       return { ...DEFAULT_SETTINGS };
     }
-    const data = snap.data();
-    return {
-      chatbotEnabled: data.chatbotEnabled ?? true,
-      maintenanceMode: data.maintenanceMode ?? false,
-      updatedBy: data.updatedBy,
-      updatedByName: data.updatedByName,
-      updatedAt: data.updatedAt ?? null,
-    };
+    return settingsFromSnap(snap.data());
   } catch (error) {
-    console.error('❌ Error fetching system settings:', error);
+    const code = (error as { code?: string }).code;
+    if (code !== 'permission-denied') {
+      console.warn('Error fetching system settings:', error);
+    }
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -71,28 +79,41 @@ export async function getSystemSettings(): Promise<SystemSettings> {
 export function subscribeToSystemSettings(
   callback: (settings: SystemSettings) => void
 ): Unsubscribe {
-  return onSnapshot(
-    settingsDocRef(),
-    (snap) => {
-      if (!snap.exists()) {
+  let settingsUnsub: Unsubscribe | null = null;
+
+  const listen = () => {
+    settingsUnsub?.();
+    settingsUnsub = onSnapshot(
+      settingsDocRef(),
+      (snap) => {
+        callback(snap.exists() ? settingsFromSnap(snap.data()) : { ...DEFAULT_SETTINGS });
+      },
+      (error) => {
+        const code = (error as { code?: string }).code;
+        if (code !== 'permission-denied') {
+          console.warn('System settings listener:', error);
+        }
         callback({ ...DEFAULT_SETTINGS });
-        return;
       }
-      const data = snap.data();
-      callback({
-        chatbotEnabled: data.chatbotEnabled ?? true,
-        maintenanceMode: data.maintenanceMode ?? false,
-        updatedBy: data.updatedBy,
-        updatedByName: data.updatedByName,
-        updatedAt: data.updatedAt ?? null,
-      });
-    },
-    (error) => {
-      console.error('❌ Error subscribing to system settings:', error);
-      // Fail open with defaults rather than breaking the caller
+    );
+  };
+
+  // Auth hydrates after first paint. Subscribing before that looks logged-out to
+  // Firestore and Next.js surfaces the permission error in the overlay.
+  const authUnsub = onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      settingsUnsub?.();
+      settingsUnsub = null;
       callback({ ...DEFAULT_SETTINGS });
+      return;
     }
-  );
+    listen();
+  });
+
+  return () => {
+    authUnsub();
+    settingsUnsub?.();
+  };
 }
 
 /**

@@ -410,12 +410,9 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // SYSTEM SETTINGS (e.g. chatbot enable/disable toggle)
+    // SYSTEM SETTINGS (chatbot / maintenance flags — not personal data)
     match /systemSettings/{settingId} {
-      // Read: Any authenticated user (complainants need this to know if the chatbot is enabled)
-      allow read: if isAuthenticated();
-      
-      // Write: Admin only
+      allow read: if true;
       allow write: if isAdmin();
     }
     

@@ -8,6 +8,12 @@
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  addBrandedPdfFooter,
+  addBrandedPdfHeader,
+  getSpeakUpLogoDataUrl,
+  PDF_BRAND_GREEN,
+} from "../utils/pdfBranding";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,58 +67,10 @@ export interface SummaryReportData {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const BRAND_GREEN = [26, 122, 69] as [number, number, number];
+const BRAND_GREEN = PDF_BRAND_GREEN;
 const LIGHT_GREEN = [232, 245, 238] as [number, number, number];
 const GRAY = [107, 114, 128] as [number, number, number];
 const DARK = [17, 24, 39] as [number, number, number];
-
-function addPageHeader(doc: jsPDF, title: string, subtitle?: string) {
-  const pageW = doc.internal.pageSize.getWidth();
-
-  // Green header bar
-  doc.setFillColor(...BRAND_GREEN);
-  doc.rect(0, 0, pageW, 28, "F");
-
-  // Logo placeholder circle
-  doc.setFillColor(255, 255, 255);
-  doc.circle(18, 14, 8, "F");
-  doc.setTextColor(...BRAND_GREEN);
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.text("GC", 18, 15.5, { align: "center" });
-
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.text("SpeakUp GC", 30, 11);
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text(title, 30, 18);
-
-  if (subtitle) {
-    doc.setFontSize(7.5);
-    doc.text(subtitle, 30, 24);
-  }
-
-  // Reset text color
-  doc.setTextColor(...DARK);
-}
-
-function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-
-  doc.setDrawColor(...BRAND_GREEN);
-  doc.setLineWidth(0.3);
-  doc.line(14, pageH - 14, pageW - 14, pageH - 14);
-
-  doc.setFontSize(7);
-  doc.setTextColor(...GRAY);
-  doc.text("SpeakUp GC", 14, pageH - 8);
-  doc.text(`Page ${pageNum} of ${totalPages}`, pageW - 14, pageH - 8, { align: "right" });
-}
 
 function statusColor(status: string): [number, number, number] {
   const s = status.toLowerCase();
@@ -131,12 +89,14 @@ function statusColor(status: string): [number, number, number] {
  *
  * Activity flow: Admin / CODI Member → Reports section → select case → download PDF
  */
-export function generateCaseReport(data: CaseReportData): void {
+export async function generateCaseReport(data: CaseReportData): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
+  const logo = await getSpeakUpLogoDataUrl();
+  const addHeader = (title: string, subtitle?: string) =>
+    addBrandedPdfHeader(doc, title, subtitle, logo);
 
-  addPageHeader(
-    doc,
+  addHeader(
     `Case Report: ${data.caseId}`,
     `Generated ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
   );
@@ -245,7 +205,7 @@ export function generateCaseReport(data: CaseReportData): void {
   if (data.statusHistory && data.statusHistory.length > 0) {
     if (y > 220) {
       doc.addPage();
-      addPageHeader(doc, `Case Report: ${data.caseId} (continued)`);
+      addHeader(`Case Report: ${data.caseId} (continued)`);
       y = 38;
     }
 
@@ -272,7 +232,7 @@ export function generateCaseReport(data: CaseReportData): void {
   if (data.evidence && data.evidence.length > 0) {
     if (y > 220) {
       doc.addPage();
-      addPageHeader(doc, `Case Report: ${data.caseId} (continued)`);
+      addHeader(`Case Report: ${data.caseId} (continued)`);
       y = 38;
     }
 
@@ -298,7 +258,7 @@ export function generateCaseReport(data: CaseReportData): void {
   const totalPages = doc.internal.pages.length - 1;
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(doc, i, totalPages);
+    addBrandedPdfFooter(doc, i, totalPages);
   }
 
   doc.save(`SpeakUpGC_Case_${data.caseId}_${Date.now()}.pdf`);
@@ -312,14 +272,16 @@ export function generateCaseReport(data: CaseReportData): void {
  *
  * Activity flow: Admin → Reports section → select filters → download PDF
  */
-export function generateSummaryReport(data: SummaryReportData): void {
+export async function generateSummaryReport(data: SummaryReportData): Promise<void> {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
+  const logo = await getSpeakUpLogoDataUrl();
 
-  addPageHeader(
+  addBrandedPdfHeader(
     doc,
     "Complaint Summary Report",
-    `Period: ${data.period}   ·   Generated: ${data.generatedDate}`
+    `Period: ${data.period}   ·   Generated: ${data.generatedDate}`,
+    logo
   );
 
   let y = 38;
@@ -419,7 +381,7 @@ export function generateSummaryReport(data: SummaryReportData): void {
   const totalPages = doc.internal.pages.length - 1;
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(doc, i, totalPages);
+    addBrandedPdfFooter(doc, i, totalPages);
   }
 
   doc.save(`SpeakUpGC_Summary_Report_${Date.now()}.pdf`);

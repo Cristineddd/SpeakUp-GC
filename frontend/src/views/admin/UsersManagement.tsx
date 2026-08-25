@@ -11,7 +11,7 @@ import {
   writeBatch,
   type DocumentReference,
 } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import {
   Table,
   TableBody,
@@ -112,20 +112,46 @@ const UsersManagement = () => {
         }
       });
       
-      const allUsersData = snapshot.docs.map(doc => {
-        const userData = doc.data();
-        const rep = representativeMap.get(doc.id);
+      const allUsersData = snapshot.docs.map(docSnap => {
+        const userData = docSnap.data();
+        const rep = representativeMap.get(docSnap.id);
         
         return {
-          uid: doc.id,
+          uid: docSnap.id,
           ...userData,
           representativeRole: rep?.role || null,
           department: rep?.department || userData.department,
           position: rep?.position || userData.position,
           isSuspended: userData.isSuspended || false,
-          reportsCount: reportCounts.get(doc.id) || 0
+          reportsCount: reportCounts.get(docSnap.id) || 0,
+          emailVerified: userData.emailVerified,
         };
       });
+
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (idToken) {
+          const res = await fetch('/api/admin/users-verification', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uids: allUsersData.map((u) => u.uid) }),
+          });
+          if (res.ok) {
+            const payload = (await res.json()) as { verified?: Record<string, boolean> };
+            const verified = payload.verified || {};
+            allUsersData.forEach((user) => {
+              if (user.uid in verified) {
+                user.emailVerified = verified[user.uid];
+              }
+            });
+          }
+        }
+      } catch (syncError) {
+        console.warn('Could not sync email verification status from Auth:', syncError);
+      }
       
       console.log('📊 Total users from Firestore:', allUsersData.length);
       console.log('📊 Users with representative roles:', allUsersData.filter(u => u.representativeRole).length);

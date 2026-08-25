@@ -33,6 +33,7 @@ import { IdentityByCategoryChart } from '../charts/IdentityByCategoryChart';
 import { FILING_IDENTITY_STYLES, type FilingIdentityLabel } from '../../constants/filingIdentity';
 import { format } from 'date-fns';
 import { ComplianceSummaryReport, FrequencyAnalysis, TrendAnalysis, ResolutionTimeAnalysis, HandlerPerformanceAnalysis } from '../../types/complianceReport';
+import { formatDurationHours } from '../../utils/complianceAnalytics';
 
 interface ComplianceReportViewerProps {
   report: ComplianceSummaryReport;
@@ -161,7 +162,7 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
             <div className="p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200">
               <div className="text-sm text-indigo-600 font-medium">Avg Resolution Time</div>
               <div className="text-2xl font-bold text-indigo-900 mt-1">
-                {report.summary.averageResolutionTime ? Math.round(report.summary.averageResolutionTime) : 0} hrs
+                {formatDurationHours(report.summary.averageResolutionTime)}
               </div>
             </div>
             
@@ -680,13 +681,13 @@ const ResolutionTimeView: React.FC<{ analysis: ResolutionTimeAnalysis }> = ({ an
           <div className="grid grid-cols-2 gap-4">
             <div className="p-6 bg-blue-50 rounded-lg text-center">
               <div className="text-4xl font-bold text-blue-900">
-                {analysis.averageResolutionTime.toFixed(1)}h
+                {formatDurationHours(analysis.averageResolutionTime)}
               </div>
               <div className="text-sm text-blue-600 mt-2">Average Resolution Time</div>
             </div>
             <div className="p-6 bg-green-50 rounded-lg text-center">
               <div className="text-4xl font-bold text-green-900">
-                {analysis.medianResolutionTime.toFixed(1)}h
+                {formatDurationHours(analysis.medianResolutionTime)}
               </div>
               <div className="text-sm text-green-600 mt-2">Median Resolution Time</div>
             </div>
@@ -697,7 +698,10 @@ const ResolutionTimeView: React.FC<{ analysis: ResolutionTimeAnalysis }> = ({ an
       {/* SLA Compliance */}
       <Card>
         <CardHeader>
-          <CardTitle>SLA Compliance</CardTitle>
+          <CardTitle>First-response SLA</CardTitle>
+          <CardDescription>
+            {analysis.slaCompliance.windowLabel || '7-day first-response window from filing'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -807,7 +811,7 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
                   <div className="font-bold text-green-600">
                     {performer.metric && (performer.metric.includes('Rate') || performer.metric.includes('Compliance'))
                       ? `${(performer.value || 0).toFixed(1)}%`
-                      : `${(performer.value || 0).toFixed(1)}h`}
+                      : formatDurationHours(performer.value)}
                   </div>
                 </div>
               ))
@@ -848,7 +852,7 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
                       <div className="text-gray-600">In Progress</div>
                     </div>
                     <div>
-                      <div className="font-bold">{(handler.averageResolutionTime || 0).toFixed(1)}h</div>
+                      <div className="font-bold">{formatDurationHours(handler.averageResolutionTime)}</div>
                       <div className="text-gray-600">Avg Time</div>
                     </div>
                   </div>

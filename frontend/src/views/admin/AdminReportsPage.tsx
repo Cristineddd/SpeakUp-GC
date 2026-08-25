@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { addBrandedPdfFooter, addBrandedPdfHeader, getSpeakUpLogoDataUrl } from '../../utils/pdfBranding';
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -957,26 +958,14 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         format: 'a4'
       });
 
-      // Load Poppins font (you'll need to add the font files)
-      // For now, we'll use helvetica as fallback
-      const font = 'helvetica';
-      
-      // Clean minimalist design with compact layout
-      doc.setFont(font, 'bold');
-      doc.setFontSize(16);
-      doc.setTextColor(45, 55, 72);
-      doc.text('SPEAKUP GC REPORTS', 15, 15);
-      
-      doc.setFont(font, 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 15, 21);
-      doc.text(`Total Reports: ${filteredReports.length}`, 15, 25);
-      
-      // Thin separator line
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.3);
-      doc.line(15, 28, 280, 28);
+      const logo = await getSpeakUpLogoDataUrl();
+      let startY = addBrandedPdfHeader(
+        doc,
+        'Case Reports Export',
+        `Generated ${new Date().toLocaleDateString()}  ·  ${filteredReports.length} reports`,
+        logo
+      );
+      startY += 2;
 
       // Prepare compact table data
       const tableData = filteredReports.map(report => [
@@ -993,7 +982,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
       // Create compact table - MAXIMIZED WIDTH
       autoTable(doc, {
-        startY: 32,
+        startY,
         head: [[
           'ID', 'Title', 'Category', 'Status', 'Complainant', 'Location', 'Incident', 'Reported', 'Escalation'
         ]],
@@ -1005,7 +994,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           textColor: [45, 55, 72],
           lineColor: [226, 232, 240],
           lineWidth: 0.1,
-          font: font,
+          font: 'helvetica',
           cellWidth: 'wrap'
         },
         headStyles: { 
@@ -1040,15 +1029,10 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         rowPageBreak: 'avoid',
       });
 
-      // Compact footer
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(6);
-        doc.setTextColor(148, 163, 184);
-        doc.setFont(font, 'normal');
-        doc.text('Confidential - SpeakUp GC Reports Management System', 15, 200);
-        doc.text(`Page ${i} of ${pageCount}`, 270, 200, { align: 'right' });
+        addBrandedPdfFooter(doc, i, pageCount, 'Confidential — SpeakUp GC Case Reports');
       }
 
       // Save with timestamp

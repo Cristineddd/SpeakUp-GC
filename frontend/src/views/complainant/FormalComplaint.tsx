@@ -37,6 +37,7 @@ import { FormTip, FormStepHeader, FormTipsList } from "../../components/forms/Fo
 import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingMessage } from "../../services/formAssistant.service";
 import { EvidenceSubmissionModal, EvidenceData } from "../../components/modals/EvidenceSubmissionModal";
 import { sanitizePhMobileInput, validatePhMobile, isValidPhMobile } from "../../utils/phoneValidation";
+import { computeResponseDueAt } from "../../utils/caseDeadlines";
 
 // ✅ SAFE CLOUDINARY CONFIG 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
@@ -1310,6 +1311,7 @@ const FormalComplaint = () => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
         lastUpdated: Timestamp.now(),
+        responseDueAt: Timestamp.fromDate(computeResponseDueAt(new Date())),
         
         // Evidence tracking (will be updated after upload)
         evidenceCount: formData.evidence.length,

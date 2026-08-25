@@ -23,7 +23,7 @@ export interface AdminReport {
   description: string;
   location: string;
   category: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: 'low' | 'medium' | 'high' | 'critical' | 'unspecified';
   status: 'pending' | 'submitted' | 'inProgress' | 'resolved' | 'dismissed' | 'closed';
   userName: string;
   userEmail: string;
@@ -34,6 +34,7 @@ export interface AdminReport {
   type?: string;
   statementOfFacts?: string;
   reportedAt: string;
+  createdAt?: string;
   lastUpdated: string;
   witnesses?: string;
   additionalInfo?: string;
@@ -132,6 +133,7 @@ export interface AdminReport {
   anonymityLevel?: 'full' | 'confidential' | string;
   complainantName?: string;
   complainantType?: string;
+  isDeleted?: boolean;
 }
 
 export interface ReportStats {
@@ -280,7 +282,10 @@ export class AdminReportService {
           return;
         }
         
-        const data = doc.data();
+        const data = doc.data() as Record<string, any>;
+        if (data.isDeleted === true) {
+          return;
+        }
         const report = this.transformToAdminReport(doc.id, data, collectionName);
         
         if (seenIds) {
@@ -314,6 +319,22 @@ export class AdminReportService {
     const assignedAt = data.assignedAt ? 
       (data.assignedAt.toDate ? data.assignedAt.toDate().toISOString() : data.assignedAt) : null;
 
+    const createdAt = data.createdAt ?
+      (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) :
+      reportedAt;
+
+    const mappedSeverity = (() => {
+      const explicit = String(data.severity || '').toLowerCase();
+      if (['low', 'medium', 'high', 'critical'].includes(explicit)) {
+        return explicit as AdminReport['severity'];
+      }
+      const degree = String(data.harassmentDegree || '').toLowerCase();
+      if (degree === 'light') return 'low';
+      if (degree === 'severe') return 'high';
+      if (degree === 'grave') return 'critical';
+      return 'unspecified';
+    })();
+
     const report: AdminReport = {
       id: docId,
       caseId: data.caseId || '',
@@ -321,7 +342,7 @@ export class AdminReportService {
       description: data.description || '',
       location: data.location || data.incidentLocation || '',
       category: data.category || data.type || 'other',
-      severity: data.severity || 'medium',
+      severity: mappedSeverity,
       status: data.status || 'pending',
       userName: data.userName || data.complainantName || 'Anonymous',
       userEmail: data.userEmail || data.email || '',
@@ -332,6 +353,7 @@ export class AdminReportService {
       type: data.type || data.category || 'other',
       statementOfFacts: data.statementOfFacts || '',
       reportedAt: reportedAt,
+      createdAt,
       lastUpdated: lastUpdated,
       witnesses: data.witnesses || '',
       additionalInfo: data.additionalInfo || '',
@@ -406,7 +428,12 @@ export class AdminReportService {
       latitude: data.latitude,
       longitude: data.longitude,
       mapAddress: data.mapAddress,
-      locationVicinity: data.locationVicinity
+      locationVicinity: data.locationVicinity,
+      isAnonymous: data.isAnonymous === true,
+      anonymityLevel: data.anonymityLevel,
+      complainantName: data.complainantName || '',
+      complainantType: data.complainantType || '',
+      isDeleted: data.isDeleted === true,
     };
 
     // Debug log for assignment data
@@ -446,7 +473,10 @@ export class AdminReportService {
           // Add all complaints
           snapshot.docs.forEach((doc) => {
             try {
-              const data = doc.data();
+              const data = doc.data() as Record<string, any>;
+              if (data.isDeleted === true) {
+                return;
+              }
               const report = this.transformToAdminReport(doc.id, data, 'complaints');
               
               // Log assignment info for debugging

@@ -51,7 +51,9 @@ import {
   DATE_RANGE_LABELS,
   getDateRangeFromPreset,
 } from '../../types/complianceReport';
-import { format } from 'date-fns';
+import { endOfDay, format, startOfDay } from 'date-fns';
+import { addBrandedPdfFooter, addBrandedPdfHeader, getSpeakUpLogoDataUrl } from '../../utils/pdfBranding';
+import { formatDurationHours } from '../../utils/complianceAnalytics';
 
 interface ComplianceReportGeneratorProps {
   onReportGenerated?: (report: ComplianceSummaryReport) => void;
@@ -85,8 +87,10 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           });
           return;
         }
-        startDate = new Date(customStartDate);
-        endDate = new Date(customEndDate);
+        const [sy, sm, sd] = customStartDate.split('-').map(Number);
+        const [ey, em, ed] = customEndDate.split('-').map(Number);
+        startDate = startOfDay(new Date(sy, sm - 1, sd));
+        endDate = endOfDay(new Date(ey, em - 1, ed));
       } else {
         const range = getDateRangeFromPreset(dateRangePreset);
         startDate = range.start;
@@ -122,40 +126,28 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
   };
 
   // Export to PDF
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!generatedReport) return;
 
     try {
       const doc = new jsPDF();
-      
-      // Pure white background (default)
-      // No colored header - clean minimalist design
-      
-      // Header - Clean Typography
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(28);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SpeakUp GC', 15, 20);
-      
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Compliance Report', 15, 30);
-      
-      // Thin line separator
-      doc.setDrawColor(220, 220, 220);
-      doc.setLineWidth(0.5);
-      doc.line(15, 35, 195, 35);
-      
-      // Report Type Badge
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(60, 60, 60);
-      doc.text(`${REPORT_TYPE_LABELS[generatedReport.reportType]}`, 15, 42);
-      
+      const logo = await getSpeakUpLogoDataUrl();
+      let yPos = addBrandedPdfHeader(
+        doc,
+        'Compliance Report',
+        REPORT_TYPE_LABELS[generatedReport.reportType],
+        logo
+      );
+
+      const ensureSpace = (needed = 40) => {
+        if (yPos + needed < 270) return;
+        doc.addPage();
+        yPos = addBrandedPdfHeader(doc, 'Compliance Report (continued)', undefined, logo);
+      };
+
       // Report info - Compact and Clean
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(9);
-      let yPos = 52;
       
       doc.setFont('helvetica', 'normal');
       doc.text('Period:', 15, yPos);
@@ -196,6 +188,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         ['Resolved', generatedReport.summary.resolvedIncidents.toString()],
         ['In Progress', generatedReport.summary.inProgressIncidents.toString()],
         ['Pending', generatedReport.summary.pendingIncidents.toString()],
+        ['Dismissed / Closed', generatedReport.summary.dismissedIncidents.toString()],
         ['Resolution Rate', `${generatedReport.summary.resolutionRate.toFixed(1)}%`],
       ];
       
@@ -218,17 +211,14 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         alternateRowStyles: {
           fillColor: [250, 250, 250],
         },
-        margin: { left: 15, right: 15 },
+        margin: { left: 15, right: 15, bottom: 18 },
       });
       
       yPos = (doc as any).lastAutoTable.finalY + 10;
 
       // Complainant filing identity
       if (generatedReport.frequencyAnalysis?.byFilingIdentity?.length) {
-        if (yPos > 230) {
-          doc.addPage();
-          yPos = 20;
-        }
+        ensureSpace();
 
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -249,7 +239,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
           headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
           alternateRowStyles: { fillColor: [250, 250, 250] },
-          margin: { left: 15, right: 15 },
+          margin: { left: 15, right: 15, bottom: 18 },
         });
 
         yPos = (doc as any).lastAutoTable.finalY + 8;
@@ -274,17 +264,14 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
             styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
             headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
             alternateRowStyles: { fillColor: [250, 250, 250] },
-            margin: { left: 15, right: 15 },
+            margin: { left: 15, right: 15, bottom: 18 },
           });
 
           yPos = (doc as any).lastAutoTable.finalY + 10;
         }
 
         if (generatedReport.frequencyAnalysis.identityByCategory?.length) {
-          if (yPos > 220) {
-            doc.addPage();
-            yPos = 20;
-          }
+          ensureSpace();
 
           doc.setFontSize(10);
           doc.setFont('helvetica', 'bold');
@@ -306,7 +293,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
             styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
             headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'left' },
             alternateRowStyles: { fillColor: [250, 250, 250] },
-            margin: { left: 15, right: 15 },
+            margin: { left: 15, right: 15, bottom: 18 },
           });
 
           yPos = (doc as any).lastAutoTable.finalY + 10;
@@ -355,7 +342,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           alternateRowStyles: {
             fillColor: [250, 250, 250],
           },
-          margin: { left: 15, right: 15 },
+          margin: { left: 15, right: 15, bottom: 18 },
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 10;
@@ -363,10 +350,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       
       // Resolution time analysis if available
       if (generatedReport.resolutionTimeAnalysis) {
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 20;
-        }
+        ensureSpace();
         
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -375,8 +359,9 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         yPos += 6;
         
         const resolutionData = [
-          ['Average Resolution Time', `${generatedReport.resolutionTimeAnalysis.averageResolutionTime.toFixed(1)} hours`],
-          ['Median Resolution Time', `${generatedReport.resolutionTimeAnalysis.medianResolutionTime.toFixed(1)} hours`],
+          ['Average Resolution Time', formatDurationHours(generatedReport.resolutionTimeAnalysis.averageResolutionTime)],
+          ['Median Resolution Time', formatDurationHours(generatedReport.resolutionTimeAnalysis.medianResolutionTime)],
+          ['Response SLA', generatedReport.resolutionTimeAnalysis.slaCompliance.windowLabel || '7-day first-response window'],
           ['SLA Compliance Rate', `${generatedReport.resolutionTimeAnalysis.slaCompliance.complianceRate.toFixed(1)}%`],
           ['Within SLA', `${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA} cases`],
           ['Breached SLA', `${generatedReport.resolutionTimeAnalysis.slaCompliance.breachedSLA} cases`],
@@ -394,7 +379,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           alternateRowStyles: {
             fillColor: [250, 250, 250],
           },
-          margin: { left: 15, right: 15 },
+          margin: { left: 15, right: 15, bottom: 18 },
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 10;
@@ -402,10 +387,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       
       // Trend analysis if available
       if (generatedReport.trendAnalysis) {
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 20;
-        }
+        ensureSpace();
         
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -432,7 +414,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           alternateRowStyles: {
             fillColor: [250, 250, 250],
           },
-          margin: { left: 15, right: 15 },
+          margin: { left: 15, right: 15, bottom: 18 },
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 10;
@@ -440,10 +422,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       
       // Handler performance if available
       if (generatedReport.handlerPerformanceAnalysis) {
-        if (yPos > 240) {
-          doc.addPage();
-          yPos = 20;
-        }
+        ensureSpace();
         
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
@@ -456,7 +435,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           handler.casesAssigned.toString(),
           handler.casesResolved.toString(),
           `${handler.resolutionRate.toFixed(1)}%`,
-          `${handler.averageResolutionTime.toFixed(1)}h`,
+          formatDurationHours(handler.averageResolutionTime),
         ]);
         
         autoTable(doc, {
@@ -478,20 +457,16 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
           alternateRowStyles: {
             fillColor: [250, 250, 250],
           },
-          margin: { left: 15, right: 15 },
+          margin: { left: 15, right: 15, bottom: 18 },
         });
         
         yPos = (doc as any).lastAutoTable.finalY + 10;
       }
       
-      // Footer - Minimalist
       const pageCount = (doc as any).internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(7);
-        doc.setTextColor(150, 150, 150);
-        doc.text('SpeakUp GC Compliance Report - Confidential', 15, 287);
-        doc.text(`Page ${i} of ${pageCount}`, 185, 287);
+        addBrandedPdfFooter(doc, i, pageCount, 'Confidential — SpeakUp GC Compliance Report');
       }
       
       doc.save(`compliance-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
@@ -535,6 +510,7 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       csvContent += `Resolved,${generatedReport.summary.resolvedIncidents}\n`;
       csvContent += `In Progress,${generatedReport.summary.inProgressIncidents}\n`;
       csvContent += `Pending,${generatedReport.summary.pendingIncidents}\n`;
+      csvContent += `Dismissed / Closed,${generatedReport.summary.dismissedIncidents}\n`;
       csvContent += `Resolution Rate,${generatedReport.summary.resolutionRate.toFixed(1)}%\n\n`;
       
       // Frequency analysis
@@ -576,8 +552,9 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
       if (generatedReport.resolutionTimeAnalysis) {
         csvContent += `Resolution Time Analysis\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Average Resolution Time,${generatedReport.resolutionTimeAnalysis.averageResolutionTime.toFixed(1)} hours\n`;
-        csvContent += `Median Resolution Time,${generatedReport.resolutionTimeAnalysis.medianResolutionTime.toFixed(1)} hours\n`;
+        csvContent += `Average Resolution Time,${formatDurationHours(generatedReport.resolutionTimeAnalysis.averageResolutionTime)}\n`;
+        csvContent += `Median Resolution Time,${formatDurationHours(generatedReport.resolutionTimeAnalysis.medianResolutionTime)}\n`;
+        csvContent += `Response SLA,${generatedReport.resolutionTimeAnalysis.slaCompliance.windowLabel || '7-day first-response window'}\n`;
         csvContent += `SLA Compliance,${generatedReport.resolutionTimeAnalysis.slaCompliance.withinSLA}/${generatedReport.resolutionTimeAnalysis.slaCompliance.total}\n`;
       }
       
@@ -773,6 +750,24 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
                     <div>
                       <div className="font-medium">{REPORT_TYPE_LABELS.category_breakdown}</div>
                       <div className="text-xs text-gray-500 mt-0.5">Classification statistics</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="location_analysis">
+                  <div className="flex items-start gap-3 py-1">
+                    <BarChart3 className="h-4 w-4 mt-0.5 text-emerald-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.location_analysis}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Campus location distribution</div>
+                    </div>
+                  </div>
+                </SelectItem>
+                <SelectItem value="severity_analysis">
+                  <div className="flex items-start gap-3 py-1">
+                    <AlertCircle className="h-4 w-4 mt-0.5 text-red-600" />
+                    <div>
+                      <div className="font-medium">{REPORT_TYPE_LABELS.severity_analysis}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Harassment degree / severity mix</div>
                     </div>
                   </div>
                 </SelectItem>

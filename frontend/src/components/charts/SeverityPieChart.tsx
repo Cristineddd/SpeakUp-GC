@@ -16,6 +16,7 @@ const SEVERITY_COLORS: Record<string, string> = {
   medium: '#f59e0b',   // Amber
   high: '#ef4444',     // Red
   critical: '#dc2626', // Dark Red
+  unspecified: '#6b7280',
 };
 
 export const SeverityPieChart: React.FC<SeverityPieChartProps> = ({ data }) => {

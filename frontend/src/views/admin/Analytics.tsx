@@ -30,6 +30,7 @@ import {
 import { getFormalComplaintCategoryLabel } from '../../constants/formalComplaintCategories';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
+import { CHART, getCaseStatusColor, getComplaintCategoryColor } from '../../utils/chartColors';
 
 interface AnalyticsData {
   dailyActiveUsers: number;
@@ -58,7 +59,6 @@ interface AnalyticsData {
   }>;
 }
 
-const BRAND = '#1D9E75';
 const CHART_MUTED = '#e5e7eb';
 const TOOLTIP_STYLE = {
   backgroundColor: 'rgba(255,255,255,0.96)',
@@ -71,9 +71,6 @@ const TOOLTIP_STYLE = {
 function formatStatusLabel(value: string) {
   return String(value).replace(/_/g, ' ');
 }
-
-const STATUS_COLORS = ['#0F6E56', '#1D9E75', '#9FE1CB', '#0F6E56', '#1D9E75', '#9FE1CB'];
-const CATEGORY_COLORS = ['#0F6E56', '#1D9E75', '#9FE1CB', '#0F6E56', '#1D9E75', '#9FE1CB'];
 
 const Analytics = () => {
   const { isAdmin } = useAuth();
@@ -439,9 +436,9 @@ const Analytics = () => {
                     type="monotone"
                     dataKey="count"
                     name="Reports"
-                    stroke="#0F6E56"
+                    stroke={CHART.blue}
                     strokeWidth={2.5}
-                    dot={{ fill: '#0F6E56', strokeWidth: 0, r: 3 }}
+                    dot={{ fill: CHART.blue, strokeWidth: 0, r: 3 }}
                     activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </LineChart>
@@ -474,9 +471,9 @@ const Analytics = () => {
                     type="monotone"
                     dataKey="users"
                     name="Users"
-                    stroke={BRAND}
+                    stroke={CHART.violet}
                     strokeWidth={2.5}
-                    dot={{ fill: BRAND, strokeWidth: 0, r: 3 }}
+                    dot={{ fill: CHART.violet, strokeWidth: 0, r: 3 }}
                     activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </LineChart>
@@ -523,8 +520,8 @@ const Analytics = () => {
                     ]}
                   />
                   <Bar dataKey="count" name="Reports" radius={[6, 6, 0, 0]}>
-                    {data.reportsByCategory.map((_, i) => (
-                      <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
+                    {data.reportsByCategory.map((row, i) => (
+                      <Cell key={i} fill={getComplaintCategoryColor(String(row.category), i)} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -566,8 +563,8 @@ const Analytics = () => {
                     formatter={(v: number, _n, p) => [v, formatStatusLabel(String(p?.payload?.status ?? ''))]}
                   />
                   <Bar dataKey="count" name="Reports" radius={[6, 6, 0, 0]}>
-                    {data.reportsByStatus.map((_, i) => (
-                      <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
+                    {data.reportsByStatus.map((row, i) => (
+                      <Cell key={i} fill={getCaseStatusColor(String(row.status))} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -610,7 +607,7 @@ const Analytics = () => {
                   contentStyle={TOOLTIP_STYLE}
                   formatter={(v: number) => [v, 'Cases']}
                 />
-                <Bar dataKey="cases" name="Cases" radius={[6, 6, 0, 0]} fill="#1D9E75" />
+                <Bar dataKey="cases" name="Cases" radius={[6, 6, 0, 0]} fill={CHART.sky} />
               </BarChart>
             </ResponsiveContainer>
           )}

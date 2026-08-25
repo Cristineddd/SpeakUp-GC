@@ -1,7 +1,8 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import type { Complaint } from '../types/complaint';
+import { computeResponseDueAt } from '../utils/caseDeadlines';
 
 export async function submitComplaint(data: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { attachmentsFiles?: File[] }) {
   // upload attachments (if any) and collect URLs
@@ -28,6 +29,7 @@ export async function submitComplaint(data: Omit<Complaint, 'id' | 'createdAt' |
     attachments: attachmentUrls,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    responseDueAt: Timestamp.fromDate(computeResponseDueAt(new Date())),
   });
 
   return doc.id;

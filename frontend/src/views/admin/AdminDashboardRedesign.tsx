@@ -20,8 +20,10 @@ import {
 import { collection, query, onSnapshot, where, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from '../../compat/router';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, formatDistanceToNow, addDays, differenceInCalendarDays } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, formatDistanceToNow, differenceInCalendarDays } from 'date-fns';
 import { getDisplayCaseNumber } from '../../utils/caseId';
+import { RESPONSE_DEADLINE_DAYS, resolveResponseDueAt } from '../../utils/caseDeadlines';
+import { CHART, getComplaintCategoryColor, getCaseStatusColor } from '../../utils/chartColors';
 
 // Green theme colors
 const COLORS = {
@@ -31,9 +33,6 @@ const COLORS = {
   warning: '#F59E0B',
   gray: '#6B7280',
 };
-
-// CODI must act on a filed case within this window, counted from the filing date.
-const RESPONSE_DEADLINE_DAYS = 7;
 
 interface MetricCardProps {
   title: string;
@@ -165,8 +164,8 @@ const AdminDashboardRedesign = () => {
       const deadlines = reports
         .filter((r: any) => r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress')
         .map((r: any) => {
-          const filedAt = r.createdAt?.toDate() || r.reportedAt?.toDate() || null;
-          const dueDate = filedAt ? addDays(filedAt, RESPONSE_DEADLINE_DAYS) : null;
+          const filedAt = r.createdAt?.toDate?.() || r.reportedAt?.toDate?.() || r.filingDate?.toDate?.() || null;
+          const dueDate = resolveResponseDueAt(r);
           const daysUntilDeadline = dueDate ? differenceInCalendarDays(dueDate, now) : null;
 
           return {
@@ -202,10 +201,9 @@ const AdminDashboardRedesign = () => {
 
       // Calculate overdue cases (cases past 7-day deadline)
       const overdueCases = reports.filter((r: any) => {
-        const createdAt = r.createdAt?.toDate();
-        if (!createdAt) return false;
-        const daysSinceCreation = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-        return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && daysSinceCreation > RESPONSE_DEADLINE_DAYS;
+        const dueDate = resolveResponseDueAt(r);
+        if (!dueDate) return false;
+        return (r.status === 'pending' || r.status === 'submitted' || r.status === 'inProgress') && dueDate < new Date();
       }).length;
 
       const followUpRequests = reports.filter((r: any) => r.followUpRequested === true).length;
@@ -525,7 +523,7 @@ const AdminDashboardRedesign = () => {
                               className="transition-all hover:opacity-80"
                               style={{
                                 width: `${(data.harassment / total) * 100}%`,
-                                backgroundColor: '#059669',
+                                backgroundColor: CHART.rose,
                               }}
                               title={`Sexual Harassment: ${data.harassment}`}
                             />
@@ -535,7 +533,7 @@ const AdminDashboardRedesign = () => {
                               className="transition-all hover:opacity-80"
                               style={{
                                 width: `${(data.bullying / total) * 100}%`,
-                                backgroundColor: '#10B981',
+                                backgroundColor: CHART.amber,
                               }}
                               title={`Bullying: ${data.bullying}`}
                             />
@@ -545,7 +543,7 @@ const AdminDashboardRedesign = () => {
                               className="transition-all hover:opacity-80"
                               style={{
                                 width: `${(data.others / total) * 100}%`,
-                                backgroundColor: '#34D399',
+                                backgroundColor: CHART.indigo,
                               }}
                               title={`Others: ${data.others}`}
                             />
@@ -564,15 +562,15 @@ const AdminDashboardRedesign = () => {
               </div>
               <div className="mt-4 pt-4 border-t flex flex-wrap items-center gap-3 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#059669' }} />
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: CHART.rose }} />
                   <span className="text-gray-600">Sexual Harassment</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#10B981' }} />
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: CHART.amber }} />
                   <span className="text-gray-600">Bullying</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#34D399' }} />
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: CHART.indigo }} />
                   <span className="text-gray-600">Others</span>
                 </div>
               </div>
@@ -610,8 +608,8 @@ const AdminDashboardRedesign = () => {
                   <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style={{ stopColor: COLORS.primary, stopOpacity: 0.2 }} />
-                        <stop offset="100%" style={{ stopColor: COLORS.primary, stopOpacity: 0 }} />
+                        <stop offset="0%" style={{ stopColor: CHART.blue, stopOpacity: 0.2 }} />
+                        <stop offset="100%" style={{ stopColor: CHART.blue, stopOpacity: 0 }} />
                       </linearGradient>
                     </defs>
                     
@@ -641,7 +639,7 @@ const AdminDashboardRedesign = () => {
                             return `${x}%,${y}`;
                           }).join(' ')}
                           fill="none"
-                          stroke={COLORS.primary}
+                          stroke={CHART.blue}
                           strokeWidth="3"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -659,14 +657,14 @@ const AdminDashboardRedesign = () => {
                                 cy={y}
                                 r="5"
                                 fill="white"
-                                stroke={COLORS.primary}
+                                stroke={CHART.blue}
                                 strokeWidth="2"
                               />
                               <circle
                                 cx={`${x}%`}
                                 cy={y}
                                 r="3"
-                                fill={COLORS.primary}
+                                fill={CHART.blue}
                               />
                             </g>
                           );
@@ -687,7 +685,7 @@ const AdminDashboardRedesign = () => {
               {/* Legend */}
               <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.primary }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CHART.blue }} />
                   <span className="text-xs text-gray-600">Total Cases</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -705,7 +703,7 @@ const AdminDashboardRedesign = () => {
             <CardHeader className="pb-4">
               <CardTitle className="text-base font-semibold">Upcoming Deadlines</CardTitle>
               <p className="text-xs text-gray-500 mt-1">
-                Based on the {RESPONSE_DEADLINE_DAYS}-day response deadline from the filing date
+                Based on each case’s stored response due date ({RESPONSE_DEADLINE_DAYS} days from filing)
               </p>
             </CardHeader>
             <CardContent>
@@ -789,8 +787,7 @@ const AdminDashboardRedesign = () => {
             ) : (
               <div className="space-y-3">
                 {categoryDistribution.map((cat, index) => {
-                  const colors = ['#1D9E75', '#10B981', '#34D399', '#6EE7B7', '#A7F3D0'];
-                  const color = colors[index % colors.length];
+                  const color = getComplaintCategoryColor(cat.name, index);
                   return (
                     <div key={cat.name}>
                       <div className="flex items-center justify-between mb-1">
@@ -825,16 +822,8 @@ const AdminDashboardRedesign = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {statusDistribution.map((stat, index) => {
-                  const statusColors: Record<string, string> = {
-                    pending: '#F59E0B',
-                    submitted: '#F59E0B',
-                    inProgress: '#3B82F6',
-                    investigating: '#3B82F6',
-                    resolved: '#10B981',
-                    dismissed: '#EF4444',
-                  };
-                  const color = statusColors[stat.name.toLowerCase()] || '#6B7280';
+                {statusDistribution.map((stat) => {
+                  const color = getCaseStatusColor(stat.name);
                   return (
                     <div key={stat.name}>
                       <div className="flex items-center justify-between mb-1">

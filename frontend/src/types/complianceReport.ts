@@ -4,6 +4,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import { endOfDay, startOfDay, subDays, subMonths, subYears } from 'date-fns';
 
 // Report types
 export type ComplianceReportType = 
@@ -179,6 +180,8 @@ export interface ResolutionTimeAnalysis {
     withinSLA: number;
     breachedSLA: number;
     complianceRate: number;
+    windowHours: number;
+    windowLabel: string;
   };
 }
 
@@ -268,34 +271,32 @@ export interface ChartData {
 // Helper: Get date range from preset
 export const getDateRangeFromPreset = (preset: DateRangePreset): { start: Date; end: Date } => {
   const now = new Date();
-  const end = now;
+  const end = endOfDay(now);
   let start: Date;
-  
+
   switch (preset) {
     case 'last_7_days':
-      start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      start = startOfDay(subDays(now, 6));
       break;
     case 'last_30_days':
-      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      start = startOfDay(subDays(now, 29));
       break;
     case 'last_90_days':
-      start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      start = startOfDay(subDays(now, 89));
       break;
     case 'last_6_months':
-      start = new Date(now);
-      start.setMonth(start.getMonth() - 6);
+      start = startOfDay(subMonths(now, 6));
       break;
     case 'last_year':
-      start = new Date(now);
-      start.setFullYear(start.getFullYear() - 1);
+      start = startOfDay(subYears(now, 1));
       break;
     case 'custom':
-      start = now;
+      start = startOfDay(now);
       break;
     default:
-      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      start = startOfDay(subDays(now, 29));
   }
-  
+
   return { start, end };
 };
 
