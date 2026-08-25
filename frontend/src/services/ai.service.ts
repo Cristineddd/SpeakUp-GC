@@ -10,14 +10,20 @@ import { logger } from '../utils/logger';
 const SYSTEM_CONTEXT = `You are Laya, SpeakUp GC's GBV rights assistant for Gordon College.
 
 LENGTH (STRICT):
-- Default: 2–4 short sentences. No walls of text.
-- If they share a worry or a name: 1 empathy sentence + 1 clarifying question. Do not dump process, laws, or hotlines unless they ask or it is an emergency.
+- Default: 2–4 short, complete sentences. No walls of text. Never stop mid-sentence.
+- Every reply MUST end with a period, question mark, or exclamation point.
+- Never reply with empathy only. Always add a next step or one clarifying question.
 - How-to / pano / steps: 1 short line of support, then at most 5 numbered steps. Stop.
 - Match the user's language (Tagalog or English).
 - Do not repeat SpeakUp GC's mission, confidentiality speech, or 911 on every turn.
 
+OFF-TOPIC:
+- You cannot give, send, or process money. Never pretend you can.
+- If they ask for money ("i need money", pera, cash, load): 1 complete empathy sentence, then clearly say you cannot provide money. Offer Gordon College DEIU / Guidance for campus support referrals, or DSWD Crisis Intervention (02) 8931-8101 if they are in a safety crisis. Ask one question: is this connected to a harassment/GBV case, or do they need support referrals?
+- Affection ("i miss you"): You are a campus rights assistant, not a partner. One warm line, then ask how you can help with rights or reporting.
+
 FACTS:
-- File a complaint: Dashboard → Complaints → File a Formal Complaint.
+- File a complaint: Dashboard → File a Complaint.
 - Anonymous filing is allowed. Identity stays hidden from the respondent.
 - GC-CODI investigates. DEIU provides support.
 - Laws: RA 11313 (Safe Spaces Act), RA 7877 (Anti-Sexual Harassment Act), RA 10173 (Data Privacy Act).
@@ -50,7 +56,7 @@ async function callGroqAPI(message: string, conversationHistory: any[]): Promise
       model: config.groq.model,
       messages,
       temperature: 0.7,
-      max_tokens: 400,
+      max_tokens: 600,
       top_p: 0.95,
     })
   });
@@ -99,7 +105,7 @@ async function callOpenRouterAPI(message: string, conversationHistory: any[]): P
       model: config.openrouter.model,
       messages,
       temperature: 0.7,
-      max_tokens: 400,
+      max_tokens: 600,
       top_p: 0.95,
     })
   });
@@ -135,6 +141,13 @@ async function callGeminiAPI(message: string, conversationHistory: any[]): Promi
   return typeof response === 'string' ? response : response.text;
 }
 
+function finalizeLayaReply(text: string): string {
+  const t = (text || '').trim();
+  if (!t) return t;
+  if (/[.!?…]["']?$/.test(t)) return t;
+  return `${t}.`;
+}
+
 /**
  * Main AI function with automatic fallback
  * Tries: Gemini → Groq → OpenRouter
@@ -156,7 +169,7 @@ export async function generateAIResponseWithFallback(
       logger.log(`\n🤖 === Attempting ${provider.name} API ===`);
       const response = await provider.fn(message, conversationHistory);
       logger.log(`✅ === ${provider.name} API succeeded ===\n`);
-      return response;
+      return finalizeLayaReply(response);
     } catch (error: any) {
       logger.error(`❌ ${provider.name} failed:`, error.message);
       lastError = error;

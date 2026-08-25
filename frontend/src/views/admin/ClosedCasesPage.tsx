@@ -389,7 +389,7 @@ const ClosedCasesPage = () => {
                   <CaseDetailStat label="Category">
                     {getFormalComplaintCategoryLabel(selectedCase.type)}
                   </CaseDetailStat>
-                  <CaseDetailStat label="Assigned CODI">
+                  <CaseDetailStat label="Assigned CODI member">
                     {selectedCase.assignedRepresentative}
                   </CaseDetailStat>
                 </div>

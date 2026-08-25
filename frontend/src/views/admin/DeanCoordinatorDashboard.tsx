@@ -299,7 +299,7 @@ const DeanCoordinatorDashboard = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <Eye className="h-4 w-4 text-gray-400" />
-                            <span><strong>Handler:</strong> {report.assignedToName || 'Unassigned'}</span>
+                            <span><strong>CODI member:</strong> {report.assignedToName || 'Unassigned'}</span>
                           </div>
                         </div>
                       </div>
@@ -349,7 +349,7 @@ const DeanCoordinatorDashboard = () => {
                                   <p className="text-sm font-semibold mt-1">{selectedReport.category || 'N/A'}</p>
                                 </div>
                                 <div className="p-3 bg-green-50 rounded-lg border">
-                                  <p className="text-sm font-medium text-green-700">Handler</p>
+                                  <p className="text-sm font-medium text-green-700">CODI member</p>
                                   <p className="text-sm font-semibold mt-1">{selectedReport.assignedToName || 'Unassigned'}</p>
                                 </div>
                               </div>

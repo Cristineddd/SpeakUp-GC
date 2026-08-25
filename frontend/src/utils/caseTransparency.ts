@@ -23,7 +23,7 @@ export function getConfidentialityAccessInfo(
     levelLabel,
     accessList: [
       { role: 'You (complainant)', access: 'Full access to your case details and updates' },
-      { role: 'Assigned CODI handler', access: 'Full case details for investigation' },
+      { role: 'Assigned CODI member', access: 'Full case details for investigation' },
       { role: 'DEIU office', access: 'Administrative oversight and support' },
       {
         role: 'Respondent',
@@ -59,16 +59,16 @@ export function getNextStageEstimate(
       return {
         nextStep: 'Investigating',
         description:
-          'Your assigned case handler is reviewing your complaint. Investigation typically begins shortly after initial review.',
+          'Your CODI member is reviewing your complaint. Investigation typically begins shortly after initial review.',
         estimatedBy: addDays(filingDate, 10),
         timeframeLabel: 'Usually within 7–10 days of filing',
       };
     }
 
     return {
-      nextStep: 'Case handler assignment',
+      nextStep: 'CODI member takes the case',
       description:
-        'Your complaint is being validated and a CODI case handler will be assigned.',
+        'Your complaint is being validated. A CODI member will take the case from the queue.',
       estimatedBy: addDays(filingDate, 3),
       timeframeLabel: 'Usually within 3 days of filing',
     };
@@ -84,4 +84,4 @@ export function getNextStageEstimate(
 }
 
 export const SENSITIVE_HANDLER_NOTE =
-  'For your protection, handler names are not shown on sensitive cases. Use Request Follow-Up or contact the DEIU office to reach your assigned handler.';
+  'For your protection, CODI member names are not shown on sensitive cases. Use Request Follow-Up or contact the DEIU office to reach the CODI member on your case.';

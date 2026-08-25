@@ -277,7 +277,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   evidence_uploaded: 'Evidence Uploaded',
   comment_added: 'Comment Added',
   handler_assigned: 'Case Taken',
-  handler_changed: 'Handler Changed',
+  handler_changed: 'CODI member changed',
   deadline_approaching: 'Deadline Approaching',
   deadline_passed: 'Deadline Passed',
   system_announcement: 'System Announcement',

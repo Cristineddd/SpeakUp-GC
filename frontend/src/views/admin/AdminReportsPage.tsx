@@ -1236,7 +1236,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
               if (!representativeId || !currentUser) {
                 toast({
                   title: 'Error',
-                  description: 'Could not identify your handler profile. Please contact an administrator.',
+                  description: 'Could not identify your CODI member profile. Please contact an administrator.',
                   variant: 'destructive',
                 });
                 return;
@@ -1402,7 +1402,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   <CaseDetailStat label="Category">
                     {getFormalComplaintCategoryLabel(String(safeGet(selectedReport, 'category', '')))}
                   </CaseDetailStat>
-                  <CaseDetailStat label="Assigned CODI" className="col-span-2 md:col-span-1">
+                  <CaseDetailStat label="Assigned CODI member" className="col-span-2 md:col-span-1">
                     {safeGet(selectedReport, 'assignedToName', 'Unassigned')}
                   </CaseDetailStat>
                 </div>
@@ -2378,7 +2378,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                   { field: 'title', label: 'Title' },
                   { field: 'status', label: 'Status' },
                   { field: 'complainant', label: 'Complainant' },
-                  ...(!isHandler ? [{ field: 'handler', label: 'CODI' }] : []),
+                  ...(!isHandler ? [{ field: 'handler', label: 'CODI member' }] : []),
                 ].map(({ field, label }) => (
                   <button
                     key={field}
@@ -2656,7 +2656,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 <CaseDetailStat label="Submitted">
                   {safeFormat(safeGet(quickSummaryReport, 'reportedAt'), 'MMM dd, yyyy')}
                 </CaseDetailStat>
-                <CaseDetailStat label="Assigned CODI">
+                <CaseDetailStat label="Assigned CODI member">
                   {safeGet(quickSummaryReport, 'assignedToName') || 'Not assigned'}
                 </CaseDetailStat>
                 <CaseDetailStat label="Last Updated">

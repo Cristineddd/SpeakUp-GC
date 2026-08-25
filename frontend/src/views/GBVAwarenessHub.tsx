@@ -45,7 +45,7 @@ const REPORTING_STEPS: ReportingStep[] = [
   { step:1, title:"Recognize the Incident", description:"Identify what happened. You do not need to be certain about the law — the DEIU will help classify the incident. Trust your instincts.", tips:["Trust your instincts — if something felt wrong, it likely was.","You are not required to have physical evidence to file a complaint.","An incident can be reported even if it happened some time ago.","Anonymous reporting is available if you're unsure about disclosing your identity."] },
   { step:2, title:"Secure Your Safety", description:"Your immediate safety is the priority. If you are in danger, contact emergency services first. Then document the incident privately — date, time, location, description, and witnesses.", tips:["Take screenshots of digital evidence (messages, posts, emails) and store them securely.","Write down what happened in your own words while it is fresh.","Identify any witnesses who may support your account.","Do not confront the respondent directly if you feel unsafe."] },
   { step:3, title:"File a Complaint on SpeakUp GC", description:'Use "File a Complaint" to submit a formal or anonymous complaint. A written sworn statement (sinumpaang salaysay) is required for formal complaints.', tips:["You may choose to remain anonymous — your identity will not be shared without your consent.","Upload all available evidence: photos, screenshots, documents, recordings.","A sworn statement strengthens your complaint and is required for formal cases.","You will receive a Case ID immediately upon submission — keep it for tracking."] },
-  { step:4, title:"DEIU Review & Investigation", description:"The DEIU will review your complaint, assign a case handler, and conduct a formal investigation in accordance with the Gordon College CODI and applicable Republic Acts.", tips:["You will be notified when your case is assigned to a handler.","You may be asked to provide additional evidence or a formal statement.","The DEIU will contact the respondent separately — your identity is protected.","Both parties have the right to be heard. Retaliation is strictly prohibited."] },
+  { step:4, title:"DEIU Review & Investigation", description:"The DEIU will review your complaint, a CODI member will take the case, and a formal investigation will be conducted in accordance with the Gordon College CODI and applicable Republic Acts.", tips:["You will be notified when a CODI member takes your case.","You may be asked to provide additional evidence or a formal statement.","The DEIU will contact the respondent separately — your identity is protected.","Both parties have the right to be heard. Retaliation is strictly prohibited."] },
   { step:5, title:"Formal Hearing (if applicable)", description:"For formal complaints, a hearing may be scheduled where both parties can present their case. You will be notified of the date, time, and venue.", tips:["You will receive written notice at least 5 days before the hearing.","You have the right to bring a support person, advocate, or representative.","You may submit written statements if you cannot attend in person.","The hearing is conducted in a safe, confidential environment."] },
   { step:6, title:"Decision & Next Steps", description:"The DEIU will issue a written decision. Both parties will be notified of the outcome. You may file a motion for reconsideration within the prescribed period.", tips:["The written decision includes findings, conclusions, and any sanction imposed.","You have the right to appeal or file a motion for reconsideration.","Regardless of the outcome, you are entitled to wellness and support resources.","You may also pursue civil or criminal remedies independently through the courts."] },
 ];
@@ -83,6 +83,9 @@ const WELLNESS_RESOURCES = [
   { icon:Handshake, title:"Academic Accommodations", color:"green", description:"If a GBV incident is affecting your studies, you may request academic accommodations including deadline extensions, section transfers, or modified attendance. Contact the DEIU with your request." },
   { icon:Lock, title:"Your Rights During Recovery", color:"green", description:"You have the right to recover at your own pace. You are not obligated to disclose your experience publicly. You may withdraw from the formal complaint process without affecting your access to support." },
 ];
+
+/** Educational summaries last checked against official Gazette / GC-CODI references. */
+const LEGAL_CONTENT_LAST_REVIEWED = "May 2026";
 
 const POLICY_ITEMS = [
   { icon:Gavel, title:"Gordon College Committee on Decorum and Investigation (GC-CODI)", subtitle:"Established under RA 7877 & RA 11313", description:"The GC-CODI is mandated to investigate complaints of sexual harassment and gender-based sexual harassment, ensuring a safe and respectful environment for all members of the Gordon College community.", details:["Chaired by VP for IPDEA with representatives from faculty, students, HRMU, and DEI Unit.","Receives and investigates all sexual and gender-based sexual harassment complaints.","Submits investigation report within 10 days to the Disciplining Authority for decision.","Protects complainants from retaliation and ensures confidentiality throughout the process.","Conducts educational programs to prevent incidents of harassment.","Follows due process — both parties have the right to be heard and present evidence."] },
@@ -125,40 +128,19 @@ function LegalActsGrid({ acts }: { acts: LegalAct[] }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
       {acts.map((act, i) => {
         const isExpanded = expandedIndex === i;
-        const isFullWidth = isExpanded;
-
         return (
-          <div key={i} className={isFullWidth ? "w-full" : ""}>
-            {isFullWidth ? (
-              <LegalActCard 
-                act={act} 
-                expanded={isExpanded}
-                onToggle={() => setExpandedIndex(isExpanded ? null : i)}
-              />
-            ) : null}
+          <div key={act.raNumber} className={isExpanded ? "md:col-span-3" : undefined}>
+            <LegalActCard
+              act={act}
+              expanded={isExpanded}
+              onToggle={() => setExpandedIndex(isExpanded ? null : i)}
+            />
           </div>
         );
       })}
-      
-      {/* Grid for collapsed cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {acts.map((act, i) => {
-          const isExpanded = expandedIndex === i;
-          if (isExpanded) return null;
-          
-          return (
-            <LegalActCard 
-              key={i}
-              act={act} 
-              expanded={false}
-              onToggle={() => setExpandedIndex(i)}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -174,26 +156,24 @@ function LegalActCard({ act, expanded, onToggle }: { act: LegalAct; expanded: bo
             <Icon className="h-6 w-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className={cn("text-xs font-bold px-3 py-1 rounded-full", c.badge)}>{act.raNumber}</span>
-              <span className="text-xs font-medium text-gray-400">{act.acronym}</span>
-            </div>
-            {/* Larger, bolder title for clear hierarchy */}
-            <h3 className="text-lg font-extrabold text-gray-900 leading-tight">{act.title}</h3>
+            <span className={cn("inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-1.5", c.badge)}>
+              {act.acronym}
+            </span>
+            <h3 className="text-lg font-extrabold text-gray-900 leading-tight">{act.raNumber}</h3>
           </div>
         </div>
-        {/* Lighter description text */}
         <div className="flex-1">
-          <p className="text-sm text-gray-600 leading-loose mt-3">{act.summary}</p>
+          <p className="text-sm text-gray-600 leading-relaxed mt-3">{act.summary}</p>
         </div>
-        {/* Friendlier CTA button */}
         <button
+          type="button"
           onClick={onToggle}
-          className={cn("mt-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold w-full transition-colors", c.toggle)}
+          aria-expanded={expanded}
+          className="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-semibold border-2 border-[#1D9E75] text-[#14532D] bg-white hover:bg-[#F0FDF4] transition-colors"
         >
           {expanded
             ? <><ChevronDown className="h-4 w-4" />Show less</>
-            : <><ArrowRight className="h-4 w-4" />Read more — provisions &amp; penalties</>}
+            : <><ArrowRight className="h-4 w-4" />Read provisions &amp; penalties</>}
         </button>
       </div>
       {expanded && (
@@ -359,40 +339,34 @@ export default function GBVAwarenessHub() {
     // -mt-4 cancels main shell pt-4 on mobile so the sticky tab bar can sit flush under the app top bar
     <div className="min-h-full w-full -mt-4 md:mt-0">
 
-      {/* Hero — restore the cancelled top inset */}
-      <div className="pt-4 md:pt-0">
-        <div className="bg-gradient-to-br from-[#0f2d1a] via-[#163d25] to-[#1e5c38] px-6 py-8 relative overflow-hidden rounded-2xl mb-4 w-full">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
-            <ShieldCheck className="absolute right-6 top-1/2 -translate-y-1/2 w-56 h-56 text-white" strokeWidth={1} />
-          </div>
-          <div className="max-w-5xl mx-auto w-full">
-            <div className="flex items-center mb-4">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-white/70" />
-                <span className="text-white/70 text-xs font-bold uppercase tracking-widest">Know Your Rights</span>
-              </div>
+      {/* Page header — same voice as Dashboard / My Cases, green only as accent */}
+      <div className="pt-4 md:pt-0 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="rounded-lg p-2 shrink-0 bg-[#DCFCE7]">
+              <ShieldCheck className="h-5 w-5 text-[#166534]" />
             </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight mb-2">
-                  GBV Awareness &amp; Rights Hub
-                </h1>
-                <p className="text-white/75 text-sm leading-relaxed max-w-lg">
-                  Philippine legal protections, reporting guidance, and victim support
-                  for the Gordon College community.
-                </p>
-              </div>
-              <div className="flex flex-row sm:flex-col gap-2 flex-shrink-0">
-                <button
-                  onClick={() => navigate("/complaints/new")}
-                  className="flex items-center gap-2 bg-white text-[#178F65] text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-green-50 transition-colors shadow-sm whitespace-nowrap"
-                >
-                  <FileText className="h-4 w-4" />File a Complaint
-                </button>
-              </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Know Your Rights</p>
+              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">
+                GBV Awareness &amp; Rights Hub
+              </h1>
+              <p className="text-sm text-gray-500 mt-1 max-w-lg leading-relaxed">
+                Philippine legal protections, reporting guidance, and victim support
+                for the Gordon College community.
+              </p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("reporting");
+              navigate("/know-your-rights?tab=reporting");
+            }}
+            className="flex items-center justify-center gap-2 bg-[#1D9E75] hover:bg-[#178F65] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap shrink-0"
+          >
+            <FileText className="h-4 w-4" />How to Report
+          </button>
         </div>
       </div>
 
@@ -429,15 +403,18 @@ export default function GBVAwarenessHub() {
         {/* LEGAL RIGHTS */}
         {activeTab === "laws" && (
           <div className="space-y-6">
-            <div className="flex items-start gap-4 bg-green-50 border-2 border-green-200 rounded-2xl p-5">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Info className="h-5 w-5 text-[#1D9E75]" />
+            <div className="flex items-start gap-4 rounded-2xl p-5" style={{ background: "var(--privacy-bg)", border: "1px solid var(--card-outline)" }}>
+              <div className="w-10 h-10 rounded-xl bg-[#DCFCE7] flex items-center justify-center flex-shrink-0">
+                <Info className="h-5 w-5 text-[#166534]" />
               </div>
               <div>
-                <p className="text-base font-bold text-green-900 mb-1">Understanding Your Legal Protections</p>
-                <p className="text-sm text-green-700 leading-relaxed">
+                <p className="text-base font-bold text-[#14532D] mb-1">Understanding Your Legal Protections</p>
+                <p className="text-sm text-[#166534] leading-relaxed">
                   Philippine law provides multiple layers of protection for GBV and sexual harassment survivors.
                   These laws apply to all members of the Gordon College community.
+                </p>
+                <p className="text-xs text-[#14532D] font-medium mt-2">
+                  Last reviewed: {LEGAL_CONTENT_LAST_REVIEWED}
                 </p>
               </div>
             </div>
@@ -612,7 +589,7 @@ export default function GBVAwarenessHub() {
             </button>
           </div>
           <p className="text-xs text-gray-500 pt-2">
-            All information is for educational and guidance purposes only. Aligned with Philippine law as of May 2026.
+            Educational guidance only — not a substitute for legal advice. Last reviewed {LEGAL_CONTENT_LAST_REVIEWED}.
           </p>
         </div>
       </div>

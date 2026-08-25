@@ -14,6 +14,7 @@ import { signOut, signInWithEmailAndPassword } from "firebase/auth";
 import { sendVerificationEmailForUser } from "../lib/sendVerificationEmail";
 import { GOOGLE_SIGN_IN_ENABLED } from "../config";
 import { getAuthErrorMessage } from "../utils/auth/firebaseErrorMessages";
+import { useTheme } from "next-themes";
 
 interface WalkthroughModalProps {
   isOpen: boolean;
@@ -29,6 +30,10 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, loginWithGoogle, register, signUpWithGoogle, isAuthenticated, currentUser, isAdmin, isLoading } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const isDark =
+    resolvedTheme === "dark" ||
+    (typeof document !== "undefined" && document.documentElement.classList.contains("dark"));
 
   // Set to true right after a login/signup call succeeds. AuthContext updates
   // `currentUser` asynchronously (via Firebase's onAuthStateChanged listener),
@@ -238,36 +243,58 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     </svg>
   );
 
-  // Color tokens (light green theme matching Landing page)
-  const colors = {
-    // Primary green
-    primary: "#1D9E75",
-    primaryHover: "#178F65",
-    primaryLight: "rgba(26, 122, 69, 0.08)",
-    primaryBorder: "rgba(26, 122, 69, 0.2)",
-    // Text
-    heading: "#1a2e1f",
-    body: "#4b5e52",
-    muted: "#7a8f82",
-    placeholder: "#9ca8a0",
-    // Surfaces
-    modalBg: "#ffffff",
-    inputBg: "#f5f9f7",
-    inputBorder: "#d4e4db",
-    inputFocus: "#1D9E75",
-    cardBg: "#f0f7f3",
-    cardBorder: "#d4e4db",
-    divider: "#e2ece7",
-    // Accent colors for icon badges
-    loginBadge: "from-emerald-500 to-teal-600",
-    signupBadge: "from-emerald-400 to-green-600",
-    exploreBadge: "from-amber-400 to-orange-500",
-    // Warning
-    warningBg: "#fef9ee",
-    warningBorder: "#f5d990",
-    warningText: "#a16207",
-    warningMuted: "#b88c2a",
-  };
+  // Color tokens — match landing light/dark surfaces
+  const colors = isDark
+    ? {
+        primary: "#1D9E75",
+        primaryHover: "#178F65",
+        primaryLight: "rgba(29, 158, 117, 0.2)",
+        primaryBorder: "rgba(29, 158, 117, 0.35)",
+        heading: "#f3f4f6",
+        body: "#c4cdc8",
+        muted: "#8b9a94",
+        placeholder: "#6b7c74",
+        modalBg: "#18241f",
+        inputBg: "#1c2c26",
+        inputBorder: "#3d5c50",
+        inputFocus: "#1D9E75",
+        cardBg: "#1c2a24",
+        cardBorder: "#2d5a48",
+        divider: "#2a453c",
+        loginBadge: "from-emerald-500 to-teal-600",
+        signupBadge: "from-emerald-400 to-green-600",
+        exploreBadge: "from-amber-400 to-orange-500",
+        warningBg: "#2a2318",
+        warningBorder: "rgba(251, 191, 36, 0.28)",
+        warningText: "#fde68a",
+        warningMuted: "#d4b36a",
+        googleBg: "#1c2a24",
+      }
+    : {
+        primary: "#1D9E75",
+        primaryHover: "#178F65",
+        primaryLight: "rgba(26, 122, 69, 0.08)",
+        primaryBorder: "rgba(26, 122, 69, 0.2)",
+        heading: "#1a2e1f",
+        body: "#4b5e52",
+        muted: "#7a8f82",
+        placeholder: "#9ca8a0",
+        modalBg: "#ffffff",
+        inputBg: "#f5f9f7",
+        inputBorder: "#d4e4db",
+        inputFocus: "#1D9E75",
+        cardBg: "#f0f7f3",
+        cardBorder: "#d4e4db",
+        divider: "#e2ece7",
+        loginBadge: "from-emerald-500 to-teal-600",
+        signupBadge: "from-emerald-400 to-green-600",
+        exploreBadge: "from-amber-400 to-orange-500",
+        warningBg: "#fef9ee",
+        warningBorder: "#f5d990",
+        warningText: "#a16207",
+        warningMuted: "#b88c2a",
+        googleBg: "#ffffff",
+      };
 
   return (
     <>
@@ -429,9 +456,9 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                         disabled={isGoogleLoading || isLoginLoading}
                         onClick={handleGoogleLogin}
                         className="w-full h-11 font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 hover:shadow-sm"
-                        style={{ background: "#fff", border: `1.5px solid ${colors.cardBorder}`, color: colors.heading }}
+                        style={{ background: colors.googleBg, border: `1.5px solid ${colors.cardBorder}`, color: colors.heading }}
                         onMouseEnter={(e) => e.currentTarget.style.background = colors.cardBg}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = colors.googleBg}
                       >
                         {isGoogleLoading ? <><Loader className="animate-spin h-4 w-4" /> Signing in…</> : <><GoogleIcon /> Continue with Google</>}
                       </button>

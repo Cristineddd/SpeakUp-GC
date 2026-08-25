@@ -34,7 +34,7 @@ const RoleSelector = () => {
   const roleDescriptions = {
     [UserRole.COMPLAINANT]: "File complaints and track case status",
     [UserRole.RESPONDENT]: "Respond to complaints filed against you",
-    [UserRole.CODI]: "Case Handler (CODI - Committee on Decorum and Investigation) - Investigate, decide, and close cases",
+    [UserRole.CODI]: "CODI member (Committee on Decorum and Investigation) — investigate, decide, and close cases",
     [UserRole.DISCIPLINING_AUTHORITY]: "Make final decisions on complaint cases",
     [UserRole.GUIDANCE_COUNSELOR]: "Provide counseling and support services",
     [UserRole.SYSTEM_ADMIN]: "Manage system settings and user accounts",

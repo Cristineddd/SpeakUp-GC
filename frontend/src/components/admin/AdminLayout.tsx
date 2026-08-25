@@ -21,6 +21,7 @@ import { useRepresentativeRole } from '../../hooks/useRepresentativeRole';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { ThemeToggle } from '../ThemeToggle';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -272,12 +273,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigationItems: NavItem[] = isCODI ? handlerNav : fullAdminNav;
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 dark:bg-background">
       {/* Sidebar Layout */}
       <>
           {/* Sidebar */}
           <div className={cn(
-            "fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-20",
+            "fixed inset-y-0 left-0 bg-white dark:bg-card border-r border-gray-200 dark:border-border flex-shrink-0 transition-all duration-300 z-20",
             sidebarCollapsed ? "w-20" : "w-64"
           )}>
             <div className="flex flex-col h-full">
@@ -377,25 +378,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
               {/* User Profile */}
               {!sidebarCollapsed && (
-                <div className="px-5 py-4 border-t border-gray-200">
+                <div className="px-5 py-4 border-t border-gray-200 dark:border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center flex-shrink-0">
                       <User className="h-5 w-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-800 truncate leading-tight">{user?.displayName || 'Admin'}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate leading-tight">{user?.displayName || 'Admin'}</p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                         {isAdmin ? 'Administrator' : isCODI ? 'CODI' : 'Staff'}
                       </p>
                     </div>
+                    <ThemeToggle />
                   </div>
                 </div>
               )}
               {sidebarCollapsed && (
-                <div className="px-3 py-3 flex justify-center border-t border-gray-200">
+                <div className="px-3 py-3 flex flex-col items-center gap-2 border-t border-gray-200 dark:border-border">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1D9E75] to-emerald-600 flex items-center justify-center" title={user?.displayName || 'Admin'}>
                     <User className="h-5 w-5 text-white" />
                   </div>
+                  <ThemeToggle />
                 </div>
               )}
 
@@ -422,7 +425,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             sidebarCollapsed ? "ml-20" : "ml-64"
           )}>
             {/* Topbar */}
-            <div className="sticky top-0 z-50 flex h-14 items-center justify-end border-b border-gray-200 bg-white px-4 sm:h-16 sm:px-6">
+            <div className="sticky top-0 z-50 flex h-14 items-center justify-end border-b border-gray-200 dark:border-border bg-white dark:bg-card px-4 sm:h-16 sm:px-6">
               <NotificationBell variant="admin" />
             </div>
             <main className="flex-1 bg-gradient-to-b from-gray-50/90 to-gray-100/80 p-8">

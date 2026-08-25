@@ -177,9 +177,9 @@ const Account = () => {
       <div className="space-y-5">
 
         {/* ── Header ── */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-          <p className="mt-2 text-sm text-gray-600">Manage your identity, notifications, and security settings.</p>
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-[#1a3329] dark:to-[#152820] border border-green-100 dark:border-[#2d5a48] rounded-2xl p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">My Profile</h1>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Manage your identity, notifications, and security settings.</p>
         </div>
 
         {/* ── Profile Setup Status Banner ── */}
@@ -329,7 +329,7 @@ const Account = () => {
 
             {/* ── Notification Preference Card ── */}
             <Card className="border-0 shadow-sm">
-              <CardHeader className="pb-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardHeader className="pb-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-500/15 dark:to-indigo-500/10">
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -346,7 +346,7 @@ const Account = () => {
                 </div>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-400/20 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <div className="shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                       <Bell className="h-5 w-5 text-blue-600" />

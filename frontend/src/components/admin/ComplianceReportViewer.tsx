@@ -192,7 +192,7 @@ export const ComplianceReportViewer: React.FC<ComplianceReportViewerProps> = ({ 
               <li>{report.summary.inProgressIncidents || 0} cases currently under investigation</li>
               <li>{report.summary.pendingIncidents || 0} cases awaiting review or assignment</li>
               {report.handlerPerformanceAnalysis && report.handlerPerformanceAnalysis.handlers && report.handlerPerformanceAnalysis.handlers.length > 0 && (
-                <li>{report.handlerPerformanceAnalysis.handlers.length} active case handlers assigned to incidents</li>
+                <li>{report.handlerPerformanceAnalysis.handlers.length} active CODI members assigned to incidents</li>
               )}
             </ul>
           </div>
@@ -760,13 +760,13 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Handler Overview
+            CODI member overview
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center p-6 bg-blue-50 rounded-lg">
             <div className="text-4xl font-bold text-blue-900">{analysis.totalHandlers}</div>
-            <div className="text-sm text-blue-600 mt-2">Active Handlers</div>
+            <div className="text-sm text-blue-600 mt-2">Active CODI members</div>
           </div>
         </CardContent>
       </Card>
@@ -823,7 +823,7 @@ const HandlerPerformanceView: React.FC<{ analysis: HandlerPerformanceAnalysis }>
       {/* All Handlers */}
       <Card>
         <CardHeader>
-          <CardTitle>Handler Performance Details</CardTitle>
+          <CardTitle>CODI member performance details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {analysis.handlers && Array.isArray(analysis.handlers) && analysis.handlers.length > 0

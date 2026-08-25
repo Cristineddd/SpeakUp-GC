@@ -17,7 +17,7 @@ import type { MessageAttachment } from '../../types/message';
 const QUICK_RESPONSES = [
   {
     label: 'Initial Greeting',
-    message: 'Hello, I am your assigned case handler. I have reviewed your complaint and will be assisting you throughout this process. Please feel free to share any additional information or evidence that may help with the investigation.',
+    message: 'Hello, I am the CODI member assigned to your case. I have reviewed your complaint and will be assisting you throughout this process. Please feel free to share any additional information or evidence that may help with the investigation.',
   },
   {
     label: 'Request More Info',

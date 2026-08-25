@@ -256,7 +256,7 @@ const RepresentativesManagement = () => {
         <div>
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Staff Management</p>
           <h1 className="text-xl font-bold text-gray-900">Representatives</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage Administrators and Case Handlers</p>
+          <p className="text-sm text-gray-500 mt-1">Manage Administrators and CODI members</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -354,7 +354,7 @@ const RepresentativesManagement = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="handler">Case Handler</SelectItem>
+                      <SelectItem value="handler">CODI member</SelectItem>
                       <SelectItem value="admin">Administrator</SelectItem>
                     </SelectContent>
                   </Select>
@@ -412,9 +412,9 @@ const RepresentativesManagement = () => {
                 <Briefcase className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
-            <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Case Handlers</p>
+            <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">CODI members</p>
             <p className="text-2xl font-bold text-gray-900">
-              {representatives.filter(r => r.role === 'handler').length}
+              {representatives.filter(r => r.role === 'handler' || r.role === 'codi').length}
             </p>
             <p className="text-xs text-gray-500 mt-0.5">Process complaints</p>
           </CardContent>
