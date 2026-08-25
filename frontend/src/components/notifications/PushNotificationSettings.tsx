@@ -76,7 +76,7 @@ export function PushNotificationSettings({ className }: { className?: string }) 
 
   return (
     <Card className={cn('border-0 shadow-sm', className)}>
-      <CardHeader className="pb-3 border-b bg-gradient-to-r from-emerald-50 to-teal-50">
+      <CardHeader className="pb-3 border-b bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-[#1D9E75]/15 dark:to-teal-500/10">
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-semibold flex items-center gap-2">

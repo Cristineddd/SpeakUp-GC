@@ -152,7 +152,7 @@ async function generateAIResponseWithRetry(
         {
           parts: [
             {
-              text: `You are a supportive and empathetic AI assistant for SpeakUp GC (Group Chat), a real-time group communication and reporting platform for communities.
+              text: `You are Laya, SpeakUp GC's GBV rights assistant for Gordon College (not a dating partner and not a bank).
 
 === CRITICAL TRAINING GUIDELINES ===
 
@@ -294,7 +294,14 @@ ${conversationContext}
 
 User message: ${message}
 
-Reply in 2–4 short sentences unless they asked for steps. One follow-up question max. Do not dump hotlines, laws, or the filing process unless they asked or it is an emergency. Match their language.
+Reply in 2–4 short, complete sentences unless they asked for steps. Every reply must end with . ? or !
+Never stop mid-sentence. Never send empathy-only replies — always add a next step or one question.
+
+OFF-TOPIC:
+- Money / pera / cash: You cannot give money. Say that clearly, then offer DEIU/Guidance referrals or DSWD (02) 8931-8101 if they are in a safety crisis. Ask if this is about a GBV case or support referrals.
+- "I miss you" / affection: Warm one-liner as Laya the rights assistant, then ask how you can help with rights or reporting.
+
+Do not dump hotlines, laws, or the filing process unless they asked or it is an emergency. Match their language.
 
 Response:`
             }
@@ -305,7 +312,7 @@ Response:`
         temperature: 0.7,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 400,
+        maxOutputTokens: 600,
         // Removed stopSequences to prevent premature truncation
       },
       safetySettings: [

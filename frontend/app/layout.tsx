@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Mute debug console noise on deployed builds before app bundles load */}
         <script
@@ -64,7 +64,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-background">
+      <body className="min-h-screen bg-background text-foreground">
         <Providers>
           {children}
         </Providers>

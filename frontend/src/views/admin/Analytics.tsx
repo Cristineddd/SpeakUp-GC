@@ -579,7 +579,7 @@ const Analytics = () => {
       <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
         <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
           <CardTitle className="text-base font-semibold text-gray-900">Cases by Representative</CardTitle>
-          <CardDescription>Case load per handler</CardDescription>
+          <CardDescription>Case load per CODI member</CardDescription>
         </CardHeader>
         <CardContent className="h-[300px] px-2 pb-4 pt-2 sm:h-[320px] sm:px-4">
           {data.casesByRepresentative.length === 0 ? (

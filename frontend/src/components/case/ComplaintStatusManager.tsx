@@ -159,7 +159,7 @@ export const ComplaintStatusManager: React.FC<ComplaintStatusManagerProps> = ({
             {/* Assignment Selection (only for 'assigned' status) */}
             {selectedStatus === 'assigned' && (
               <div className="space-y-2">
-                <Label htmlFor="handler">Assign To Handler *</Label>
+                <Label htmlFor="handler">Assign to CODI member *</Label>
                 <Select
                   value={assignedHandler}
                   onValueChange={(value) => {
@@ -169,7 +169,7 @@ export const ComplaintStatusManager: React.FC<ComplaintStatusManagerProps> = ({
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a handler" />
+                    <SelectValue placeholder="Select a CODI member" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableHandlers.map((handler) => (

@@ -59,6 +59,9 @@ export const getFormSuggestions = (
     }
 
     if (fieldName === 'complainantContact' && fieldValue.length > 0) {
+      if (formData?.isAnonymous || fieldValue === 'Not Disclosed') {
+        return null;
+      }
       if (!fieldValue.startsWith('09')) {
         return {
           fieldName,
@@ -202,7 +205,7 @@ export const validateFormCompletion = (formData: any, currentStep: number): Form
     if (!formData.complainantAddress || formData.complainantAddress.length < 10) {
       suggestions.push({ fieldName: 'complainantAddress', message: 'Please provide a complete address.', type: 'warning' });
     }
-    if (!formData.complainantContact || formData.complainantContact.length < 10) {
+    if (!formData.isAnonymous && (!formData.complainantContact || formData.complainantContact.length < 10)) {
       suggestions.push({ fieldName: 'complainantContact', message: 'Please enter a valid contact number.', type: 'warning' });
     }
   }

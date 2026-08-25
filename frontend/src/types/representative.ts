@@ -163,8 +163,8 @@ export const CODI_ROLE_DESCRIPTION =
 // Role display names
 export const ROLE_LABELS: Record<RepresentativeRole, string> = {
   admin: 'Administrator',
-  handler: 'CODI',
-  codi: 'CODI'
+  handler: 'CODI member',
+  codi: 'CODI member'
 };
 
 // Role colors for badges

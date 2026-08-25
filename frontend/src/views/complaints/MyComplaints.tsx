@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
-  Clock, CheckCircle, AlertTriangle, Eye, Plus, MessageSquare,
-  FileText, Search, Calendar as CalendarIcon, User, MapPin, X,
-  FolderOpen, Loader, Gavel, Shield
+  Clock, AlertTriangle, Eye, Plus, MessageSquare,
+  Search, Calendar as CalendarIcon, User, MapPin, X,
+  FolderOpen, Bell, FolderSearch
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Progress } from "../../components/ui/progress";
@@ -18,6 +18,7 @@ import { db } from "../../firebase";
 import { getCaseProgress } from "../../utils/caseProgress";
 import { getCachedUserDisplayName } from "../../utils/userDisplay";
 import { useCaseUnreadByComplaintId } from "../../hooks/useCaseUnreadByComplaintId";
+import { PrivacyNotice } from "../../components/PrivacyNotice";
 
 // ─── Helpers ───
 const safeToDate = (dateValue: any): Date => {
@@ -118,8 +119,9 @@ const getStatusLabel = (status: ComplaintStatus): string => {
     case ComplaintStatus.UNDER_DELIBERATION:
       return 'Ongoing Investigation';
     case ComplaintStatus.RESOLVED:
+      return 'Resolved';
     case ComplaintStatus.DISMISSED:
-      return 'Decision Already Made';
+      return 'Dismissed';
     case ComplaintStatus.WITHDRAWN:
       return 'Withdrawn';
     default:
@@ -240,7 +242,11 @@ export default function MyComplaints() {
   const inProgress = complaints.filter(
     (c) => hasStatus(c, 'inProgress', ComplaintStatus.VALIDATED, ComplaintStatus.INVESTIGATING, ComplaintStatus.AWAITING_RESPONSE, ComplaintStatus.UNDER_DELIBERATION)
   ).length;
-  const decided = complaints.filter((c) => hasStatus(c, 'resolved', 'dismissed', ComplaintStatus.RESOLVED, ComplaintStatus.DISMISSED)).length;
+  const needsAttention = complaints.filter((c) => (byComplaintId[c.id] || 0) > 0).length;
+  const recentlyUpdated = complaints.filter((c) => {
+    const updated = safeToDate(c.updatedAt);
+    return Date.now() - updated.getTime() < 7 * 24 * 60 * 60 * 1000;
+  }).length;
 
   if (loading) {
     return (
@@ -276,37 +282,32 @@ export default function MyComplaints() {
             <h1 className="text-2xl font-bold text-gray-900">My Cases</h1>
             <p className="text-sm text-gray-400 mt-1">Track and manage all your filed complaints</p>
           </div>
-          <Button
-            onClick={() => navigate("/complaints/new")}
-            className="bg-[#1D9E75] hover:bg-[#178F65] text-white shadow-sm w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            File New Complaint
-          </Button>
+          {total > 0 && (
+            <Button
+              onClick={() => navigate("/complaints/new")}
+              className="bg-[#1D9E75] hover:bg-[#178F65] text-white shadow-sm w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              File New Complaint
+            </Button>
+          )}
         </div>
 
-        {/* Privacy Assurance Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-          <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-blue-900">Your Privacy is Protected</p>
-            <p className="text-xs text-blue-700 mt-1">All case information is handled confidentially under the Safe Spaces Act (RA 11313) and Anti-Sexual Harassment Act (RA 7877). Anti-retaliation protections apply to all parties.</p>
-          </div>
-        </div>
+        <PrivacyNotice />
 
-        {/* Stats Row (Minimal Outline Style) */}
+        {/* Page-specific stats — not a repeat of the dashboard */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Total Filed", value: total, icon: FileText },
-            { label: "Ongoing Investigation", value: inProgress, icon: Loader },
-            { label: "Decision Already Made", value: decided, icon: Gavel },
+            { label: "Needs Your Attention", value: needsAttention, icon: Bell },
+            { label: "Ongoing Investigation", value: inProgress, icon: FolderSearch },
+            { label: "Recently Updated", value: recentlyUpdated, icon: Clock },
           ].map((stat) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
                 className="bg-white rounded-xl p-4 flex flex-col items-center text-center"
-                style={{ border: "0.5px solid #e5e7eb" }}
+                style={{ border: "1px solid var(--card-outline)" }}
               >
                 <Icon className="h-7 w-7 text-[#1D9E75] mb-3" strokeWidth={1.5} />
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
@@ -316,8 +317,9 @@ export default function MyComplaints() {
           })}
         </div>
 
-        {/* Search + Filter */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        {/* Search + Filter — only when there is something to search */}
+        {total > 0 && (
+        <div className="bg-white rounded-xl p-4" style={{ border: "1px solid var(--card-outline)" }}>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -338,8 +340,8 @@ export default function MyComplaints() {
               <option value={ComplaintStatus.UNDER_REVIEW}>Submitted (Under Review)</option>
               <option value={ComplaintStatus.INVESTIGATING}>Ongoing Investigation</option>
               <option value={ComplaintStatus.AWAITING_RESPONSE}>Ongoing Investigation (Awaiting Response)</option>
-              <option value={ComplaintStatus.RESOLVED}>Decision Already Made (Resolved)</option>
-              <option value={ComplaintStatus.DISMISSED}>Decision Already Made (Dismissed)</option>
+              <option value={ComplaintStatus.RESOLVED}>Resolved</option>
+              <option value={ComplaintStatus.DISMISSED}>Dismissed</option>
             </select>
             {(searchTerm || statusFilter !== "all") && (
               <button
@@ -351,6 +353,7 @@ export default function MyComplaints() {
             )}
           </div>
         </div>
+        )}
 
         {/* Complaints List */}
         {filtered.length > 0 ? (
@@ -367,9 +370,10 @@ export default function MyComplaints() {
               return (
                 <div
                   key={complaint.id}
-                  className={`bg-white rounded-xl border p-5 hover:border-[#1D9E75]/30 hover:shadow-md transition-all duration-200 ${
-                    hasUpdate ? 'border-amber-200' : 'border-gray-200'
+                  className={`bg-white rounded-xl p-5 hover:shadow-md transition-all duration-200 ${
+                    hasUpdate ? 'border-2 border-amber-400' : ''
                   }`}
+                  style={hasUpdate ? undefined : { border: "1px solid var(--card-outline)" }}
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -486,7 +490,7 @@ export default function MyComplaints() {
                     {(!complaint.assignedCODI || complaint.assignedCODI.length === 0) && (
                       <p className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                         <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                        No case handler assigned yet. Messaging will be available once a handler is assigned.
+                        No CODI member has taken this case yet. Messaging will be available once a CODI member takes it.
                       </p>
                     )}
                   </div>
@@ -496,7 +500,7 @@ export default function MyComplaints() {
           </div>
         ) : (
           /* Empty state */
-          <div className="bg-white rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-xl border-2 border-dashed p-12 text-center" style={{ borderColor: "var(--card-outline)" }}>
             <div className="max-w-sm mx-auto">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                 <FolderOpen className="h-8 w-8 text-gray-400" />

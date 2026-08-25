@@ -60,7 +60,7 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
           findings: findings.trim() || undefined
         },
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'Handler',
+        currentUser.displayName || currentUser.email || 'CODI member',
         toActivityActorRole(role),
       );
 
@@ -68,7 +68,7 @@ export function ActivityLogger({ complaintId, onActivityLogged }: ActivityLogger
       await maybeStartInvestigation(
         complaintId,
         currentUser.uid,
-        currentUser.displayName || currentUser.email || 'Handler'
+        currentUser.displayName || currentUser.email || 'CODI member'
       );
 
       toast({

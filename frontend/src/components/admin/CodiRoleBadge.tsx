@@ -14,14 +14,16 @@ export function CodiRoleBadge({ role, className }: CodiRoleBadgeProps) {
   const label = ROLE_LABELS[role as RepresentativeRole] || role;
   const colorClass = ROLE_COLORS[role as RepresentativeRole] || 'bg-gray-100 text-gray-800';
 
-  if (label !== 'CODI') {
+  const isCodiMember = label === 'CODI' || label === 'CODI member';
+
+  if (!isCodiMember) {
     return <Badge className={`${colorClass} ${className ?? ''}`}>{label}</Badge>;
   }
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Badge className={`${colorClass} cursor-help ${className ?? ''}`}>CODI</Badge>
+        <Badge className={`${colorClass} cursor-help ${className ?? ''}`}>{label}</Badge>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs text-center">
         {CODI_ROLE_DESCRIPTION}

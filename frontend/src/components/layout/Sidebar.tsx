@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { ThemeToggle } from "../ThemeToggle";
 import { useAuth } from "../../contexts/AuthContext";
 import { useUnreadCasesCount } from "../../hooks/useUnreadCasesCount";
 import {
@@ -312,14 +313,14 @@ export default function Sidebar() {
         {/* Help Center Card */}
         {!isCollapsed && (
           <div className="px-3 py-3">
-            <div className="rounded-xl p-4 bg-green-50 border border-gray-200">
+            <div className="rounded-xl p-4 bg-green-50 dark:bg-[#1a3329]" style={{ border: "1px solid var(--card-outline)" }}>
               <div className="flex items-start gap-3">
-                <div className="rounded-lg p-2 bg-white border border-gray-200 shrink-0">
+                <div className="rounded-lg p-2 bg-white dark:bg-card shrink-0" style={{ border: "1px solid var(--card-outline)" }}>
                   <HelpCircle className="h-4 w-4 text-[#1D9E75]" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-gray-900 mb-1">Need Help?</p>
-                  <p className="text-xs text-gray-500 leading-relaxed mb-2">
+                  <p className="text-xs text-gray-700 leading-relaxed mb-2">
                     Contact DEIU for support and guidance.
                   </p>
                   <Link
@@ -336,25 +337,27 @@ export default function Sidebar() {
 
         {/* User Profile */}
         {!isCollapsed && (
-          <div className="px-4 py-4 border-t border-gray-200">
+          <div className="px-4 py-4 border-t border-gray-200 dark:border-border">
             <div className="flex items-center gap-3">
               <div className={sidebarUserAvatar()}>
                 {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
-                <p className="text-[11px] text-gray-500 font-medium mt-0.5">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">{alias || user?.displayName?.split(' ')[0] || 'User'}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                   {userRole === 'complainant' ? 'Complainant' : userRole || 'User'}
                 </p>
               </div>
+              <ThemeToggle />
             </div>
           </div>
         )}
         {isCollapsed && (
-          <div className="px-3 py-3 flex justify-center border-t border-gray-200">
+          <div className="px-3 py-3 flex flex-col items-center gap-2 border-t border-gray-200 dark:border-border">
             <div className={sidebarUserAvatar()} title={alias || user?.displayName || 'User'}>
               {alias ? alias.slice(0, 2).toUpperCase() : (user?.displayName ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U')}
             </div>
+            <ThemeToggle />
           </div>
         )}
 

@@ -219,7 +219,7 @@ export const SYSTEM_MESSAGES = {
     `${handlerName} has taken your case.`,
   
   CASE_REASSIGNED: (oldHandler: string, newHandler: string) => 
-    `Case handler changed from ${oldHandler} to ${newHandler}.`,
+    `CODI member changed from ${oldHandler} to ${newHandler}.`,
   
   CASE_ESCALATED: (level: string) => 
     `Case has been escalated to ${level} priority.`,

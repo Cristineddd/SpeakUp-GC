@@ -7,6 +7,7 @@ import {
 import { Link, useLocation, useSearchParams } from "../compat/router";
 import { useRouter } from "next/navigation";
 import WalkthroughModal from "../components/WalkthroughModal";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 function useInView(options: IntersectionObserverInit = {}) {
   const ref = useRef<HTMLDivElement>(null);
@@ -116,7 +117,7 @@ const Landing = () => {
     return (
       <header className="fixed top-0 z-50 w-full">
         <div className={`${SHELL} pt-4`}>
-          <div className="flex h-14 items-center justify-between bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl px-5 shadow-lg shadow-gray-900/5">
+          <div className="flex h-14 items-center justify-between bg-white/90 dark:bg-[#111614]/90 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl px-5 shadow-lg shadow-gray-900/5 dark:shadow-black/40">
             <Link to="/" className="flex items-center gap-3">
               <img src="/LOGO.png" alt="GC Logo" className="w-10 h-10 object-contain" />
               <span className="text-lg font-bold text-gray-900 tracking-tight">SpeakUp GC</span>
@@ -127,6 +128,7 @@ const Landing = () => {
               <Link to="/#about" className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">About</Link>
             </nav>
             <div className="hidden lg:flex items-center gap-2">
+              <ThemeToggle />
               <button
                 className="text-sm font-medium text-gray-600 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors"
                 onClick={() => openWalkthrough("login")}
@@ -142,11 +144,15 @@ const Landing = () => {
             </button>
           </div>
           {isMenuOpen && (
-            <div className="lg:hidden mt-2 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+            <div className="lg:hidden mt-2 bg-white/95 dark:bg-[#111614]/95 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl shadow-lg overflow-hidden">
               <nav className="flex flex-col p-3 gap-1">
                 <Link to="/#features" className="px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>Features</Link>
                 <Link to="/#about" className="px-3 py-2.5 text-sm font-medium text-gray-700 rounded-xl hover:bg-gray-100" onClick={() => setIsMenuOpen(false)}>About</Link>
                 <div className="border-t border-gray-100 mt-1 pt-2 flex flex-col gap-2">
+                  <div className="flex items-center justify-between px-1 py-1">
+                    <span className="text-xs font-medium text-gray-500">Appearance</span>
+                    <ThemeToggle />
+                  </div>
                   <button className="w-full py-2.5 text-sm font-medium text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50"
                     onClick={() => { setIsMenuOpen(false); openWalkthrough("login"); }}>Log in</button>
                   <button className="w-full py-2.5 text-sm font-semibold bg-[#1D9E75] text-white rounded-xl hover:bg-[#178F65]"
@@ -161,13 +167,13 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8faf9] text-gray-900 font-sans">
+    <div className="min-h-screen bg-[#f8faf9] dark:bg-[#0f1412] text-gray-900 font-sans">
       <Header />
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-white border-b border-gray-200 pt-28 pb-10 lg:pt-36 lg:pb-16">
+      <section className="relative overflow-hidden bg-white dark:bg-[#111614] border-b border-gray-200 dark:border-white/10 pt-28 pb-10 lg:pt-36 lg:pb-16">
         {/* Soft mint mesh — organic blobs sitting behind the headline */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute inset-0 pointer-events-none dark:opacity-[0.18]" aria-hidden="true">
           <div
             className="absolute -left-32 -top-24 h-[26rem] w-[38rem] bg-gradient-to-br from-[#1D9E75]/25 via-emerald-200/40 to-transparent blur-3xl"
             style={{ borderRadius: "58% 42% 46% 54% / 52% 44% 56% 48%" }}
@@ -208,7 +214,7 @@ const Landing = () => {
                   </button>
                   <a
                     href="#about"
-                    className="inline-flex items-center gap-1.5 border border-gray-300 text-gray-700 font-medium text-sm px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="inline-flex items-center gap-1.5 border border-gray-300 dark:border-white/15 text-gray-700 font-medium text-sm px-6 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                   >
                     Learn more
                   </a>
@@ -228,8 +234,8 @@ const Landing = () => {
 
               {/* Right: Dashboard Illustration */}
               <div className="hidden lg:block w-full max-w-xl ml-auto">
-                <div className="bg-white rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] border border-gray-200 overflow-hidden">
-                  <div className="bg-green-50 border-b border-green-200 px-5 py-3 flex items-start gap-3">
+                <div className="bg-white dark:bg-[#18241f] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] dark:shadow-[0_24px_64px_-12px_rgba(0,0,0,0.55)] border border-gray-200 dark:border-white/10 overflow-hidden">
+                  <div className="bg-green-50 dark:bg-[#1D9E75]/15 border-b border-green-200 dark:border-[#1D9E75]/25 px-5 py-3 flex items-start gap-3">
                     <div className="w-7 h-7 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
@@ -239,7 +245,7 @@ const Landing = () => {
                     </div>
                   </div>
                   <div className="p-5">
-                    <div className="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-xl p-5">
+                    <div className="bg-gradient-to-br from-gray-50 to-white dark:from-[#141a18] dark:to-[#1c2a24] border border-gray-200 dark:border-white/10 rounded-xl p-5">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-wide">Active Case</p>
@@ -292,9 +298,9 @@ const Landing = () => {
               <button
                 key={item.title}
                 onClick={() => openWalkthrough()}
-                className="group text-left bg-white border border-gray-200 hover:border-[#1D9E75]/50 rounded-xl p-4 transition-all hover:shadow-md"
+                className="group text-left bg-white dark:bg-[#18241f] border border-gray-200 dark:border-white/10 hover:border-[#1D9E75]/50 rounded-xl p-4 transition-all hover:shadow-md"
               >
-                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center mb-2 group-hover:bg-green-100 transition-colors">
+                <div className="w-9 h-9 bg-green-50 dark:bg-white/5 rounded-lg flex items-center justify-center mb-2 group-hover:bg-green-100 dark:group-hover:bg-white/10 transition-colors">
                   <item.icon className="w-4.5 h-4.5 text-[#1D9E75]" />
                 </div>
                 <h3 className="text-sm font-bold text-gray-900 mb-0.5">{item.title}</h3>
@@ -308,8 +314,8 @@ const Landing = () => {
       {/* ── Trust Banner ───────────────────────────────────────────── */}
       <section className="pb-6">
         <div className={SHELL}>
-          <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="bg-white dark:bg-[#18241f] border border-gray-200 dark:border-white/10 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 bg-green-50 dark:bg-white/5 rounded-lg flex items-center justify-center flex-shrink-0">
               <ShieldCheck className="w-5 h-5 text-[#1D9E75]" />
             </div>
             <div className="flex-1 min-w-0">
@@ -336,12 +342,12 @@ const Landing = () => {
       {/* ── How It Works ───────────────────────────────────────────── */}
       <section className="pb-6">
         <div className={SHELL}>
-          <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
+          <div className="bg-white dark:bg-[#18241f] border border-gray-200 dark:border-white/10 rounded-xl p-5 sm:p-6">
             <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">Process</p>
             <h2 className="text-lg font-black text-gray-900 mb-4">Three steps to resolution</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {STEPS.map((s) => (
-                <div key={s.n} className="bg-gray-50 rounded-lg p-3">
+                <div key={s.n} className="bg-gray-50 dark:bg-white/[0.05] rounded-lg p-3">
                   <p className="text-2xl font-black text-[#1D9E75]/30 leading-none mb-1">{s.n}</p>
                   <h3 className="text-sm font-bold text-gray-900 mb-1">{s.title}</h3>
                   <p className="text-xs text-gray-500 leading-snug">{s.desc}</p>
@@ -358,7 +364,7 @@ const Landing = () => {
           ref={aboutRef.ref as React.RefObject<HTMLDivElement>}
           className={SHELL}
         >
-          <div className={`bg-white border border-gray-200 rounded-xl p-5 sm:p-6 transition-all duration-500 ${aboutRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          <div className={`bg-white dark:bg-[#18241f] border border-gray-200 dark:border-white/10 rounded-xl p-5 sm:p-6 transition-all duration-500 ${aboutRef.inView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <div>
                 <p className="text-[10px] font-bold text-[#1D9E75] uppercase tracking-widest mb-1">About & Mission</p>
@@ -375,8 +381,8 @@ const Landing = () => {
                   { icon: HeadphonesIcon, title: "DEIU-Backed Support", desc: "Trained administrators guide every step." },
                   { icon: GraduationCap, title: "Know Your Rights", desc: "Resources on RA 11313, RA 7877, and policies." },
                 ].map((item) => (
-                  <div key={item.title} className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                    <div className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div key={item.title} className="flex items-center gap-3 bg-gray-50 dark:bg-white/[0.05] rounded-lg p-3">
+                    <div className="w-8 h-8 bg-white dark:bg-[#1c2a24] border border-gray-200 dark:border-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <item.icon className="w-4 h-4 text-[#1D9E75]" />
                     </div>
                     <div>
@@ -401,12 +407,12 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {DID_YOU_KNOW.map((card) => {
               const colorMap = {
-                green: { bg: "bg-green-50", icon: "text-green-600", check: "text-green-600" },
-                purple: { bg: "bg-purple-50", icon: "text-purple-600", check: "text-purple-600" },
-                red: { bg: "bg-red-50", icon: "text-red-600", check: "text-red-600" },
+                green: { bg: "bg-green-50 dark:bg-[#1D9E75]/15", icon: "text-green-600 dark:text-emerald-400", check: "text-green-600 dark:text-emerald-400" },
+                purple: { bg: "bg-purple-50 dark:bg-purple-500/15", icon: "text-purple-600 dark:text-purple-300", check: "text-purple-600 dark:text-purple-300" },
+                red: { bg: "bg-red-50 dark:bg-red-500/15", icon: "text-red-600 dark:text-red-400", check: "text-red-600 dark:text-red-400" },
               }[card.color];
               return (
-                <div key={card.title} className="bg-white border border-gray-200 rounded-xl p-4">
+                <div key={card.title} className="bg-white dark:bg-[#18241f] border border-gray-200 dark:border-white/10 rounded-xl p-4">
                   <div className={`w-9 h-9 ${colorMap.bg} rounded-lg flex items-center justify-center mb-2`}>
                     <card.icon className={`w-4 h-4 ${colorMap.icon}`} />
                   </div>
@@ -425,7 +431,7 @@ const Landing = () => {
           </div>
 
           {/* Know Your Rights CTA */}
-          <div className="mt-4 bg-gradient-to-r from-[#1D9E75]/5 to-emerald-50 border border-[#1D9E75]/20 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="landing-signin-bar mt-4 border rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Lock className="w-5 h-5 text-[#1D9E75]" />
               <div>
@@ -444,7 +450,7 @@ const Landing = () => {
       </section>
 
       {/* ── Compact Footer ─────────────────────────────────────────── */}
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="bg-white dark:bg-[#111614] border-t border-gray-200 dark:border-white/10">
         <div className={`${SHELL} py-8`}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-3 min-w-0">

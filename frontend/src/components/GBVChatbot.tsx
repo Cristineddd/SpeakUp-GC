@@ -221,15 +221,17 @@ export default function GBVChatbot() {
     <div className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-5 z-50 flex flex-col items-end gap-2">
 
       {!open && showBubble && (
-        <div className="bg-white border border-gray-200 shadow-lg rounded-2xl px-4 py-2.5 text-sm text-gray-700 max-w-[200px] text-center animate-bounce-slow">
+        <div className="relative bg-white shadow-lg rounded-2xl px-4 py-2.5 text-sm text-gray-700 max-w-[200px] text-center animate-bounce-slow" style={{ border: "1px solid #8ECBB3" }}>
           Ask Laya about your rights! 💚
-          <div className="absolute -bottom-2 right-6 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white" />
+          <div className="absolute -bottom-2 right-6 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent" style={{ borderTopColor: "#8ECBB3" }} />
         </div>
       )}
 
       {open && (
-        <div className="w-[340px] sm:w-[380px] bg-white rounded-3xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-          style={{ height: "520px" }}>
+        <div
+          className="w-[340px] sm:w-[380px] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          style={{ height: "520px", border: "1px solid #8ECBB3" }}
+        >
 
           <div className="bg-gradient-to-r from-[#178F65] to-[#1D9E75] px-4 py-3 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/30 flex-shrink-0 bg-[#1D9E75]">
@@ -237,7 +239,7 @@ export default function GBVChatbot() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-bold text-sm leading-tight">Laya</p>
-              <p className="text-white/60 text-xs">GBV Rights Assistant · SpeakUp GC</p>
+              <p className="text-white/70 text-xs">GBV Rights Assistant · SpeakUp GC</p>
             </div>
             {currentUser && (
               <>
@@ -264,7 +266,7 @@ export default function GBVChatbot() {
             )}
             <button
               onClick={() => setOpen(false)}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
               aria-label="Minimize chat"
             >
               <Minimize2 className="h-4 w-4" />
@@ -273,7 +275,7 @@ export default function GBVChatbot() {
 
           {historyOpen ? (
             <div className="flex-1 overflow-y-auto bg-gray-50">
-              <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 bg-white">
+              <div className="px-4 py-3 flex items-center justify-between bg-white" style={{ borderBottom: "1px solid #8ECBB3" }}>
                 <button
                   onClick={() => setHistoryOpen(false)}
                   className="flex items-center gap-1.5 text-xs font-medium text-[#1D9E75]"
@@ -300,8 +302,8 @@ export default function GBVChatbot() {
                       className={cn(
                         "w-full text-left rounded-2xl border px-3 py-2.5 transition-colors",
                         chat.id === conversationId
-                          ? "border-[#1D9E75]/40 bg-[#F0FAF6]"
-                          : "border-gray-200 bg-white hover:border-[#1D9E75]/30"
+                          ? "border-[#8ECBB3] bg-[#F0FDF4]"
+                          : "border-[#8ECBB3] bg-white hover:bg-[#F0FDF4]"
                       )}
                     >
                       <div className="flex items-start gap-2">
@@ -341,16 +343,19 @@ export default function GBVChatbot() {
                 {messages.map((msg, i) => (
                   <div key={i} className={cn("flex gap-2", msg.role === "user" ? "justify-end" : "justify-start")}>
                     {msg.role === "assistant" && (
-                      <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-0.5 bg-[#1D9E75] border border-green-200">
+                      <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mt-0.5 bg-[#1D9E75]" style={{ border: "1px solid #8ECBB3" }}>
                         <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
                       </div>
                     )}
-                    <div className={cn(
-                      "max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                      msg.role === "user"
-                        ? "bg-[#1D9E75] text-white rounded-tr-sm"
-                        : "bg-white border border-gray-200 text-gray-800 rounded-tl-sm shadow-sm"
-                    )}>
+                    <div
+                      className={cn(
+                        "max-w-[78%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                        msg.role === "user"
+                          ? "bg-[#1D9E75] text-white rounded-tr-sm"
+                          : "bg-white text-gray-800 rounded-tl-sm"
+                      )}
+                      style={msg.role === "assistant" ? { border: "1px solid #8ECBB3" } : undefined}
+                    >
                       {renderText(msg.text)}
                     </div>
                   </div>
@@ -358,10 +363,10 @@ export default function GBVChatbot() {
 
                 {loading && (
                   <div className="flex gap-2 justify-start">
-                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-[#1D9E75] border border-green-200">
+                    <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 bg-[#1D9E75]" style={{ border: "1px solid #8ECBB3" }}>
                       <img src="/speakup_gc_chatbot_3d_1.png" alt="Laya" className="w-full h-full object-cover" />
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex items-center gap-2">
+                    <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2" style={{ border: "1px solid #8ECBB3" }}>
                       <Loader2 className="h-3.5 w-3.5 animate-spin text-[#1D9E75]" />
                       <span className="text-xs text-gray-400">Laya is typing…</span>
                     </div>
@@ -376,7 +381,7 @@ export default function GBVChatbot() {
                     <button
                       key={s}
                       onClick={() => send(s)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-[#1D9E75]/40 text-[#1D9E75] bg-[#F0FAF6] hover:bg-green-100 transition-colors font-medium"
+                      className="text-xs px-3 py-1.5 rounded-full border border-[#8ECBB3] text-[#14532D] bg-white hover:bg-[#F0FDF4] transition-colors font-medium"
                     >
                       {s}
                     </button>
@@ -384,7 +389,7 @@ export default function GBVChatbot() {
                 </div>
               )}
 
-              <div className="px-4 py-3 bg-white border-t border-gray-100 flex items-center gap-2">
+              <div className="px-4 py-3 bg-white flex items-center gap-2" style={{ borderTop: "1px solid #8ECBB3" }}>
                 <input
                   ref={inputRef}
                   value={input}
@@ -392,12 +397,13 @@ export default function GBVChatbot() {
                   onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder="Ask about your rights…"
                   disabled={loading}
-                  className="flex-1 text-sm bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#1D9E75]/30 focus:border-[#1D9E75] disabled:opacity-50 placeholder-gray-400"
+                  className="flex-1 text-sm bg-white rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#1D9E75]/25 disabled:opacity-50 placeholder-gray-400"
+                  style={{ border: "1px solid #8ECBB3" }}
                 />
                 <button
                   onClick={() => send()}
                   disabled={!input.trim() || loading}
-                  className="w-10 h-10 rounded-xl bg-[#1D9E75] hover:bg-[#178F65] text-white flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                  className="w-10 h-10 rounded-xl bg-[#1D9E75] hover:bg-[#178F65] text-white flex items-center justify-center transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:hover:bg-gray-200 disabled:cursor-not-allowed flex-shrink-0"
                 >
                   <Send className="h-4 w-4" />
                 </button>

@@ -355,7 +355,7 @@ export async function generateSummaryReport(data: SummaryReportData): Promise<vo
 
   autoTable(doc, {
     startY: y,
-    head: [["Case ID", "Title", "Category", "Severity", "Status", "Date Filed", "Handler"]],
+    head: [["Case ID", "Title", "Category", "Severity", "Status", "Date Filed", "CODI member"]],
     body: data.cases.map((c) => [
       c.caseId,
       c.title.length > 40 ? c.title.slice(0, 38) + "…" : c.title,

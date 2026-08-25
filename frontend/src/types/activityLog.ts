@@ -159,7 +159,7 @@ export const ACTIVITY_ACTION_LABELS: Record<ActivityAction, string> = {
   
   // Handler actions
   handler_assigned: 'Case Taken',
-  handler_removed: 'Handler Removed',
+  handler_removed: 'CODI member removed',
   handler_note_added: 'Note Added',
   handler_timeline_updated: 'Timeline Updated',
   

@@ -141,9 +141,9 @@ export default function Messages() {
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 flex-shrink-0">
                           <AvatarFallback
-                            className={other.role === 'handler' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}
+                            className={other.role === 'handler' || other.role === 'codi' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}
                           >
-                            {other.role === 'handler' ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                            {other.role === 'handler' || other.role === 'codi' ? <Shield className="h-4 w-4" /> : <User className="h-4 w-4" />}
                           </AvatarFallback>
                         </Avatar>
 
@@ -171,7 +171,7 @@ export default function Messages() {
 
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <span className="text-xs text-gray-500">
-                              {other.role === 'handler' ? 'Handler: ' : ''}{other.name}
+                              {other.role === 'handler' || other.role === 'codi' ? 'CODI member: ' : ''}{other.name}
                             </span>
                             <span className="text-gray-300">·</span>
                             <span className="text-xs text-gray-400 flex items-center gap-0.5">

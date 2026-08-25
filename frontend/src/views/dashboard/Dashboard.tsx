@@ -17,9 +17,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { useNavigate, Link } from "../../compat/router";
 import { useAuth } from "../../contexts/AuthContext";
 import {
-  FileText, Clock, CheckCircle, Loader, Bell, Shield,
-  MessageSquare, Plus, ArrowRight, User, Lock, X, Lightbulb, BookOpen, Gavel,
+  FileText, Bell, Shield, FolderSearch,
+  MessageSquare, Plus, ArrowRight, Lock, Lightbulb, Gavel,
 } from "lucide-react";
+import { PrivacyNotice } from "../../components/PrivacyNotice";
 import { Badge } from "../../components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
 import { ComplaintStatus } from "../../types/complaints";
@@ -31,7 +32,7 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageService } from "../../services/messageService";
 import type { ChatRoom } from "../../types/message";
 import GBVChatbot from "../../components/GBVChatbot";
-import { pageStackClass } from "../../lib/sidebar-styles";
+import { pageStackClass, complainantCardBorder, complainantCardDivider } from "../../lib/sidebar-styles";
 
 // ─── Helpers ───
 const safeToDate = (dateValue: any): Date => {
@@ -285,9 +286,9 @@ export default function Dashboard() {
   const getStatusBadge = (status: ComplaintStatus) => {
     switch (status) {
       case ComplaintStatus.RESOLVED:
-        return <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>;
+        return <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>;
       case ComplaintStatus.DISMISSED:
-        return <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Decision Already Made</Badge>;
+        return <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Dismissed</Badge>;
       case ComplaintStatus.INVESTIGATING:
         return <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Investigating</Badge>;
       case ComplaintStatus.UNDER_REVIEW:
@@ -313,7 +314,7 @@ export default function Dashboard() {
     "You are entitled to psychological support and counseling services through the Gordon College DEIU office throughout the process.",
     "Filing a complaint does not automatically reveal your identity to the respondent. You control when and if your identity is disclosed.",
     "The Anti-Sexual Harassment Act (RA 7877) covers harassment in employment, education, and training environments.",
-    "You can request for a case handler of a specific gender if it makes you more comfortable during the investigation.",
+    "You can request a CODI member of a specific gender if it makes you more comfortable during the investigation.",
     "All DEIU proceedings are conducted in a safe, private, and respectful environment. Your dignity is always protected.",
     "You have the right to be informed of the progress and outcome of your complaint at every stage of the investigation.",
     "Retaliation against complainants is strictly prohibited and can result in additional charges against the respondent.",
@@ -348,36 +349,14 @@ export default function Dashboard() {
 
         {/* ─── Privacy Notice (Dismissible) ─── */}
         {showPrivacyBanner && (
-          <div
-            className="flex items-start gap-3 p-4 rounded-2xl relative"
-            style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
-          >
-            <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-              <Lock className="h-4 w-4 text-[#1D9E75]" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-[#178F65]">Your privacy is protected</p>
-              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
-                All complaints are handled with strict confidentiality by the DEIU office.
-                Your identity is <strong>never disclosed</strong> to respondents without your consent.
-                You may also file anonymously.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowPrivacyBanner(false)}
-              className="shrink-0 p-1 hover:bg-green-200/50 rounded-lg transition-colors"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4 text-[#178F65]" />
-            </button>
-          </div>
+          <PrivacyNotice dismissible onDismiss={() => setShowPrivacyBanner(false)} />
         )}
 
         {/* ─── Stats Row (Horizontal Layout) ─── */}
         <div className="grid grid-cols-3 gap-4 lg:gap-6">
           {[
-            { label: "Total Filed",  value: total,      icon: FileText },
-            { label: "Ongoing Investigation",  value: inProgress, icon: Loader },
+            { label: "Total Filed", value: total, icon: FileText },
+            { label: "Ongoing Investigation", value: inProgress, icon: FolderSearch },
             { label: "Resolved", value: decided, icon: Gavel },
           ].map((stat) => {
             const Icon = stat.icon;
@@ -385,7 +364,7 @@ export default function Dashboard() {
               <div
                 key={stat.label}
                 className="bg-white rounded-xl p-3 sm:p-4 flex flex-col items-center text-center"
-                style={{ border: "1px solid #B8E6D5" }}
+                style={{ border: complainantCardBorder }}
               >
                 <Icon className="h-6 w-6 sm:h-7 sm:w-7 text-[#1D9E75] mb-2 sm:mb-3" strokeWidth={1.5} />
                 <p className="text-2xl sm:text-3xl font-bold text-gray-900">{loading ? "–" : stat.value}</p>
@@ -402,11 +381,11 @@ export default function Dashboard() {
           <div className="lg:col-span-2">
             <div
               className="rounded-2xl overflow-hidden"
-              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+              style={{ background: "var(--card-surface)", border: complainantCardBorder }}
             >
               <div
                 className="flex items-center justify-between px-5 py-3.5"
-                style={{ borderBottom: "0.5px solid #e8f4ea" }}
+                style={{ borderBottom: complainantCardDivider }}
               >
                 <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-gray-400" />
@@ -423,7 +402,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="p-4 min-h-[240px]">
+              <div className="p-4 min-h-[160px]">
                 {loading ? (
                   <div className="flex items-center justify-center h-full py-16">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D9E75]" />
@@ -436,7 +415,7 @@ export default function Dashboard() {
                         type="button"
                         className="w-full text-left p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
                         style={{ border: "0.5px solid transparent" }}
-                        onMouseEnter={e => (e.currentTarget.style.borderColor = "#86EFAC")}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = "#6BB89A")}
                         onMouseLeave={e => (e.currentTarget.style.borderColor = "transparent")}
                         onClick={() => navigate(`/case-tracking/${complaint.id}`)}
                       >
@@ -459,8 +438,10 @@ export default function Dashboard() {
                                 <Badge className="bg-yellow-50 text-yellow-700 border border-yellow-200 text-xs font-medium">Submitted</Badge>
                               ) : complaint.status === ComplaintStatus.INVESTIGATING || complaint.status === ComplaintStatus.AWAITING_RESPONSE || complaint.status === ComplaintStatus.UNDER_DELIBERATION ? (
                                 <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium">Ongoing Investigation</Badge>
-                              ) : complaint.status === ComplaintStatus.RESOLVED || complaint.status === ComplaintStatus.DISMISSED ? (
-                                <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Decision Already Made</Badge>
+                              ) : complaint.status === ComplaintStatus.RESOLVED ? (
+                                <Badge className="bg-green-50 text-green-700 border border-green-200 text-xs font-medium">Resolved</Badge>
+                              ) : complaint.status === ComplaintStatus.DISMISSED ? (
+                                <Badge className="bg-red-50 text-red-700 border border-red-200 text-xs font-medium">Dismissed</Badge>
                               ) : (
                                 getStatusBadge(complaint.status)
                               )}
@@ -482,17 +463,17 @@ export default function Dashboard() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full py-10 text-center px-6">
+                  <div className="flex flex-col items-center justify-center h-full py-6 text-center px-6">
                     <div
                       className="rounded-full p-4 w-16 h-16 mx-auto mb-4 flex items-center justify-center"
                       style={{ background: "#DCFCE7" }}
                     >
                       <Shield className="h-8 w-8 text-[#1D9E75]" />
                     </div>
-                    <p className="text-gray-800 font-semibold text-sm">You're all set — we're here when you need us</p>
-                    <p className="text-xs text-gray-400 mt-2 max-w-xs leading-relaxed">
+                    <p className="text-gray-800 font-semibold text-sm">No cases yet</p>
+                    <p className="text-xs text-gray-500 mt-2 max-w-xs leading-relaxed">
                       If you've experienced harassment, bullying, or any misconduct, you can file a complaint confidentially.
-                      Once submitted, a case handler will review and update you every step of the way.
+                      Once submitted, a CODI member will review and update you every step of the way.
                     </p>
                     <Button
                       size="sm"
@@ -501,8 +482,8 @@ export default function Dashboard() {
                     >
                       <Plus className="h-4 w-4 mr-1.5" /> File a Complaint
                     </Button>
-                    <p className="text-xs text-gray-400 mt-3 flex items-center gap-1">
-                      <Lock className="h-3 w-3" /> Anonymous filing is available
+                    <p className="text-xs text-[#166534] mt-3 flex items-center gap-1.5 font-medium">
+                      <Lock className="h-3.5 w-3.5" /> You can file anonymously — your identity stays protected
                     </p>
                   </div>
                 )}
@@ -510,15 +491,15 @@ export default function Dashboard() {
 
               {/* ── Know Your Rights (moved here to fill white space) ── */}
               <div className="px-4 pb-4">
-                <div className="pt-4" style={{ borderTop: "2px solid #d1d5db" }}>
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
+                <div className="pt-4" style={{ borderTop: "1px solid var(--card-divider)" }}>
+                  <div className="rounded-xl p-4 border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-[#2a2318] dark:to-[#241e16] dark:border-amber-900/50">
                     <div className="flex items-start gap-3">
-                      <div className="rounded-lg p-2 bg-white shadow-sm shrink-0">
-                        <Lightbulb className="h-5 w-5 text-amber-600" />
+                      <div className="rounded-lg p-2 bg-white dark:bg-white/5 shadow-sm shrink-0">
+                        <Lightbulb className="h-5 w-5 text-amber-600 dark:text-amber-300" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-amber-900 mb-2">Know Your Rights - Tip of the Day</p>
-                        <p className="text-xs text-amber-800 leading-relaxed">
+                        <p className="text-sm font-bold text-amber-900 dark:text-amber-100 mb-2">Know Your Rights - Tip of the Day</p>
+                        <p className="text-xs text-amber-800 dark:text-amber-200/90 leading-relaxed">
                           {todaysTip}
                         </p>
                       </div>
@@ -538,27 +519,84 @@ export default function Dashboard() {
           {/* ── Right Column ── */}
           <div className="space-y-6">
 
+            {/* ── Messages (above Getting Started so it stays on screen) ── */}
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{ background: "var(--card-surface)", border: complainantCardBorder }}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-3.5"
+                style={{ borderBottom: complainantCardDivider }}
+              >
+                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-gray-400" />
+                  Messages
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigate("/chat")}
+                  className="text-xs text-[#1D9E75] hover:text-[#178F65] font-medium"
+                >
+                  See all
+                </button>
+              </div>
+              <div className="p-4">
+                {chatRooms.length === 0 ? (
+                  <div className="text-center py-3">
+                    <MessageSquare className="h-7 w-7 text-gray-200 mx-auto mb-1" />
+                    <p className="text-xs text-gray-400">Messages with your CODI member will appear here once a case is filed.</p>
+                  </div>
+                ) : (
+                  chatRooms.slice(0, 1).map((room) => {
+                    const unread = room.unreadCount?.[currentUser?.uid || ""] || 0;
+                    const preview = room.lastMessage?.content || "Open chat";
+                    return (
+                      <button
+                        key={room.id}
+                        type="button"
+                        className="w-full text-left p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
+                        style={{ background: "var(--card-tint)", border: complainantCardBorder }}
+                        onClick={() => navigate(`/case-chat/${room.complaintId}`)}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">{room.complaintTitle || "Case Chat"}</p>
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">{preview}</p>
+                          </div>
+                          {unread > 0 && (
+                            <span className="bg-[#1D9E75] text-white text-xs rounded-full px-1.5 py-0.5 font-medium shrink-0">
+                              {unread > 9 ? "9+" : unread}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
             {isNewUser ? (
               /* ── Onboarding checklist ── */
               <div
                 className="rounded-2xl overflow-hidden"
-                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+                style={{ background: "var(--card-surface)", border: complainantCardBorder }}
               >
-                <div className="px-5 py-3.5" style={{ borderBottom: "0.5px solid #e8f4ea" }}>
+                <div className="px-5 py-3.5" style={{ borderBottom: complainantCardDivider }}>
                   <p className="text-sm font-semibold text-gray-800">Getting Started</p>
                   <p className="text-xs text-gray-400 mt-0.5">Follow these steps to get the most out of SpeakUp GC</p>
                 </div>
                 <div className="p-4 space-y-2">
                   {[
-                    { step: 1, label: "File your first complaint",   desc: "Submit a case — it only takes a few minutes",       link: "/complaints/new" },
-                    { step: 2, label: "Track its status",           desc: "Once filed, monitor updates in My Cases",           link: "/complaints" },
+                    { step: 1, label: "Know your rights", desc: "Read RA 11313 and how SpeakUp GC protects you", link: "/know-your-rights" },
+                    { step: 2, label: "Track your case", desc: "After you file, updates appear in My Cases", link: "/complaints" },
                   ].map((item) => (
                     <button
                       key={item.step}
                       type="button"
                       onClick={() => navigate(item.link)}
                       className="w-full text-left flex items-start gap-3 p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
-                      style={{ border: "0.5px solid #e2f0e5" }}
+                      style={{ border: complainantCardBorder }}
                     >
                       <div
                         className="rounded-full w-6 h-6 flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold"
@@ -579,11 +617,11 @@ export default function Dashboard() {
               /* ── Notifications ── */
               <div
                 className="rounded-2xl overflow-hidden"
-                style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
+                style={{ background: "var(--card-surface)", border: complainantCardBorder }}
               >
                 <div
                   className="flex items-center justify-between px-5 py-3.5"
-                  style={{ borderBottom: "0.5px solid #e8f4ea" }}
+                  style={{ borderBottom: complainantCardDivider }}
                 >
                   <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                     <Bell className="h-4 w-4 text-gray-400" />
@@ -619,8 +657,8 @@ export default function Dashboard() {
                             type="button"
                             className="w-full text-left p-3 rounded-xl transition-colors"
                             style={{
-                              background: isUnread ? "#F0FDF4" : "#F9FAFB",
-                              border: `0.5px solid ${isUnread ? "#86EFAC" : "#e2f0e5"}`,
+                              background: isUnread ? "var(--privacy-bg)" : "var(--muted-surface)",
+                              border: isUnread ? complainantCardBorder : complainantCardDivider,
                             }}
                             onClick={() => onNotificationClick(n)}
                           >
@@ -642,63 +680,6 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-
-            {/* ── Messages ── */}
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: "#fff", border: "0.5px solid #e2f0e5" }}
-            >
-              <div
-                className="flex items-center justify-between px-5 py-3.5"
-                style={{ borderBottom: "0.5px solid #e8f4ea" }}
-              >
-                <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-gray-400" />
-                  Messages
-                </p>
-                <button
-                  type="button"
-                  onClick={() => navigate("/chat")}
-                  className="text-xs text-[#1D9E75] hover:text-[#178F65] font-medium"
-                >
-                  See all
-                </button>
-              </div>
-              <div className="p-4">
-                {chatRooms.length === 0 ? (
-                  <div className="text-center py-5">
-                    <MessageSquare className="h-7 w-7 text-gray-200 mx-auto mb-1" />
-                    <p className="text-xs text-gray-400">Messages with your case handler will appear here once a case is filed.</p>
-                  </div>
-                ) : (
-                  chatRooms.slice(0, 1).map((room) => {
-                    const unread = room.unreadCount?.[currentUser?.uid || ""] || 0;
-                    const preview = room.lastMessage?.content || "Open chat";
-                    return (
-                      <button
-                        key={room.id}
-                        type="button"
-                        className="w-full text-left p-3 rounded-xl transition-colors hover:bg-[#F0FDF4]"
-                        style={{ background: "#F9FFF9", border: "0.5px solid #e2f0e5" }}
-                        onClick={() => navigate(`/case-chat/${room.complaintId}`)}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-gray-800 truncate">{room.complaintTitle || "Case Chat"}</p>
-                            <p className="text-xs text-gray-400 mt-0.5 truncate">{preview}</p>
-                          </div>
-                          {unread > 0 && (
-                            <span className="bg-[#1D9E75] text-white text-xs rounded-full px-1.5 py-0.5 font-medium shrink-0">
-                              {unread > 9 ? "9+" : unread}
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
 
           </div>
         </div>

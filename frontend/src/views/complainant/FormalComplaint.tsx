@@ -38,6 +38,7 @@ import { getFormSuggestions, getStepTip, validateFormCompletion, getEncouragingM
 import { EvidenceSubmissionModal, EvidenceData } from "../../components/modals/EvidenceSubmissionModal";
 import { sanitizePhMobileInput, validatePhMobile, isValidPhMobile } from "../../utils/phoneValidation";
 import { computeResponseDueAt } from "../../utils/caseDeadlines";
+import { PrivacyNotice } from "../../components/PrivacyNotice";
 
 // ✅ SAFE CLOUDINARY CONFIG 
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
@@ -409,6 +410,15 @@ const LANDMARK_COORDINATES: { [key: string]: [number, number] } = {
   "Bataan People's Center": [14.6758, 120.5375],
 };
 
+const looksLikeEmail = (value?: string | null) => Boolean(value && /@/.test(value.trim()));
+
+/** Legal name from the profile — never fall back to the account email. */
+const profileLegalName = (user?: { displayName?: string | null; email?: string | null } | null) => {
+  const name = user?.displayName?.trim() || "";
+  if (!name || looksLikeEmail(name) || name === user?.email) return "";
+  return name;
+};
+
 const HARASSMENT_DEGREE_OPTIONS = [
   { value: HarassmentDegree.LIGHT, label: 'Light', description: 'Light gestures, jokes, or comments' },
   { value: HarassmentDegree.SEVERE, label: 'Severe', description: 'Unwelcome touching, advances' },
@@ -448,7 +458,7 @@ const FormalComplaint = () => {
 
   const [formData, setFormData] = useState<ComplaintFormData>({
     // Auto-filled from user profile
-    complainantName: currentUser?.displayName || currentUser?.email || "",
+    complainantName: profileLegalName(currentUser),
     complainantAddress: "",
     complainantContact: "",
     complainantType: undefined,  // NEW: Person type
@@ -1555,7 +1565,7 @@ const FormalComplaint = () => {
                   } else {
                     setFormData(prev => ({
                       ...prev,
-                      complainantName: currentUser?.displayName || "",
+                      complainantName: profileLegalName(currentUser),
                       complainantAddress: "",
                       complainantContact: ""
                     }));
@@ -1582,6 +1592,8 @@ const FormalComplaint = () => {
                 {hasFieldError('complainantName') && <span className="text-red-500 ml-2 text-xs">(Required)</span>}
               </label>
               <Input
+                name="complainantFullName"
+                autoComplete="name"
                 value={formData.complainantName}
                 onChange={(e) => handleInputChange("complainantName", e.target.value)}
                 onBlur={() => handleFieldBlur('complainantName')}
@@ -1719,6 +1731,7 @@ const FormalComplaint = () => {
                 </p>
               )}
               {(() => {
+                if (isAnonymous) return null;
                 const contactSuggestion = getFormSuggestions("complainantContact", formData.complainantContact, 1, formData);
                 return contactSuggestion && contactSuggestion.type !== 'success' ? (
                   <FormTip
@@ -2515,21 +2528,7 @@ const FormalComplaint = () => {
         {/* LEFT COLUMN - Main Form (60% on desktop) */}
         <div className="w-full lg:w-[60%] flex-shrink-0">
 
-          {/* Privacy notice */}
-          <div
-            className="flex items-start gap-3 p-4 rounded-2xl mb-6"
-            style={{ background: "#F0FDF4", border: "0.5px solid #86EFAC" }}
-          >
-            <div className="rounded-lg p-2 shrink-0" style={{ background: "#DCFCE7" }}>
-              <Shield className="h-4 w-4 text-[#1D9E75]" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-[#178F65]">Your privacy is protected</p>
-              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4B7C55" }}>
-                All submitted information is handled with strict confidentiality. Your identity will not be disclosed to the respondent without your consent.
-              </p>
-            </div>
-          </div>
+          <PrivacyNotice className="mb-6" />
 
         {/* Step indicator */}
         <div className="mb-6">
