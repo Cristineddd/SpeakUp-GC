@@ -26,9 +26,46 @@ import type {
   UpdateRepresentativeData,
   RepresentativeStats,
   RepresentativeFilters,
-  RepresentativeRole,
-  DEFAULT_PERMISSIONS
+  RepresentativeRole
 } from '../types/representative';
+
+/** Convert Firestore Timestamps to ISO strings */
+const mapRepresentativeDoc = (id: string, data: any): Representative =>
+  ({
+    id,
+    ...data,
+    createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
+    updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+    lastActive: data.lastActive?.toDate?.() ? data.lastActive.toDate().toISOString() : data.lastActive,
+    lastLoginAt: data.lastLoginAt?.toDate?.() ? data.lastLoginAt.toDate().toISOString() : data.lastLoginAt
+  }) as Representative;
+
+/**
+ * Remove duplicate representatives (same userId/email).
+ * Keeps the copy with the most case activity, so assignments aren't lost.
+ */
+const dedupeRepresentatives = (reps: Representative[]): Representative[] => {
+  const map = new Map<string, Representative>();
+
+  for (const rep of reps) {
+    const key = (rep.userId || rep.email || rep.id).toLowerCase();
+    const existing = map.get(key);
+
+    if (!existing) {
+      map.set(key, rep);
+      continue;
+    }
+
+    const score = (r: Representative) =>
+      (r.assignedCases?.length || 0) + (r.totalCasesHandled || 0);
+
+    if (score(rep) > score(existing)) {
+      map.set(key, rep);
+    }
+  }
+
+  return Array.from(map.values());
+};
 
 export class RepresentativeService {
   private static readonly COLLECTION = 'representatives';
@@ -73,11 +110,18 @@ export class RepresentativeService {
 
   /**
    * Auto-register current user as admin (for development/setup)
+   * Safe to call many times: does nothing if the user is already registered.
    */
   static async autoRegisterAsAdmin(userId: string, email: string, displayName?: string): Promise<void> {
     try {
+      // Guard: don't create duplicates
+      const existing = await this.getByUserId(userId);
+      if (existing) {
+        return;
+      }
+
       console.log('🔧 Auto-registering user as admin:', email);
-      
+
       const representativeData: CreateRepresentativeData = {
         userId,
         email,
@@ -112,48 +156,50 @@ export class RepresentativeService {
   static async getAll(filters?: RepresentativeFilters): Promise<Representative[]> {
     try {
       console.log('🔍 Fetching all representatives...');
-      
+
       let q = query(collection(db, this.COLLECTION), orderBy('displayName'));
 
       // Apply filters
       if (filters?.role && filters.role.length > 0) {
         q = query(q, where('role', 'in', filters.role));
       }
-      
+
       if (filters?.isActive !== undefined) {
         q = query(q, where('isActive', '==', filters.isActive));
       }
 
       const snapshot = await getDocs(q);
-      let representatives = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate?.() ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
-        lastActive: doc.data().lastActive?.toDate?.() ? doc.data().lastActive.toDate().toISOString() : doc.data().lastActive,
-        lastLoginAt: doc.data().lastLoginAt?.toDate?.() ? doc.data().lastLoginAt.toDate().toISOString() : doc.data().lastLoginAt
-      })) as Representative[];
+      let representatives = snapshot.docs.map(d => mapRepresentativeDoc(d.id, d.data()));
+
+      // Hide duplicates (display-only safety net; clean the DB too)
+      const before = representatives.length;
+      representatives = dedupeRepresentatives(representatives);
+      if (representatives.length !== before) {
+        console.warn(
+          `⚠️ Found ${before - representatives.length} duplicate representative document(s) in Firestore. Please delete them.`
+        );
+      }
 
       // Apply client-side filters
       if (filters?.department && filters.department.length > 0) {
-        representatives = representatives.filter(rep => 
+        representatives = representatives.filter(rep =>
           filters.department!.includes(rep.department)
         );
       }
 
       if (filters?.onlineStatus && filters.onlineStatus.length > 0) {
-        representatives = representatives.filter(rep => 
+        representatives = representatives.filter(rep =>
           filters.onlineStatus!.includes(rep.onlineStatus)
         );
       }
 
       if (filters?.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
+        const search = filters.searchQuery.toLowerCase();
         representatives = representatives.filter(rep =>
-          rep.displayName.toLowerCase().includes(query) ||
-          rep.email.toLowerCase().includes(query) ||
-          rep.department.toLowerCase().includes(query) ||
-          rep.position.toLowerCase().includes(query)
+          rep.displayName.toLowerCase().includes(search) ||
+          rep.email.toLowerCase().includes(search) ||
+          rep.department.toLowerCase().includes(search) ||
+          rep.position.toLowerCase().includes(search)
         );
       }
 
@@ -178,15 +224,7 @@ export class RepresentativeService {
         return null;
       }
 
-      const data = docSnap.data();
-      return {
-        id: docSnap.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-        lastActive: data.lastActive?.toDate?.() ? data.lastActive.toDate().toISOString() : data.lastActive,
-        lastLoginAt: data.lastLoginAt?.toDate?.() ? data.lastLoginAt.toDate().toISOString() : data.lastLoginAt
-      } as Representative;
+      return mapRepresentativeDoc(docSnap.id, docSnap.data());
     } catch (error) {
       console.error(`❌ Error fetching representative ${id}:`, error);
       throw error;
@@ -208,16 +246,8 @@ export class RepresentativeService {
         return null;
       }
 
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-        lastActive: data.lastActive?.toDate?.() ? data.lastActive.toDate().toISOString() : data.lastActive,
-        lastLoginAt: data.lastLoginAt?.toDate?.() ? data.lastLoginAt.toDate().toISOString() : data.lastLoginAt
-      } as Representative;
+      const first = snapshot.docs[0];
+      return mapRepresentativeDoc(first.id, first.data());
     } catch (error) {
       console.error(`❌ Error fetching representative by userId ${userId}:`, error);
       throw error;
@@ -236,17 +266,9 @@ export class RepresentativeService {
       );
       const snapshot = await getDocs(q);
 
-      return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate?.() ? data.createdAt.toDate().toISOString() : data.createdAt,
-          updatedAt: data.updatedAt?.toDate?.() ? data.updatedAt.toDate().toISOString() : data.updatedAt,
-          lastActive: data.lastActive?.toDate?.() ? data.lastActive.toDate().toISOString() : data.lastActive,
-          lastLoginAt: data.lastLoginAt?.toDate?.() ? data.lastLoginAt.toDate().toISOString() : data.lastLoginAt
-        } as Representative;
-      });
+      return dedupeRepresentatives(
+        snapshot.docs.map(d => mapRepresentativeDoc(d.id, d.data()))
+      );
     } catch (error) {
       console.error('❌ Error fetching all admins:', error);
       throw error;
@@ -255,6 +277,7 @@ export class RepresentativeService {
 
   /**
    * Create new representative
+   * The document ID is the userId (or email if no userId), so one user = one document.
    */
   static async create(data: CreateRepresentativeData): Promise<string> {
     try {
@@ -262,7 +285,28 @@ export class RepresentativeService {
 
       // Import DEFAULT_PERMISSIONS dynamically to avoid circular dependency
       const { DEFAULT_PERMISSIONS } = await import('../types/representative');
-      
+
+      const docId = data.userId || data.email;
+      if (!docId) {
+        throw new Error('userId or email is required');
+      }
+
+      const docRef = doc(db, this.COLLECTION, docId);
+
+      // Prevent duplicates (same doc ID)
+      const existingById = await getDoc(docRef);
+      if (existingById.exists()) {
+        throw new Error('A representative with this User ID / email already exists');
+      }
+
+      // Prevent duplicates (same userId stored under a different doc ID)
+      if (data.userId) {
+        const existingByUserId = await this.getByUserId(data.userId);
+        if (existingByUserId) {
+          throw new Error('A representative with this User ID already exists');
+        }
+      }
+
       const now = Timestamp.now();
       const representative: Omit<Representative, 'id'> = {
         ...data,
@@ -284,7 +328,6 @@ export class RepresentativeService {
         lastActive: now.toDate().toISOString()
       };
 
-      const docRef = doc(collection(db, this.COLLECTION));
       await setDoc(docRef, {
         ...representative,
         createdAt: now,
@@ -294,7 +337,7 @@ export class RepresentativeService {
 
       await this.syncStaffProfile({
         id: docRef.id,
-        userId: data.userId,
+        userId: data.userId || docId,
         role: data.role,
         isActive: true,
       });
@@ -360,45 +403,43 @@ export class RepresentativeService {
   private static async updateHandlerNameInComplaints(representativeId: string, newDisplayName: string): Promise<void> {
     try {
       console.log(`🔄 Updating handler name in all complaints and reports for representative: ${representativeId}`);
-      
+
       // Update complaints collection
       const complaintsRef = collection(db, 'complaints');
       const complaintsQuery = query(complaintsRef, where('assignedTo', '==', representativeId));
       const complaintsSnapshot = await getDocs(complaintsQuery);
-      
+
       // Update reports collection
       const reportsRef = collection(db, 'reports');
       const reportsQuery = query(reportsRef, where('assignedTo', '==', representativeId));
       const reportsSnapshot = await getDocs(reportsQuery);
-      
+
       const totalDocs = complaintsSnapshot.size + reportsSnapshot.size;
-      
+
       if (totalDocs === 0) {
         console.log(`ℹ️ No complaints or reports assigned to representative ${representativeId}`);
         return;
       }
 
       console.log(`📋 Found ${complaintsSnapshot.size} complaints and ${reportsSnapshot.size} reports to update`);
-      
+
       // Update all documents in batch
       const batch = writeBatch(db);
-      
-      // Add complaints to batch
-      complaintsSnapshot.docs.forEach(doc => {
-        batch.update(doc.ref, {
+
+      complaintsSnapshot.docs.forEach(d => {
+        batch.update(d.ref, {
           assignedToName: newDisplayName,
           updatedAt: Timestamp.now()
         });
       });
-      
-      // Add reports to batch
-      reportsSnapshot.docs.forEach(doc => {
-        batch.update(doc.ref, {
+
+      reportsSnapshot.docs.forEach(d => {
+        batch.update(d.ref, {
           assignedToName: newDisplayName,
           updatedAt: Timestamp.now()
         });
       });
-      
+
       await batch.commit();
       console.log(`✅ Updated handler name in ${complaintsSnapshot.size} complaints and ${reportsSnapshot.size} reports`);
     } catch (error) {
@@ -422,10 +463,14 @@ export class RepresentativeService {
       await deleteDoc(docRef);
 
       if (userId) {
-        try {
-          await deleteDoc(doc(db, this.STAFF_PROFILES, userId));
-        } catch {
-          // Best effort cleanup
+        // Only remove the staff profile if no other representative doc uses this userId
+        const remaining = await this.getByUserId(userId);
+        if (!remaining) {
+          try {
+            await deleteDoc(doc(db, this.STAFF_PROFILES, userId));
+          } catch {
+            // Best effort cleanup
+          }
         }
       }
 
@@ -539,13 +584,13 @@ export class RepresentativeService {
       const data = docSnap.data();
       const resolvedCases = (data.resolvedCases || 0) + 1;
       const totalCases = data.totalCasesHandled || 0;
-      
+
       // Calculate new averages
       const currentAvgResolution = data.averageResolutionTime || 0;
-      const newAvgResolution = totalCases > 0 
+      const newAvgResolution = totalCases > 0
         ? ((currentAvgResolution * (resolvedCases - 1)) + resolutionTime) / resolvedCases
         : resolutionTime;
-      
+
       const resolutionRate = totalCases > 0 ? (resolvedCases / totalCases) * 100 : 0;
 
       await updateDoc(docRef, {
@@ -567,7 +612,7 @@ export class RepresentativeService {
   static async getStats(): Promise<RepresentativeStats> {
     try {
       const representatives = await this.getAll();
-      
+
       const stats: RepresentativeStats = {
         totalRepresentatives: representatives.length,
         activeRepresentatives: representatives.filter(r => r.isActive).length,
@@ -613,41 +658,36 @@ export class RepresentativeService {
     if (filters?.role && filters.role.length > 0) {
       q = query(q, where('role', 'in', filters.role));
     }
-    
+
     if (filters?.isActive !== undefined) {
       q = query(q, where('isActive', '==', filters.isActive));
     }
 
     return onSnapshot(q, (snapshot) => {
-      let representatives = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate?.() ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
-        lastActive: doc.data().lastActive?.toDate?.() ? doc.data().lastActive.toDate().toISOString() : doc.data().lastActive,
-        lastLoginAt: doc.data().lastLoginAt?.toDate?.() ? doc.data().lastLoginAt.toDate().toISOString() : doc.data().lastLoginAt
-      })) as Representative[];
+      let representatives = dedupeRepresentatives(
+        snapshot.docs.map(d => mapRepresentativeDoc(d.id, d.data()))
+      );
 
       // Apply client-side filters
       if (filters?.department && filters.department.length > 0) {
-        representatives = representatives.filter(rep => 
+        representatives = representatives.filter(rep =>
           filters.department!.includes(rep.department)
         );
       }
 
       if (filters?.onlineStatus && filters.onlineStatus.length > 0) {
-        representatives = representatives.filter(rep => 
+        representatives = representatives.filter(rep =>
           filters.onlineStatus!.includes(rep.onlineStatus)
         );
       }
 
       if (filters?.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
+        const search = filters.searchQuery.toLowerCase();
         representatives = representatives.filter(rep =>
-          rep.displayName.toLowerCase().includes(query) ||
-          rep.email.toLowerCase().includes(query) ||
-          rep.department.toLowerCase().includes(query) ||
-          rep.position.toLowerCase().includes(query)
+          rep.displayName.toLowerCase().includes(search) ||
+          rep.email.toLowerCase().includes(search) ||
+          rep.department.toLowerCase().includes(search) ||
+          rep.position.toLowerCase().includes(search)
         );
       }
 
