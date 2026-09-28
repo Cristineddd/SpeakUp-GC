@@ -118,9 +118,18 @@ const Landing = () => {
       <header className="fixed top-0 z-50 w-full">
         <div className={`${SHELL} pt-4`}>
           <div className="flex h-14 items-center justify-between bg-white/90 dark:bg-[#111614]/90 backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-2xl px-5 shadow-lg shadow-gray-900/5 dark:shadow-black/40">
-            <Link to="/" className="flex items-center gap-3">
-              <img src="/LOGO.png" alt="GC Logo" className="w-10 h-10 object-contain" />
-              <span className="text-lg font-bold text-gray-900 tracking-tight">SpeakUp GC</span>
+            <Link to="/" className="flex items-center gap-2.5 min-w-0">
+              <img
+                src="/LOGO.png"
+                alt="SpeakUp GC"
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+              <img
+                src="/GC.png"
+                alt="Gordon College"
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+              <span className="text-lg font-bold text-gray-900 dark:text-gray-100 tracking-tight truncate">SpeakUp GC</span>
             </Link>
             <nav className="hidden lg:flex items-center gap-1">
               <Link to="#" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="px-3 py-1.5 text-sm font-medium text-gray-500 rounded-lg hover:text-gray-900 hover:bg-gray-100 transition-colors">Home</Link>
