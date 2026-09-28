@@ -929,6 +929,8 @@ export class AdminReportService {
       if (!deletedFromReports && !deletedFromComplaints) {
         throw new Error(`Report ${reportId} not found in either collection`);
       }
+
+      await NotificationService.deleteNotificationsForComplaint(reportId);
       
       console.log(`✅ Successfully deleted ${reportId} from available collections`);
       

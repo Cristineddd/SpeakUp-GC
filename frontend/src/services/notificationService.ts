@@ -838,6 +838,120 @@ export class NotificationService {
     }
   }
 
+  /** Case id from the notification payload or its deep link. */
+  private static relatedCaseId(notification: Notification): string | undefined {
+    if (notification.complaintId) return notification.complaintId;
+    const url = notification.actionUrl;
+    if (!url) return undefined;
+    try {
+      const reportMatch = url.match(/[?&]reportId=([^&]+)/);
+      if (reportMatch?.[1]) return decodeURIComponent(reportMatch[1]);
+      const pathMatch = url.match(/\/(?:case-tracking|case-chat)\/([^/?#]+)/);
+      if (pathMatch?.[1]) return decodeURIComponent(pathMatch[1]);
+    } catch {
+      return undefined;
+    }
+    return undefined;
+  }
+
+  private static isRemovedCaseData(data: Record<string, unknown> | undefined): boolean {
+    if (!data) return true;
+    if (data.isDeleted === true) return true;
+    return String(data.status || '').toLowerCase() === 'deleted';
+  }
+
+  /** True if the case still exists and is not soft-deleted. Unknown on read errors (keep the notif). */
+  static async caseStillExists(caseId: string): Promise<boolean | 'unknown'> {
+    try {
+      for (const collectionName of ['complaints', 'reports'] as const) {
+        const snap = await getDoc(doc(db, collectionName, caseId));
+        if (snap.exists() && !this.isRemovedCaseData(snap.data() as Record<string, unknown>)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.warn('[NotificationService] Could not verify case exists:', caseId, error);
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Hide notifications whose case/complaint is gone. Optionally delete those docs
+   * so users do not have to remove them by hand.
+   */
+  static async filterNotificationsForExistingCases(
+    notifications: Notification[],
+    options?: { prune?: boolean }
+  ): Promise<Notification[]> {
+    const uniqueIds = [
+      ...new Set(
+        notifications
+          .map((notification) => this.relatedCaseId(notification))
+          .filter((id): id is string => Boolean(id))
+      ),
+    ];
+
+    const existingIds = new Set<string>();
+    const unknownIds = new Set<string>();
+
+    await Promise.all(
+      uniqueIds.map(async (caseId) => {
+        const result = await this.caseStillExists(caseId);
+        if (result === true) existingIds.add(caseId);
+        else if (result === 'unknown') unknownIds.add(caseId);
+      })
+    );
+
+    const keep: Notification[] = [];
+    const drop: Notification[] = [];
+
+    for (const notification of notifications) {
+      const caseId = this.relatedCaseId(notification);
+      if (!caseId || existingIds.has(caseId) || unknownIds.has(caseId)) {
+        keep.push(notification);
+      } else {
+        drop.push(notification);
+      }
+    }
+
+    if (options?.prune && drop.length > 0) {
+      void this.pruneNotificationDocs(drop.map((notification) => notification.id));
+    }
+
+    return keep;
+  }
+
+  private static async pruneNotificationDocs(ids: string[]): Promise<void> {
+    try {
+      const chunkSize = 450;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const batch = writeBatch(db);
+        chunk.forEach((id) => batch.delete(doc(db, this.notificationsCollection, id)));
+        await batch.commit();
+      }
+    } catch (error) {
+      console.warn('[NotificationService] Failed to prune stale notifications:', error);
+    }
+  }
+
+  /** Remove every in-app notification tied to a case (after the case is deleted). */
+  static async deleteNotificationsForComplaint(complaintId: string): Promise<void> {
+    try {
+      const snapshot = await getDocs(
+        query(
+          collection(db, this.notificationsCollection),
+          where('complaintId', '==', complaintId)
+        )
+      );
+      if (snapshot.empty) return;
+      await this.pruneNotificationDocs(snapshot.docs.map((document) => document.id));
+    } catch (error) {
+      console.warn('[NotificationService] Failed to delete notifications for case:', complaintId, error);
+    }
+  }
+
   /**
    * Get notifications for a user
    */
@@ -875,11 +989,13 @@ export class NotificationService {
         } as Notification);
       });
 
-      return notifications.filter((notification) => {
+      const filtered = notifications.filter((notification) => {
         if (options?.status && notification.status !== options.status) return false;
         if (options?.unreadOnly && notification.status !== 'unread') return false;
         return true;
       });
+
+      return this.filterNotificationsForExistingCases(filtered, { prune: true });
     } catch (error) {
       console.error('Error getting notifications:', error);
       throw error;
@@ -920,15 +1036,17 @@ export class NotificationService {
       );
 
       if (options?.limit) {
-        q = query(q, limit(options?.unreadOnly ? Math.max(options.limit * 3, 30) : options.limit));
+        q = query(q, limit(Math.max(options.limit * 4, 50)));
       } else if (options?.unreadOnly) {
         q = query(q, limit(50));
       }
 
       // FIX: Process entire snapshot instead of docChanges() to avoid duplicates.
       // Status filters are applied client-side to avoid brittle composite-index requirements.
+      let snapshotGeneration = 0;
       const unsubscribe = onSnapshot(q, 
         (snapshot) => {
+          const thisGeneration = ++snapshotGeneration;
           console.log('[NotificationService] Received snapshot, docs:', snapshot.size);
           const notifications: Notification[] = [];
           
@@ -954,14 +1072,17 @@ export class NotificationService {
           const filtered = options?.unreadOnly
             ? notifications.filter((n) => n.status === 'unread')
             : notifications;
-          const limited =
-            options?.limit && filtered.length > options.limit
-              ? filtered.slice(0, options.limit)
-              : filtered;
-          
-          console.log('[NotificationService] Processed notifications:', limited.length);
-          console.log('[NotificationService] Unread count:', limited.filter(n => n.status === 'unread').length);
-          callback(limited, { fromCache: snapshot.metadata.fromCache });
+
+          void this.filterNotificationsForExistingCases(filtered, { prune: true }).then((live) => {
+            if (thisGeneration !== snapshotGeneration) return;
+            const limited =
+              options?.limit && live.length > options.limit
+                ? live.slice(0, options.limit)
+                : live;
+            console.log('[NotificationService] Processed notifications:', limited.length);
+            console.log('[NotificationService] Unread count:', limited.filter(n => n.status === 'unread').length);
+            callback(limited, { fromCache: snapshot.metadata.fromCache });
+          });
         },
         (error) => {
           console.error('[NotificationService] Subscription error:', error);

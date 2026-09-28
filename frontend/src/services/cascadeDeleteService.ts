@@ -371,19 +371,9 @@ export class CascadeDeleteService {
 
       // Step 5: Delete notifications (hard delete)
       try {
-        const notificationsQuery = query(
-          collection(db, 'notifications'),
-          where('complaintId', '==', complaintId)
-        );
-        const notificationsSnap = await getDocs(notificationsQuery);
-
-        if (notificationsSnap.size > 0) {
-          const deleted = await this.batchDelete(
-            notificationsSnap.docs.map(d => d.ref)
-          );
-          deletedCount += deleted;
-          console.log(`   ✅ Deleted ${deleted} notifications`);
-        }
+        const { NotificationService } = await import('./notificationService');
+        await NotificationService.deleteNotificationsForComplaint(complaintId);
+        console.log('   ✅ Deleted notifications for complaint');
       } catch (error) {
         console.error('   ❌ Error deleting notifications:', error);
         errors.push(`Notifications: ${error.message}`);
