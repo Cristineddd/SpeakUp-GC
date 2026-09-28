@@ -1,6 +1,34 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
+async function sendViaResend(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}): Promise<{ provider: 'resend' }> {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) {
+    throw new Error('No email provider configured');
+  }
+
+  const resend = new Resend(resendKey);
+  const from = process.env.RESEND_FROM_ADDRESS || 'SpeakUp GC <noreply@resend.dev>';
+  const result = await resend.emails.send({
+    from,
+    to: input.to,
+    subject: input.subject,
+    html: input.html,
+    text: input.text,
+  });
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return { provider: 'resend' };
+}
+
 export async function sendTransactionalEmail(input: {
   to: string;
   subject: string;
@@ -17,43 +45,33 @@ export async function sendTransactionalEmail(input: {
   }
 
   if (gmailUser && gmailPass) {
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user: gmailUser, pass: gmailPass },
-    });
+    try {
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPass },
+      });
 
-    const fromName = process.env.GMAIL_FROM_NAME || 'SpeakUp GC';
-    await transporter.sendMail({
-      from: `"${fromName}" <${gmailUser}>`,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-    });
+      const fromName = process.env.GMAIL_FROM_NAME || 'SpeakUp GC';
+      await transporter.sendMail({
+        from: `"${fromName}" <${gmailUser}>`,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+      });
 
-    return { provider: 'gmail' };
-  }
-
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
-    const resend = new Resend(resendKey);
-    const from = process.env.RESEND_FROM_ADDRESS || 'SpeakUp GC <noreply@resend.dev>';
-    const result = await resend.emails.send({
-      from,
-      to: input.to,
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
-    });
-
-    if (result.error) {
-      throw new Error(result.error.message);
+      return { provider: 'gmail' };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn('[email] Gmail SMTP failed, falling back to Resend:', message);
+      if (!process.env.RESEND_API_KEY) {
+        throw error;
+      }
+      return sendViaResend(input);
     }
-
-    return { provider: 'resend' };
   }
 
-  throw new Error('No email provider configured');
+  return sendViaResend(input);
 }

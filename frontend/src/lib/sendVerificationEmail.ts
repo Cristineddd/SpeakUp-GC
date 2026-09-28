@@ -23,5 +23,10 @@ export async function sendVerificationEmailForUser(user: User): Promise<void> {
     console.warn('[verification] branded email error, falling back to Firebase', error);
   }
 
-  await firebaseSendEmailVerification(user);
+  try {
+    await firebaseSendEmailVerification(user);
+  } catch (error) {
+    // Account already exists; do not surface quota / SMTP errors as a failed signup.
+    console.warn('[verification] Firebase fallback also failed', error);
+  }
 }

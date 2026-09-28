@@ -353,9 +353,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Continue even if Firestore fails - user can still authenticate
         }
 
-        // Send branded verification email (falls back to Firebase template)
-        await sendVerificationEmailForUser(user);
-        console.log('✅ Verification email sent to:', user.email);
+        try {
+          await sendVerificationEmailForUser(user);
+          console.log('✅ Verification email sent to:', user.email);
+        } catch (verifyError) {
+          console.warn('Account created but verification email failed:', verifyError);
+        }
       }
       
       return userCredential;
