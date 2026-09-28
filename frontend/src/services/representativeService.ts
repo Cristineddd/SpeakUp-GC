@@ -276,6 +276,40 @@ export class RepresentativeService {
   }
 
   /**
+   * Active CODI members (handler / codi roles) who should see new cases in the queue.
+   */
+  static async getActiveHandlers(): Promise<Representative[]> {
+    try {
+      const roles: Representative['role'][] = ['handler', 'codi'];
+      const batches = await Promise.all(
+        roles.map(async (role) => {
+          const q = query(
+            collection(db, this.COLLECTION),
+            where('role', '==', role),
+            where('isActive', '==', true)
+          );
+          const snapshot = await getDocs(q);
+          return snapshot.docs.map((d) => mapRepresentativeDoc(d.id, d.data()));
+        })
+      );
+
+      return dedupeRepresentatives(batches.flat());
+    } catch (error) {
+      console.error('❌ Error fetching active CODI members:', error);
+      throw error;
+    }
+  }
+
+  /** Admins and CODI members who should be alerted when a complaint is filed. */
+  static async getStaffToNotifyForNewCases(): Promise<Representative[]> {
+    const [admins, handlers] = await Promise.all([
+      this.getAllAdmins(),
+      this.getActiveHandlers(),
+    ]);
+    return dedupeRepresentatives([...admins, ...handlers]);
+  }
+
+  /**
    * Create new representative
    * The document ID is the userId (or email if no userId), so one user = one document.
    */

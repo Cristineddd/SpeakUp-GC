@@ -1460,23 +1460,27 @@ const FormalComplaint = () => {
         }
       }
 
-      // Send notifications to ALL admins about new complaint
+      // Send notifications to admins and CODI members about the new case
       try {
-        const admins = await RepresentativeService.getAllAdmins();
-        console.log(`📧 Notifying ${admins.length} admin(s) about new complaint`);
-        
-        for (const admin of admins) {
+        const staff = await RepresentativeService.getStaffToNotifyForNewCases();
+        const recipients = staff.filter((member) => member.userId && member.userId !== currentUser.uid);
+        console.log(`📧 Notifying ${recipients.length} staff member(s) about new complaint`);
+
+        for (const member of recipients) {
           try {
+            const isCodi = member.role === 'handler' || member.role === 'codi';
             await NotificationService.createNotification(
-              admin.userId,
+              member.userId,
               'complaint_created',
-              'New Complaint Submitted',
-              `A new ${formData.type || 'formal'} complaint has been submitted. Case ID: ${formattedCaseId}`,
+              isCodi ? 'New Case in Queue' : 'New Complaint Submitted',
+              isCodi
+                ? `A new ${formData.type || 'formal'} complaint is waiting in the case queue. Case ID: ${formattedCaseId}`
+                : `A new ${formData.type || 'formal'} complaint has been submitted. Case ID: ${formattedCaseId}`,
               {
                 priority: 'high',
                 complaintId: complaintId,
                 actionUrl: `/admin/reports?reportId=${complaintId}&tab=details`,
-                actionLabel: 'View Complaint',
+                actionLabel: isCodi ? 'Open Case Queue' : 'View Complaint',
                 data: {
                   category: formData.type,
                   severity: 'high',
@@ -1484,13 +1488,13 @@ const FormalComplaint = () => {
                 }
               }
             );
-          } catch (adminNotifyError) {
-            console.warn(`⚠️ Could not notify admin ${admin.email}:`, adminNotifyError);
+          } catch (staffNotifyError) {
+            console.warn(`⚠️ Could not notify ${member.email}:`, staffNotifyError);
           }
         }
-        console.log('✅ Admin notifications sent');
-      } catch (adminError) {
-        console.warn('⚠️ Could not send admin notifications:', adminError);
+        console.log('✅ Staff notifications sent');
+      } catch (staffError) {
+        console.warn('⚠️ Could not send staff notifications:', staffError);
       }
       
       toast({

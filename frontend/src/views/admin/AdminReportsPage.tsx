@@ -1184,55 +1184,52 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
     // QUICK SUMMARY BUTTON - Visible to all
     baseButtons.push(
-      <div key="quick-summary" className="relative group">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            markReportReviewed(report.id);
-            setQuickSummaryReport(report);
-            setQuickSummaryOpen(true);
-          }}
-          className="text-gray-600 hover:bg-gray-50"
-        >
-          <FileText className="h-4 w-4" />
-        </Button>
-        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-          Quick Summary
-        </span>
-      </div>
+      <Button
+        key="quick-summary"
+        variant="outline"
+        size="sm"
+        title="Quick Summary"
+        onClick={() => {
+          markReportReviewed(report.id);
+          setQuickSummaryReport(report);
+          setQuickSummaryOpen(true);
+        }}
+        className="gap-1.5 text-gray-600 hover:bg-gray-50"
+      >
+        <FileText className="h-4 w-4 shrink-0" />
+        <span>Summary</span>
+      </Button>
     );
 
     // ESCALATION BUTTON - Visible to Admin only
     if (isAdmin) {
       baseButtons.push(
-        <div key="escalation" className="relative group">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => {
-              setReportToEscalate(report);
-              setEscalationDialogOpen(true);
-            }}
-            className={(report.escalationLevel || 0) > 0 ? "text-orange-600 hover:bg-orange-50" : "text-gray-600 hover:bg-gray-50"}
-          >
-            <AlertTriangle className="h-4 w-4" />
-          </Button>
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Escalate Case
-          </span>
-        </div>
+        <Button
+          key="escalation"
+          variant="outline"
+          size="sm"
+          title="Escalate Case"
+          onClick={() => {
+            setReportToEscalate(report);
+            setEscalationDialogOpen(true);
+          }}
+          className={`gap-1.5 ${(report.escalationLevel || 0) > 0 ? "text-orange-600 hover:bg-orange-50" : "text-gray-600 hover:bg-gray-50"}`}
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>Escalate</span>
+        </Button>
       );
     }
 
     // TAKE CASE BUTTON - Visible to CODI for unassigned cases
     if (isCODI && !report.assignedTo) {
       baseButtons.push(
-        <div key="take-case" className="relative group">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={async () => {
+        <Button
+          key="take-case"
+          variant="outline"
+          size="sm"
+          title="Take Case"
+          onClick={async () => {
               if (!representativeId || !currentUser) {
                 toast({
                   title: 'Error',
@@ -1271,14 +1268,11 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 });
               }
             }}
-            className="text-green-600 hover:bg-green-50 border-green-300"
-          >
-            <UserPlus className="h-4 w-4" />
-          </Button>
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Take Case
-          </span>
-        </div>
+          className="gap-1.5 text-green-600 hover:bg-green-50 border-green-300"
+        >
+          <UserPlus className="h-4 w-4 shrink-0" />
+          <span>Take Case</span>
+        </Button>
       );
     }
 
@@ -1288,17 +1282,16 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
         key="view"
         variant="outline" 
         size="sm"
+        title="View Report"
         onClick={() => {
           markReportReviewed(report.id);
           setSelectedReport(report);
           setModalOpen(true);
         }}
-        className="relative group"
+        className="gap-1.5"
       >
-        <Eye className="h-4 w-4" />
-        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-          View Report
-        </span>
+        <Eye className="h-4 w-4 shrink-0" />
+        <span>View</span>
       </Button>
     );
 
@@ -1309,13 +1302,12 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           key="chat"
           variant="outline" 
           size="sm"
+          title="Chat with Complainant"
           onClick={() => navigate(`/case-chat/${report.id}`)}
-          className="text-blue-600 hover:text-blue-700 relative group"
+          className="gap-1.5 text-blue-600 hover:text-blue-700"
         >
-          <MessageCircle className="h-4 w-4" />
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-            Chat with Complainant
-          </span>
+          <MessageCircle className="h-4 w-4 shrink-0" />
+          <span>Chat</span>
         </Button>
       );
     }
