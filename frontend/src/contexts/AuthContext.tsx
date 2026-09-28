@@ -43,7 +43,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, additionalData?: any) => Promise<{ verificationEmailSent: boolean }>;
+  register: (email: string, password: string, additionalData?: any) => Promise<{ verificationEmailSent: boolean; verificationLink?: string }>;
   logout: () => Promise<void>;
   sendEmailVerification: () => Promise<void>;
   reloadCurrentUser: () => Promise<AuthUser | null>;
@@ -317,6 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       let verificationEmailSent = false;
+      let verificationLink: string | undefined;
 
       if (user) {
         // Update Firebase Auth profile with displayName
@@ -354,9 +355,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-          verificationEmailSent = await sendVerificationEmailForUser(user);
+          const verifyResult = await sendVerificationEmailForUser(user);
+          verificationEmailSent = verifyResult.emailed;
+          verificationLink = verifyResult.verificationLink;
           if (verificationEmailSent) {
             console.log('✅ Verification email sent to:', user.email);
+          } else if (verificationLink) {
+            console.warn('Account created; email did not send, in-app verification link available');
           } else {
             console.warn('Account created but verification email was not sent:', user.email);
           }
@@ -365,7 +370,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      return { verificationEmailSent };
+      return { verificationEmailSent, verificationLink };
     } catch (error: any) {
       console.error('Registration error:', error);
       throw error;
@@ -375,10 +380,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendEmailVerification = async () => {
     if (currentUser && auth.currentUser) {
       try {
-        const sent = await sendVerificationEmailForUser(auth.currentUser);
-        if (!sent) {
-          throw new Error('Could not send verification email. Please try again in a few minutes.');
+        const result = await sendVerificationEmailForUser(auth.currentUser);
+        if (result.emailed) return;
+        if (result.verificationLink && typeof window !== 'undefined') {
+          window.location.assign(result.verificationLink);
+          return;
         }
+        throw new Error('Could not send verification email. Please try again in a few minutes.');
       } catch (error) {
         console.error('Error sending email verification:', error);
         throw error;

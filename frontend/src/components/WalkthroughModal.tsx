@@ -60,6 +60,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [verificationEmailSent, setVerificationEmailSent] = useState(true);
+  const [verificationLink, setVerificationLink] = useState<string | null>(null);
 
   // Reset on open
   useEffect(() => {
@@ -206,12 +207,15 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
       const result = await register(signupData.email, signupData.password);
       await signOut(auth);
       setVerificationEmailSent(result.verificationEmailSent);
+      setVerificationLink(result.verificationLink || null);
       goTo("signup-done");
       toast({
         title: "Account created!",
         description: result.verificationEmailSent
           ? "Please check your email to verify your account."
-          : "Account created, but the verification email could not be sent. Use Resend Email.",
+          : result.verificationLink
+            ? "Email could not be sent. Use Verify now to activate your account."
+            : "Account created, but verification could not be completed. Try Resend Email.",
       });
     } catch (error: unknown) {
       toast({
@@ -646,6 +650,13 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           We sent a verification link to<br />
                           <span className="font-semibold" style={{ color: colors.heading }}>{signupData.email}</span>
                         </>
+                      ) : verificationLink ? (
+                        <>
+                          We created your account for<br />
+                          <span className="font-semibold" style={{ color: colors.heading }}>{signupData.email}</span>
+                          <br />
+                          School email delivery is blocked from the live site. Click Verify now to activate your account.
+                        </>
                       ) : (
                         <>
                           We created your account for<br />
@@ -672,6 +683,19 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                       <p className="text-[11px]" style={{ color: colors.warningMuted }}>The email may be in your Spam or Junk folder.</p>
                     </div>
                   </div>
+
+                  {verificationLink && !verificationEmailSent && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.location.assign(verificationLink);
+                      }}
+                      className="w-full h-11 text-white font-medium text-sm rounded-lg transition-colors"
+                      style={{ background: colors.primary }}
+                    >
+                      Verify now
+                    </button>
+                  )}
 
                   <div className="flex flex-col sm:flex-row gap-2">
                     <button
@@ -708,17 +732,23 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           if (u) {
                             const sent = await sendVerificationEmailForUser(u);
                             await signOut(auth);
-                            if (!sent) {
-                              toast({
-                                title: "Resend Failed",
-                                description: "Could not send the verification email. Please try again in a few minutes.",
-                                variant: "destructive",
-                              });
+                            if (sent.emailed) {
+                              setVerificationEmailSent(true);
+                              setVerificationLink(null);
+                              toast({ title: "Verification Sent", description: "Check inbox and spam." });
+                              setResendCooldown(60);
                               return;
                             }
-                            setVerificationEmailSent(true);
-                            toast({ title: "Verification Sent", description: "Check inbox and spam for a Firebase or SpeakUp GC message." });
-                            setResendCooldown(60);
+                            if (sent.verificationLink) {
+                              setVerificationLink(sent.verificationLink);
+                              toast({ title: "Use Verify now", description: "Email still cannot send. Click Verify now to activate your account." });
+                              return;
+                            }
+                            toast({
+                              title: "Resend Failed",
+                              description: "Could not send the verification email. Please try again in a few minutes.",
+                              variant: "destructive",
+                            });
                           }
                         } catch (err: unknown) { toast({ title: "Resend Failed", description: getAuthErrorMessage(err, "Could not resend verification email. Please try again."), variant: "destructive" }); }
                         finally { setIsSignupLoading(false); }

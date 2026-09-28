@@ -1,11 +1,16 @@
 import { sendEmailVerification as firebaseSendEmailVerification, User } from 'firebase/auth';
 
+export type VerificationSendResult = {
+  emailed: boolean;
+  verificationLink?: string;
+};
+
 /**
  * Sends the branded SpeakUp GC verification email via the API.
- * Falls back to Firebase's default template if branded mail cannot be sent.
- * Returns whether at least one provider accepted the send.
+ * If mail providers fail, the API may still return a one-time verification link
+ * for the signed-in user so signup can finish without inbox delivery.
  */
-export async function sendVerificationEmailForUser(user: User): Promise<boolean> {
+export async function sendVerificationEmailForUser(user: User): Promise<VerificationSendResult> {
   const token = await user.getIdToken();
 
   try {
@@ -17,9 +22,21 @@ export async function sendVerificationEmailForUser(user: User): Promise<boolean>
       },
     });
 
-    if (res.ok) return true;
+    const data = (await res.json().catch(() => ({}))) as {
+      emailed?: boolean;
+      skipped?: boolean;
+      verificationLink?: string;
+    };
 
-    console.warn('[verification] branded email failed, falling back to Firebase', await res.text());
+    if (res.ok && (data.emailed || data.skipped)) {
+      return { emailed: true };
+    }
+
+    if (res.ok && data.verificationLink) {
+      return { emailed: false, verificationLink: data.verificationLink };
+    }
+
+    console.warn('[verification] branded email failed, falling back to Firebase', data);
   } catch (error) {
     console.warn('[verification] branded email error, falling back to Firebase', error);
   }
@@ -31,9 +48,9 @@ export async function sendVerificationEmailForUser(user: User): Promise<boolean>
       user,
       continueUrl ? { url: continueUrl, handleCodeInApp: false } : undefined
     );
-    return true;
+    return { emailed: true };
   } catch (error) {
     console.warn('[verification] Firebase fallback also failed', error);
-    return false;
+    return { emailed: false };
   }
 }

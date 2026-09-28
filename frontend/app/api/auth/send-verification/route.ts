@@ -47,10 +47,21 @@ export async function POST(request: NextRequest) {
 
     const appBase = getAppBaseUrl().replace(/\/$/, '');
     const continueUrl = `${appBase}/dashboard`;
-    const verificationLink = await getAdminAuth().generateEmailVerificationLink(user.email, {
-      url: continueUrl,
-      handleCodeInApp: false,
-    });
+    let verificationLink: string;
+    try {
+      verificationLink = await getAdminAuth().generateEmailVerificationLink(user.email, {
+        url: continueUrl,
+        handleCodeInApp: false,
+      });
+    } catch (linkError) {
+      const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+      if (!authDomain) throw linkError;
+      console.warn('[send-verification] continue URL rejected, retrying with authDomain', linkError);
+      verificationLink = await getAdminAuth().generateEmailVerificationLink(user.email, {
+        url: `https://${authDomain}`,
+        handleCodeInApp: false,
+      });
+    }
 
     const toName =
       user.displayName || user.email.split('@')[0] || 'there';
@@ -60,18 +71,23 @@ export async function POST(request: NextRequest) {
       logoUrl: `${appBase}/LOGO.png`,
     });
 
-    const result = await sendTransactionalEmail(
-      {
+    try {
+      const result = await sendTransactionalEmail({
         to: user.email,
         subject,
         html,
         text,
-      },
-      // noreply@resend.dev is testing-only and is usually dropped by school inboxes
-      { allowResend: false }
-    );
-
-    return NextResponse.json({ success: true, provider: result.provider });
+      });
+      return NextResponse.json({ success: true, emailed: true, provider: result.provider });
+    } catch (sendError) {
+      console.warn('[send-verification] Mail providers failed; returning in-app link', sendError);
+      // Caller is the signed-in owner of this account (Bearer token checked above).
+      return NextResponse.json({
+        success: true,
+        emailed: false,
+        verificationLink,
+      });
+    }
   } catch (error) {
     console.error('[send-verification] Error:', error);
     return NextResponse.json({ error: 'Failed to send verification email' }, { status: 500 });

@@ -29,6 +29,44 @@ async function sendViaResend(input: {
   return { provider: 'resend' };
 }
 
+async function sendViaGmail(input: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+  gmailUser: string;
+  gmailPass: string;
+}): Promise<{ provider: 'gmail' }> {
+  const pass = input.gmailPass.replace(/\s+/g, '');
+  const fromName = process.env.GMAIL_FROM_NAME || 'SpeakUp GC';
+  const attempts = [
+    { host: 'smtp.gmail.com', port: 465, secure: true },
+    { host: 'smtp.gmail.com', port: 587, secure: false },
+  ] as const;
+
+  let lastError: unknown;
+  for (const smtp of attempts) {
+    try {
+      const transporter = nodemailer.createTransport({
+        ...smtp,
+        auth: { user: input.gmailUser, pass },
+      });
+      await transporter.sendMail({
+        from: `"${fromName}" <${input.gmailUser}>`,
+        to: input.to,
+        subject: input.subject,
+        html: input.html,
+        text: input.text,
+      });
+      return { provider: 'gmail' };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
 export async function sendTransactionalEmail(
   input: {
     to: string;
@@ -50,23 +88,7 @@ export async function sendTransactionalEmail(
 
   if (gmailUser && gmailPass) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: { user: gmailUser, pass: gmailPass },
-      });
-
-      const fromName = process.env.GMAIL_FROM_NAME || 'SpeakUp GC';
-      await transporter.sendMail({
-        from: `"${fromName}" <${gmailUser}>`,
-        to: input.to,
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-      });
-
-      return { provider: 'gmail' };
+      return await sendViaGmail({ ...input, gmailUser, gmailPass });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!allowResend || !process.env.RESEND_API_KEY) {
