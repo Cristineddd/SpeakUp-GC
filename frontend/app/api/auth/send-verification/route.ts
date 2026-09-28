@@ -60,12 +60,16 @@ export async function POST(request: NextRequest) {
       logoUrl: `${appBase}/LOGO.png`,
     });
 
-    const result = await sendTransactionalEmail({
-      to: user.email,
-      subject,
-      html,
-      text,
-    });
+    const result = await sendTransactionalEmail(
+      {
+        to: user.email,
+        subject,
+        html,
+        text,
+      },
+      // noreply@resend.dev is testing-only and is usually dropped by school inboxes
+      { allowResend: false }
+    );
 
     return NextResponse.json({ success: true, provider: result.provider });
   } catch (error) {

@@ -29,12 +29,16 @@ async function sendViaResend(input: {
   return { provider: 'resend' };
 }
 
-export async function sendTransactionalEmail(input: {
-  to: string;
-  subject: string;
-  html: string;
-  text?: string;
-}): Promise<{ provider: 'gmail' | 'resend' }> {
+export async function sendTransactionalEmail(
+  input: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+  },
+  options?: { allowResend?: boolean }
+): Promise<{ provider: 'gmail' | 'resend' }> {
+  const allowResend = options?.allowResend !== false;
   const gmailUser = process.env.GMAIL_USER?.trim();
   const gmailPass = process.env.GMAIL_APP_PASSWORD?.trim();
 
@@ -65,12 +69,17 @@ export async function sendTransactionalEmail(input: {
       return { provider: 'gmail' };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn('[email] Gmail SMTP failed, falling back to Resend:', message);
-      if (!process.env.RESEND_API_KEY) {
+      if (!allowResend || !process.env.RESEND_API_KEY) {
+        console.warn('[email] Gmail SMTP failed:', message);
         throw error;
       }
+      console.warn('[email] Gmail SMTP failed, falling back to Resend:', message);
       return sendViaResend(input);
     }
+  }
+
+  if (!allowResend) {
+    throw new Error('No email provider configured');
   }
 
   return sendViaResend(input);

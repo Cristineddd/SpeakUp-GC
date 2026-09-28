@@ -59,6 +59,7 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(true);
 
   // Reset on open
   useEffect(() => {
@@ -202,10 +203,16 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
     }
     setIsSignupLoading(true);
     try {
-      await register(signupData.email, signupData.password);
+      const result = await register(signupData.email, signupData.password);
       await signOut(auth);
+      setVerificationEmailSent(result.verificationEmailSent);
       goTo("signup-done");
-      toast({ title: "Account created!", description: "Please check your email to verify your account." });
+      toast({
+        title: "Account created!",
+        description: result.verificationEmailSent
+          ? "Please check your email to verify your account."
+          : "Account created, but the verification email could not be sent. Use Resend Email.",
+      });
     } catch (error: unknown) {
       toast({
         title: "Error",
@@ -630,10 +637,23 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                     </div>
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: colors.heading }}>Check Your Email</h2>
+                    <h2 className="text-xl sm:text-2xl font-bold mb-1" style={{ color: colors.heading }}>
+                      {verificationEmailSent ? "Check Your Email" : "Account Created"}
+                    </h2>
                     <p className="text-sm" style={{ color: colors.body }}>
-                      We sent a verification link to<br />
-                      <span className="font-semibold" style={{ color: colors.heading }}>{signupData.email}</span>
+                      {verificationEmailSent ? (
+                        <>
+                          We sent a verification link to<br />
+                          <span className="font-semibold" style={{ color: colors.heading }}>{signupData.email}</span>
+                        </>
+                      ) : (
+                        <>
+                          We created your account for<br />
+                          <span className="font-semibold" style={{ color: colors.heading }}>{signupData.email}</span>
+                          <br />
+                          but the verification email did not send. Click Resend Email below.
+                        </>
+                      )}
                     </p>
                   </div>
 
@@ -686,10 +706,19 @@ const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ isOpen, onClose, in
                           await signInWithEmailAndPassword(auth, signupData.email, signupData.password);
                           const u = auth.currentUser;
                           if (u) {
-                            await sendVerificationEmailForUser(u);
-                            toast({ title: "Verification Sent" });
-                            setResendCooldown(60);
+                            const sent = await sendVerificationEmailForUser(u);
                             await signOut(auth);
+                            if (!sent) {
+                              toast({
+                                title: "Resend Failed",
+                                description: "Could not send the verification email. Please try again in a few minutes.",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            setVerificationEmailSent(true);
+                            toast({ title: "Verification Sent", description: "Check inbox and spam for a Firebase or SpeakUp GC message." });
+                            setResendCooldown(60);
                           }
                         } catch (err: unknown) { toast({ title: "Resend Failed", description: getAuthErrorMessage(err, "Could not resend verification email. Please try again."), variant: "destructive" }); }
                         finally { setIsSignupLoading(false); }

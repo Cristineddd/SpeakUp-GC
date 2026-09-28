@@ -2,9 +2,10 @@ import { sendEmailVerification as firebaseSendEmailVerification, User } from 'fi
 
 /**
  * Sends the branded SpeakUp GC verification email via the API.
- * Falls back to Firebase's default template if the API is not configured.
+ * Falls back to Firebase's default template if branded mail cannot be sent.
+ * Returns whether at least one provider accepted the send.
  */
-export async function sendVerificationEmailForUser(user: User): Promise<void> {
+export async function sendVerificationEmailForUser(user: User): Promise<boolean> {
   const token = await user.getIdToken();
 
   try {
@@ -16,7 +17,7 @@ export async function sendVerificationEmailForUser(user: User): Promise<void> {
       },
     });
 
-    if (res.ok) return;
+    if (res.ok) return true;
 
     console.warn('[verification] branded email failed, falling back to Firebase', await res.text());
   } catch (error) {
@@ -24,9 +25,15 @@ export async function sendVerificationEmailForUser(user: User): Promise<void> {
   }
 
   try {
-    await firebaseSendEmailVerification(user);
+    const continueUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined;
+    await firebaseSendEmailVerification(
+      user,
+      continueUrl ? { url: continueUrl, handleCodeInApp: false } : undefined
+    );
+    return true;
   } catch (error) {
-    // Account already exists; do not surface quota / SMTP errors as a failed signup.
     console.warn('[verification] Firebase fallback also failed', error);
+    return false;
   }
 }
