@@ -660,8 +660,8 @@ export const ComplianceReportGenerator: React.FC<ComplianceReportGeneratorProps>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E1F5EE' }}>
-                <FileText className="h-5 w-5" style={{ color: '#1D9E75' }} />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-50 dark:bg-[#1D9E75]/20">
+                <FileText className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div>
                 <CardTitle className="text-xl">Generate Compliance Report</CardTitle>

@@ -1892,7 +1892,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
   };
 
   const reportCardClass =
-    'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
+    'border-gray-200 dark:border-border bg-white dark:bg-card shadow-sm overflow-hidden';
 
   // Calculate tab counts (closed cases excluded - they go to separate Case Archive page)
   const tabCounts = {
@@ -2145,7 +2145,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
       )}
 
       {/* Status Tabs */}
-      <div className="border-b border-gray-200 bg-white rounded-lg shadow-sm">
+      <div className="border-b border-gray-200 dark:border-border bg-white dark:bg-card rounded-lg shadow-sm">
         <nav className="flex space-x-8 px-6" aria-label="Status tabs">
           <button
             onClick={() => handleTabChange('all')}
@@ -2283,12 +2283,12 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 placeholder="Search reports..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border-emerald-100/90 bg-white focus-visible:border-[#1D9E75]/40 focus-visible:ring-[#1D9E75]/20"
+                className="w-full border-emerald-100/90 dark:border-border bg-white dark:bg-card focus-visible:border-[#1D9E75]/40 focus-visible:ring-[#1D9E75]/20"
               />
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
+              <SelectTrigger className="border-emerald-100/90 dark:border-border bg-white dark:bg-card focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -2300,7 +2300,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
+              <SelectTrigger className="border-emerald-100/90 dark:border-border bg-white dark:bg-card focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -2315,7 +2315,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
 
             {/* Escalation Filter */}
             <Select value={escalationFilter} onValueChange={setEscalationFilter}>
-              <SelectTrigger className="border-emerald-100/90 bg-white focus:ring-[#1D9E75]/20">
+              <SelectTrigger className="border-emerald-100/90 dark:border-border bg-white dark:bg-card focus:ring-[#1D9E75]/20">
                 <SelectValue placeholder="All Escalations" />
               </SelectTrigger>
               <SelectContent>
@@ -2426,8 +2426,8 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                 return (
                   <div
                     key={report.id}
-                    className={`rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${
-                      isUnseenQueue ? 'bg-red-50/40' : ''
+                    className={`rounded-xl border border-gray-200 dark:border-border bg-white dark:bg-card p-4 shadow-sm ${
+                      isUnseenQueue ? 'bg-red-50/40 dark:bg-red-500/10' : ''
                     }`}
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

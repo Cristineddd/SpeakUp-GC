@@ -205,7 +205,7 @@ const LocationsPage = () => {
                         id="category"
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-border rounded-lg bg-white dark:bg-card text-gray-900 dark:text-foreground focus:ring-2 focus:ring-[#1D9E75] focus:border-transparent"
                       >
                         <option value="">Select category</option>
                         {CATEGORIES.map((cat) => (
@@ -270,7 +270,7 @@ const LocationsPage = () => {
               {filteredLocations.map((location) => (
                 <div
                   key={location.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-gray-200 dark:border-border rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Building2 className="h-5 w-5 text-gray-400 shrink-0" />

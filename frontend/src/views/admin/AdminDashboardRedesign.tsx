@@ -45,18 +45,17 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon: Icon, trend, onClick }) => {
   return (
     <Card 
-      className={`bg-white border-0 shadow-sm hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+      className={`bg-white dark:bg-card border border-transparent dark:border-border shadow-sm hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.primaryLight }}>
-            <Icon className="h-5 w-5" style={{ color: COLORS.primary }} />
+          <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
+            <Icon className="h-5 w-5 text-[#1D9E75]" />
           </div>
           {trend && (
             <Badge 
-              className="px-2 py-0.5 text-xs font-semibold border-0"
-              style={{ backgroundColor: COLORS.primaryLight, color: COLORS.primary }}
+              className="px-2 py-0.5 text-xs font-semibold border-0 bg-emerald-50 text-[#1D9E75] dark:bg-[#1D9E75]/20 dark:text-emerald-200"
             >
               <TrendingUp className="h-3 w-3 mr-1" />
               {trend}
@@ -64,9 +63,9 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon: Icon, trend
           )}
         </div>
         <div>
-          <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
-          <p className="text-xs text-gray-500 mt-0.5">vs. last 30 days</p>
+          <p className="text-xs text-gray-600 dark:text-muted-foreground uppercase tracking-wide mb-1">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-foreground">{value}</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">vs. last 30 days</p>
         </div>
       </CardContent>
     </Card>
@@ -303,15 +302,15 @@ const AdminDashboardRedesign = () => {
   }
 
   return (
-    <div className="w-full space-y-6 pb-10" style={{ backgroundColor: '#FAFAFA' }}>
+    <div className="w-full space-y-6 pb-10">
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">Admin Overview</p>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">System-wide case management and analytics overview</p>
+          <p className="text-xs font-medium text-gray-600 dark:text-muted-foreground uppercase tracking-wide mb-2">Admin Overview</p>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-foreground">Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-muted-foreground mt-1">System-wide case management and analytics overview</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm sm:min-w-[240px]">
+        <div className="rounded-xl border border-gray-200 dark:border-border bg-white dark:bg-card px-5 py-3 shadow-sm sm:min-w-[240px]">
           <div className="flex items-center justify-end gap-2 text-gray-400 mb-1">
             <Clock className="h-4 w-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">Philippine Time</span>
@@ -386,8 +385,8 @@ const AdminDashboardRedesign = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.primaryLight }}>
-                <CheckCircle className="h-5 w-5" style={{ color: COLORS.primary }} />
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
+                <CheckCircle className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Case Resolution Rate</p>
@@ -401,8 +400,8 @@ const AdminDashboardRedesign = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.primaryLight }}>
-                <Clock className="h-5 w-5" style={{ color: COLORS.primary }} />
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
+                <Clock className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Avg Resolution Time</p>
@@ -416,8 +415,8 @@ const AdminDashboardRedesign = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-red-100">
-                <ShieldAlert className="h-5 w-5 text-red-600" />
+              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-500/20">
+                <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Overdue Cases</p>
@@ -431,8 +430,8 @@ const AdminDashboardRedesign = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-amber-100">
-                <FileText className="h-5 w-5 text-amber-600" />
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                <FileText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
                 <p className="text-xs text-gray-600 uppercase tracking-wide mb-1">Follow-Up Requests</p>
@@ -717,11 +716,13 @@ const AdminDashboardRedesign = () => {
                   {upcomingDeadlines.map((deadline: any) => (
                     <div
                       key={deadline.id}
-                      className="p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all"
-                      style={{
-                        borderColor: deadline.isOverdue ? '#FECACA' : deadline.isUrgent ? '#FDE68A' : '#E5E7EB',
-                        backgroundColor: deadline.isOverdue ? '#FEF2F2' : deadline.isUrgent ? '#FFFBEB' : 'white',
-                      }}
+                      className={`p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all ${
+                        deadline.isOverdue
+                          ? 'border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10'
+                          : deadline.isUrgent
+                            ? 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'
+                            : 'border-gray-200 bg-white dark:border-border dark:bg-card'
+                      }`}
                       onClick={() => navigate(`/admin/reports?reportId=${deadline.id}`)}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -856,49 +857,45 @@ const AdminDashboardRedesign = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <button
               onClick={() => navigate('/admin/reports')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+              className="p-6 rounded-lg border border-gray-200 dark:border-border hover:border-gray-300 dark:hover:border-[#1D9E75]/40 hover:shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-center group"
             >
               <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center bg-emerald-50 dark:bg-[#1D9E75]/20 group-hover:scale-110 transition-transform"
               >
-                <UserPlus className="h-5 w-5" style={{ color: COLORS.primary }} />
+                <UserPlus className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <p className="text-sm font-semibold text-gray-900">Assign Case</p>
             </button>
             <button
               onClick={() => navigate('/admin/compliance-reports')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+              className="p-6 rounded-lg border border-gray-200 dark:border-border hover:border-gray-300 dark:hover:border-[#1D9E75]/40 hover:shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-center group"
             >
               <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center bg-emerald-50 dark:bg-[#1D9E75]/20 group-hover:scale-110 transition-transform"
               >
-                <FileCheck className="h-5 w-5" style={{ color: COLORS.primary }} />
+                <FileCheck className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <p className="text-sm font-semibold text-gray-900">Generate Report</p>
             </button>
             <button
               onClick={() => navigate('/admin/reports')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+              className="p-6 rounded-lg border border-gray-200 dark:border-border hover:border-gray-300 dark:hover:border-[#1D9E75]/40 hover:shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-center group"
             >
               <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center bg-emerald-50 dark:bg-[#1D9E75]/20 group-hover:scale-110 transition-transform"
               >
-                <ShieldAlert className="h-5 w-5" style={{ color: COLORS.primary }} />
+                <ShieldAlert className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <p className="text-sm font-semibold text-gray-900">View Escalations</p>
             </button>
             <button
               onClick={() => navigate('/admin/analytics')}
-              className="p-6 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all text-center group"
+              className="p-6 rounded-lg border border-gray-200 dark:border-border hover:border-gray-300 dark:hover:border-[#1D9E75]/40 hover:shadow-sm hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-center group"
             >
               <div 
-                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center group-hover:scale-110 transition-transform"
-                style={{ backgroundColor: COLORS.primaryLight }}
+                className="w-10 h-10 rounded-lg mx-auto mb-3 flex items-center justify-center bg-emerald-50 dark:bg-[#1D9E75]/20 group-hover:scale-110 transition-transform"
               >
-                <BarChart3 className="h-5 w-5" style={{ color: COLORS.primary }} />
+                <BarChart3 className="h-5 w-5 text-[#1D9E75]" />
               </div>
               <p className="text-sm font-semibold text-gray-900">Export Analytics</p>
             </button>

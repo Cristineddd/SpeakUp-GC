@@ -91,21 +91,21 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8faf9] text-gray-900 font-sans flex flex-col">
+    <div className="min-h-screen bg-[#f8faf9] dark:bg-[#0f1412] text-gray-900 dark:text-gray-100 font-sans flex flex-col">
       <main className="relative flex-1 flex items-center justify-center p-4 sm:p-6">
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
           <div className="absolute -left-24 -top-20 h-[22rem] w-[28rem] bg-gradient-to-br from-[#1D9E75]/20 via-emerald-200/35 to-transparent blur-3xl" />
           <div className="absolute -right-20 bottom-0 h-[20rem] w-[24rem] bg-gradient-to-tl from-teal-200/35 via-[#1D9E75]/10 to-transparent blur-3xl" />
         </div>
 
-        <div className="relative w-full max-w-md bg-white border border-[#d4e4db] rounded-2xl shadow-xl shadow-gray-900/5 p-6 sm:p-8">
+        <div className="relative w-full max-w-md bg-white dark:bg-card border border-[#d4e4db] dark:border-border rounded-2xl shadow-xl shadow-gray-900/5 p-6 sm:p-8">
           <div className="text-center mb-6">
-            <div className="mx-auto h-14 w-14 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto h-14 w-14 bg-emerald-50 dark:bg-[#1D9E75]/20 rounded-full flex items-center justify-center mb-4">
               <Shield className="h-7 w-7 text-[#1D9E75]" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1a2e1f] mb-1">Admin Panel</h1>
-            <p className="text-sm text-[#7a8f82]">Sign in to manage cases and reports</p>
-            <span className="inline-block mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#1D9E75] bg-[#f0f7f3] border border-[#d4e4db] rounded-full px-3 py-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1a2e1f] dark:text-foreground mb-1">Admin Panel</h1>
+            <p className="text-sm text-[#7a8f82] dark:text-muted-foreground">Sign in to manage cases and reports</p>
+            <span className="inline-block mt-3 text-[11px] font-semibold uppercase tracking-wide text-[#1D9E75] bg-[#f0f7f3] dark:bg-[#1D9E75]/20 border border-[#d4e4db] dark:border-[#1D9E75]/30 rounded-full px-3 py-1">
               Admin • CODI Members
             </span>
           </div>
@@ -189,7 +189,7 @@ export default function AdminLogin() {
               <div className="w-full border-t border-[#e2ece7]" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 font-medium text-[#7a8f82]">OR</span>
+              <span className="bg-white dark:bg-card px-2 font-medium text-[#7a8f82] dark:text-muted-foreground">OR</span>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export default function AdminLogin() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading || googleLoading}
-            className="w-full h-11 bg-white hover:bg-[#f0f7f3] text-[#1a2e1f] font-medium text-sm rounded-xl border-[1.5px] border-[#d4e4db] transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-11 bg-white dark:bg-card hover:bg-[#f0f7f3] dark:hover:bg-white/5 text-[#1a2e1f] dark:text-foreground font-medium text-sm rounded-xl border-[1.5px] border-[#d4e4db] dark:border-border transition-colors flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {googleLoading ? (
               <>

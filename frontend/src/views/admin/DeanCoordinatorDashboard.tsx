@@ -112,7 +112,7 @@ const DeanCoordinatorDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900">Reports Overview</h1>
@@ -121,7 +121,7 @@ const DeanCoordinatorDashboard = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-1 bg-white p-1 rounded-lg border">
+        <TabsList className="grid w-full grid-cols-1 bg-white dark:bg-card p-1 rounded-lg border dark:border-border">
           <TabsTrigger 
             value="overview" 
             className="data-[state=active]:bg-green-600 data-[state=active]:text-white"

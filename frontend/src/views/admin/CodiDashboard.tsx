@@ -170,7 +170,7 @@ export default function CodiDashboard() {
       hint: 'All open cases in the system',
       icon: Inbox,
       href: '/admin/reports',
-      color: 'text-emerald-700 bg-emerald-50',
+      color: 'text-emerald-700 bg-emerald-50 dark:text-emerald-300 dark:bg-[#1D9E75]/20',
     },
     {
       label: 'My Assigned',
@@ -178,7 +178,7 @@ export default function CodiDashboard() {
       hint: `${stats.investigating} currently investigating`,
       icon: Briefcase,
       href: '/admin/reports?assigned=me',
-      color: 'text-blue-700 bg-blue-50',
+      color: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/20',
     },
     {
       label: 'Unassigned',
@@ -186,7 +186,7 @@ export default function CodiDashboard() {
       hint: 'Available to take from queue',
       icon: UserPlus,
       href: '/admin/reports?status=unassigned',
-      color: 'text-amber-700 bg-amber-50',
+      color: 'text-amber-700 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/20',
     },
     {
       label: 'Needs Attention',
@@ -194,7 +194,7 @@ export default function CodiDashboard() {
       hint: 'Stale, escalated, or follow-up',
       icon: AlertTriangle,
       href: '/admin/reports?status=needs-attention',
-      color: 'text-red-700 bg-red-50',
+      color: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/20',
     },
   ];
 
@@ -208,7 +208,7 @@ export default function CodiDashboard() {
             Shared case queue — review priorities, take unassigned cases, and manage your investigations.
           </p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-3 shadow-sm sm:min-w-[240px]">
+        <div className="rounded-xl border border-gray-200 dark:border-border bg-white dark:bg-card px-5 py-3 shadow-sm sm:min-w-[240px]">
           <div className="flex items-center justify-end gap-2 text-gray-400 mb-1">
             <Clock className="h-4 w-4" />
             <span className="text-[11px] font-medium uppercase tracking-wide">Philippine Time</span>
@@ -228,7 +228,7 @@ export default function CodiDashboard() {
             onClick={() => navigate(card.href)}
             className="text-left"
           >
-            <Card className="h-full border-gray-200 hover:border-[#1D9E75]/40 hover:shadow-md transition-all">
+            <Card className="h-full border-gray-200 dark:border-border hover:border-[#1D9E75]/40 hover:shadow-md transition-all">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className={`p-2.5 rounded-xl ${card.color}`}>
@@ -246,7 +246,7 @@ export default function CodiDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 border-gray-200">
+        <Card className="lg:col-span-2 border-gray-200 dark:border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
               <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
@@ -276,7 +276,7 @@ export default function CodiDashboard() {
                     key={report.id}
                     type="button"
                     onClick={() => navigate(`/admin/reports?reportId=${report.id}`)}
-                    className="w-full text-left rounded-xl border border-gray-200 p-4 hover:border-[#1D9E75]/40 hover:bg-emerald-50/30 transition-all"
+                    className="w-full text-left rounded-xl border border-gray-200 dark:border-border p-4 hover:border-[#1D9E75]/40 hover:bg-emerald-50/30 dark:hover:bg-white/5 transition-all"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -311,7 +311,7 @@ export default function CodiDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-gray-200">
+        <Card className="border-gray-200 dark:border-border">
           <CardHeader>
             <CardTitle className="text-base font-semibold">Quick Links</CardTitle>
           </CardHeader>
@@ -327,7 +327,7 @@ export default function CodiDashboard() {
                 key={link.label}
                 type="button"
                 onClick={() => navigate(link.href)}
-                className="w-full flex items-center gap-3 rounded-xl border border-gray-200 p-3 hover:border-[#1D9E75]/40 hover:bg-gray-50 transition-all text-left"
+                className="w-full flex items-center gap-3 rounded-xl border border-gray-200 dark:border-border p-3 hover:border-[#1D9E75]/40 hover:bg-gray-50 dark:hover:bg-white/5 transition-all text-left"
               >
                 <div className="p-2 rounded-lg bg-gray-100">
                   <link.icon className="h-4 w-4 text-gray-600" />

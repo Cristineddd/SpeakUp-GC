@@ -643,7 +643,7 @@ const UsersManagement = () => {
   }
 
   return (
-    <div className="w-full space-y-6 pb-10" style={{ backgroundColor: '#FAFAFA' }}>
+    <div className="w-full space-y-6 pb-10">
       {/* Header */}
       <div>
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">User Accounts</p>
@@ -656,7 +656,7 @@ const UsersManagement = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <Users2 className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -668,7 +668,7 @@ const UsersManagement = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <UserCheck className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -680,7 +680,7 @@ const UsersManagement = () => {
         <Card className="bg-white border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <UserPlus className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -731,7 +731,7 @@ const UsersManagement = () => {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-200 dark:border-border bg-white dark:bg-card shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

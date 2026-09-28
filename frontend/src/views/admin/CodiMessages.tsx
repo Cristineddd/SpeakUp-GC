@@ -97,7 +97,7 @@ export default function CodiMessages() {
         )}
       </div>
 
-      <div className="max-w-3xl bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="max-w-3xl bg-white dark:bg-card rounded-xl border border-gray-200 dark:border-border overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-[#1D9E75]" />
           <h2 className="text-base font-semibold text-gray-900">Case Conversations</h2>
@@ -137,7 +137,7 @@ export default function CodiMessages() {
                     key={room.id}
                     type="button"
                     onClick={() => navigate(`/case-chat/${room.complaintId}`)}
-                    className="w-full text-left p-4 rounded-xl border border-gray-200 hover:border-[#1D9E75]/40 hover:bg-green-50/50 transition-all group"
+                    className="w-full text-left p-4 rounded-xl border border-gray-200 dark:border-border hover:border-[#1D9E75]/40 hover:bg-green-50/50 dark:hover:bg-white/5 transition-all group"
                   >
                     <div className="flex items-start gap-3">
                       <Avatar className="h-10 w-10 flex-shrink-0">

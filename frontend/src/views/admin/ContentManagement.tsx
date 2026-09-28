@@ -445,7 +445,7 @@ const ContentManagement = () => {
 
             {formData.videoId && (
               <>
-                <div className="p-2 bg-gray-50 rounded border">
+                <div className="p-2 bg-gray-50 dark:bg-muted rounded border dark:border-border">
                   <p className="text-xs text-gray-600 mb-2">Preview:</p>
                   <img
                     src={`https://img.youtube.com/vi/${formData.videoId}/hqdefault.jpg`}
@@ -499,7 +499,7 @@ const ContentManagement = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="tags">Labels/Tags *</Label>
-                    <div className="border rounded-lg p-3 bg-white space-y-2 max-h-40 overflow-y-auto">
+                    <div className="border dark:border-border rounded-lg p-3 bg-white dark:bg-card space-y-2 max-h-40 overflow-y-auto">
                       {categories.map((tag) => (
                         <label key={tag} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                           <input

@@ -136,11 +136,11 @@ const CaseArchive = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50/30 via-white to-emerald-50/20 p-4 sm:p-6 lg:p-8">
+    <div className="w-full space-y-6 pb-10">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header */}
-        <div className="bg-white rounded-xl border border-gray-200 px-6 py-6 shadow-sm">
+        <div className="bg-white dark:bg-card rounded-xl border border-gray-200 dark:border-border px-6 py-6 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
               <Archive className="h-6 w-6 text-gray-600" />
@@ -283,7 +283,7 @@ const CaseArchive = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredReports.map((report, index) => (
-                    <TableRow key={report.id} className="hover:bg-gray-50">
+                    <TableRow key={report.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
                       <TableCell className="font-semibold text-gray-600">{index + 1}</TableCell>
                       <TableCell>
                         <div className="space-y-1">

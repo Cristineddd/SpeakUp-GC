@@ -81,7 +81,7 @@ interface StatCardProps {
 }
 
 const dashCardClass =
-  'border-emerald-100/80 bg-white/95 shadow-sm ring-1 ring-emerald-950/[0.04] overflow-hidden';
+    'border-gray-200 dark:border-border bg-white dark:bg-card shadow-sm overflow-hidden';
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, description, trend, onClick }) => {
   const isActiveCasesZero = title.includes('Active') && value === 0;

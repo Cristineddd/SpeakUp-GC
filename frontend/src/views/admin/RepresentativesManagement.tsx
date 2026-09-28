@@ -250,7 +250,7 @@ const RepresentativesManagement = () => {
   }
 
   return (
-    <div className="w-full space-y-6 pb-10" style={{ backgroundColor: '#FAFAFA' }}>
+    <div className="w-full space-y-6 pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -395,7 +395,7 @@ const RepresentativesManagement = () => {
         <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <Users className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -408,7 +408,7 @@ const RepresentativesManagement = () => {
         <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <Briefcase className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -423,7 +423,7 @@ const RepresentativesManagement = () => {
         <Card className="bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+              <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                 <Shield className="h-5 w-5" style={{ color: '#1D9E75' }} />
               </div>
             </div>
@@ -440,7 +440,7 @@ const RepresentativesManagement = () => {
       <Card className="border border-gray-200 bg-white shadow-sm">
         <CardHeader className="border-b pb-4 pt-6">
           <CardTitle className="flex items-center gap-3 text-lg font-bold text-gray-900">
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
               <Users className="h-5 w-5" style={{ color: '#1D9E75' }} />
             </div>
             All Representatives

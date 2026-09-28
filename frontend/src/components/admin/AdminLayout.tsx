@@ -283,7 +283,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           )}>
             <div className="flex flex-col h-full">
               {/* Logo & Collapse Button */}
-              <div className="px-6 py-6 border-b border-gray-200">
+              <div className="px-6 py-6 border-b border-gray-200 dark:border-border">
                 {!sidebarCollapsed ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -300,11 +300,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                           }}
                         />
                       </div>
-                      <h1 className="text-xl font-bold text-gray-900 leading-tight whitespace-nowrap">SpeakUp GC</h1>
+                      <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight whitespace-nowrap">SpeakUp GC</h1>
                     </div>
                     <button
                       onClick={() => setSidebarCollapsed(true)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
                       title="Collapse sidebar"
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -321,7 +321,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     </div>
                     <button
                       onClick={() => setSidebarCollapsed(false)}
-                      className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
                       title="Expand sidebar"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -348,13 +348,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                         "flex items-center gap-3 rounded-xl transition-all duration-200 relative group",
                         sidebarCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5",
                         active
-                          ? "bg-[#1D9E75] text-white shadow-md"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                          ? "bg-[#1D9E75] text-white shadow-md dark:bg-[#1D9E75]/30 dark:text-emerald-100 dark:shadow-none dark:ring-1 dark:ring-[#1D9E75]/40"
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
                       )}
                       title={sidebarCollapsed ? item.label : item.description}
                     >
                       <div className="relative">
-                        <item.icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white" : "text-gray-400 group-hover:text-gray-600")} />
+                        <item.icon className={cn("h-5 w-5 flex-shrink-0", active ? "text-white dark:text-emerald-100" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200")} />
                         {badgeCount > 0 && sidebarCollapsed && (
                           <span className={`absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white rounded-full ${item.showUnreadBadge ? 'bg-[#1D9E75]' : 'bg-red-500'}`}>
                             {badgeCount > 99 ? '99+' : badgeCount}
@@ -403,11 +403,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               )}
 
               {/* Sign Out */}
-              <div className="px-4 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="px-4 py-4 border-t border-gray-200 dark:border-border bg-gray-50 dark:bg-background/40">
                 <button
                   onClick={() => setShowLogoutDialog(true)}
                   className={cn(
-                    "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600",
+                    "flex items-center gap-3 rounded-xl transition-all duration-200 w-full group text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600",
                     sidebarCollapsed ? "px-3 py-3.5 justify-center" : "px-4 py-3.5"
                   )}
                   title={sidebarCollapsed ? "Sign Out" : undefined}
@@ -428,7 +428,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <div className="sticky top-0 z-50 flex h-14 items-center justify-end border-b border-gray-200 dark:border-border bg-white dark:bg-card px-4 sm:h-16 sm:px-6">
               <NotificationBell variant="admin" />
             </div>
-            <main className="flex-1 bg-gradient-to-b from-gray-50/90 to-gray-100/80 p-8">
+            <main className="flex-1 bg-gray-50 dark:bg-background p-8">
               {children}
             </main>
           </div>

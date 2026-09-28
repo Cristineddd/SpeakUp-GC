@@ -61,11 +61,12 @@ interface AnalyticsData {
 
 const CHART_MUTED = '#e5e7eb';
 const TOOLTIP_STYLE = {
-  backgroundColor: 'rgba(255,255,255,0.96)',
-  border: '1px solid rgba(0,0,0,0.06)',
+  backgroundColor: 'hsl(var(--card))',
+  border: '1px solid hsl(var(--border))',
   borderRadius: '10px',
   fontSize: '12px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+  color: 'hsl(var(--card-foreground))',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
 };
 
 function formatStatusLabel(value: string) {
@@ -399,7 +400,7 @@ const Analytics = () => {
           >
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg" style={{ backgroundColor: '#E1F5EE' }}>
+                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-[#1D9E75]/20">
                   <kpi.icon className="h-5 w-5" style={{ color: '#1D9E75' }} />
                 </div>
               </div>
@@ -413,8 +414,8 @@ const Analytics = () => {
 
       {/* Line charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
-          <CardHeader className="space-y-1 border-b border-gray-100 bg-gradient-to-r from-white to-violet-50/40 pb-4 pt-5">
+        <Card className="overflow-hidden border-gray-200/80 dark:border-border bg-white dark:bg-card shadow-sm">
+          <CardHeader className="space-y-1 border-b border-gray-100 dark:border-border bg-gradient-to-r from-white to-violet-50/40 dark:from-card dark:to-violet-500/10 pb-4 pt-5">
             <CardTitle className="text-base font-semibold text-gray-900">Reports over time</CardTitle>
             <CardDescription>Last 7 days · daily submissions</CardDescription>
           </CardHeader>
@@ -448,8 +449,8 @@ const Analytics = () => {
         </Card>
 
         {!isCODI && (
-        <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
-          <CardHeader className="space-y-1 border-b border-gray-100 bg-gradient-to-r from-white to-emerald-50/50 pb-4 pt-5">
+        <Card className="overflow-hidden border-gray-200/80 dark:border-border bg-white dark:bg-card shadow-sm">
+          <CardHeader className="space-y-1 border-b border-gray-100 dark:border-border bg-gradient-to-r from-white to-emerald-50/50 dark:from-card dark:to-emerald-500/10 pb-4 pt-5">
             <CardTitle className="text-base font-semibold text-gray-900">User growth</CardTitle>
             <CardDescription>Last 7 days · cumulative registered users</CardDescription>
           </CardHeader>
@@ -484,7 +485,7 @@ const Analytics = () => {
         )}
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
+        <Card className="overflow-hidden border-gray-200/80 dark:border-border bg-white dark:bg-card shadow-sm">
           <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
             <CardTitle className="text-base font-semibold text-gray-900">Reports by category</CardTitle>
             <CardDescription>Volume by complaint type</CardDescription>
@@ -530,7 +531,7 @@ const Analytics = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
+        <Card className="overflow-hidden border-gray-200/80 dark:border-border bg-white dark:bg-card shadow-sm">
           <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
             <CardTitle className="text-base font-semibold text-gray-900">Reports by status</CardTitle>
             <CardDescription>Pipeline distribution</CardDescription>
@@ -576,7 +577,7 @@ const Analytics = () => {
 
       {/* Cases by Representative — admin only */}
       {!isCODI && (
-      <Card className="overflow-hidden border-gray-200/80 bg-white/95 shadow-sm ring-1 ring-gray-900/[0.03]">
+      <Card className="overflow-hidden border-gray-200/80 dark:border-border bg-white dark:bg-card shadow-sm">
         <CardHeader className="space-y-1 border-b border-gray-100 pb-4 pt-5">
           <CardTitle className="text-base font-semibold text-gray-900">Cases by Representative</CardTitle>
           <CardDescription>Case load per CODI member</CardDescription>

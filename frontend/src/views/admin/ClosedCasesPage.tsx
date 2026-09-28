@@ -255,7 +255,7 @@ const ClosedCasesPage = () => {
                   {filteredCases.map((case_) => (
                     <TableRow
                       key={case_.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5"
                       onClick={() => openCaseDetail(case_)}
                     >
                       <TableCell>
