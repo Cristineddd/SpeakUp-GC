@@ -1368,17 +1368,17 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
           
           {selectedReport && (
             <Tabs value={modalTab} onValueChange={setModalTab} className="w-full">
-              <TabsList className="mb-4 grid h-auto w-full grid-cols-2 sm:grid-cols-4 rounded-xl bg-emerald-50/60 p-1">
-                <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+              <TabsList className="mb-4 grid h-auto w-full grid-cols-2 sm:grid-cols-4 rounded-xl bg-emerald-50/60 p-1 dark:bg-[#15241f]">
+                <TabsTrigger value="details" className="rounded-lg text-emerald-900/70 data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm dark:text-emerald-100/70 dark:data-[state=active]:bg-[#243830] dark:data-[state=active]:text-emerald-100">
                   Case Details
                 </TabsTrigger>
-                <TabsTrigger value="evidence" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                <TabsTrigger value="evidence" className="rounded-lg text-emerald-900/70 data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm dark:text-emerald-100/70 dark:data-[state=active]:bg-[#243830] dark:data-[state=active]:text-emerald-100">
                   Evidence & Files
                 </TabsTrigger>
-                <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                <TabsTrigger value="notes" className="rounded-lg text-emerald-900/70 data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm dark:text-emerald-100/70 dark:data-[state=active]:bg-[#243830] dark:data-[state=active]:text-emerald-100">
                   Internal Notes
                 </TabsTrigger>
-                <TabsTrigger value="activity" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm">
+                <TabsTrigger value="activity" className="rounded-lg text-emerald-900/70 data-[state=active]:bg-white data-[state=active]:text-[#1D9E75] data-[state=active]:shadow-sm dark:text-emerald-100/70 dark:data-[state=active]:bg-[#243830] dark:data-[state=active]:text-emerald-100">
                   Activity
                 </TabsTrigger>
               </TabsList>
@@ -2486,7 +2486,7 @@ const handleQuickStatusUpdate = async (reportId: string, status: AdminReport['st
                             </Badge>
                           )}
                           {isMine && (
-                            <Badge className="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5">
+                            <Badge className="border-transparent bg-[#D1FAE5] text-[#065F46] hover:bg-[#A7F3D0] text-[10px] font-semibold px-2 py-0.5">
                               Assigned to you
                             </Badge>
                           )}

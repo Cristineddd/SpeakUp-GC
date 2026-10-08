@@ -98,6 +98,8 @@
     --foreground: 0 0% 95%;
     --card: 152 15% 11%;
     --card-foreground: 0 0% 95%;
+    --popover: 152 15% 11%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 152 55% 45%;
     --primary-foreground: 0 0% 98%;

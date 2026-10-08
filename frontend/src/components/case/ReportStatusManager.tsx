@@ -185,19 +185,19 @@ export function ReportStatusManager({
 
   const getActionButtonClass = (status: ReportStatus) => {
     const base =
-      'h-8 gap-1.5 rounded-full px-3.5 text-xs font-medium shadow-none transition-colors sm:text-sm [&_svg]:h-3.5 [&_svg]:w-3.5';
+      'h-8 gap-1.5 rounded-full px-3.5 text-xs font-medium shadow-none !transition-colors sm:text-sm [&_svg]:h-3.5 [&_svg]:w-3.5';
 
     switch (status) {
       case 'inProgress':
-        return `${base} border border-[#1D9E75] bg-white text-[#178F65] hover:bg-emerald-50 hover:text-[#146b50] [&_svg]:text-[#1D9E75]`;
+        return `${base} border border-[#1D9E75] bg-white text-[#178F65] hover:bg-[#ECFDF5] hover:text-[#146b50] [&_svg]:text-[#1D9E75]`;
       case 'resolved':
-        return `${base} border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100`;
+        return `${base} border border-blue-200 bg-[#EFF6FF] text-blue-700 hover:bg-[#DBEAFE] hover:text-blue-800`;
       case 'dismissed':
-        return `${base} border border-red-200 bg-white text-red-700 hover:bg-red-50`;
+        return `${base} border border-red-200 bg-white text-red-700 hover:bg-[#FEF2F2] hover:text-red-800`;
       case 'closed':
-        return `${base} border border-gray-300 bg-gray-900 text-white hover:bg-gray-800 [&_svg]:text-white`;
+        return `${base} border border-gray-800 bg-gray-900 text-white hover:bg-gray-800 hover:text-white [&_svg]:text-white`;
       default:
-        return `${base} border border-gray-200 bg-white text-gray-700 hover:bg-gray-50`;
+        return `${base} border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900`;
     }
   };
 

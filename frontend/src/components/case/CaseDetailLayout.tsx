@@ -14,14 +14,14 @@ export function CaseDetailStat({
   return (
     <div
       className={cn(
-        'rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-white p-3 sm:p-4',
+        'rounded-xl border border-emerald-100 bg-[#F4FBF7] p-3 sm:p-4 dark:border-[#2f4a40] dark:bg-[#1a2e26]',
         className
       )}
     >
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800/70">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800/70 dark:text-emerald-200/80">
         {label}
       </p>
-      <div className="text-sm font-semibold text-gray-900">{children}</div>
+      <div className="text-sm font-semibold text-gray-900 dark:text-gray-50">{children}</div>
     </div>
   );
 }
@@ -40,15 +40,15 @@ export function CaseDetailSection({
   className?: string;
 }) {
   const variants = {
-    default: 'border-emerald-100/80 bg-white',
-    muted: 'border-gray-100 bg-gray-50/40',
-    notice: 'border-blue-100 bg-blue-50/40',
-    respondent: 'border-amber-100 bg-amber-50/30',
+    default: 'border-emerald-100/80 bg-white dark:border-[#2f4a40] dark:bg-[#18241f]',
+    muted: 'border-gray-100 bg-gray-50/40 dark:border-[#2f4a40] dark:bg-[#15241f]',
+    notice: 'border-blue-100 bg-blue-50/40 dark:border-blue-900/50 dark:bg-[#152433]',
+    respondent: 'border-amber-100 bg-amber-50/30 dark:border-amber-900/50 dark:bg-[#2a2418]',
   };
 
   return (
     <div className={cn('rounded-2xl border p-4 sm:p-5', variants[variant], className)}>
-      <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900">
+      <h4 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-50">
         {Icon && <Icon className="h-4 w-4 shrink-0 text-[#1D9E75]" />}
         {title}
       </h4>
@@ -94,8 +94,8 @@ export function CaseDetailField({
 }) {
   return (
     <div className={cn(fullWidth && 'sm:col-span-2', className)}>
-      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">{label}</p>
-      <div className="text-sm font-medium leading-relaxed text-gray-900">{value ?? '—'}</div>
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
+      <div className="text-sm font-medium leading-relaxed text-gray-900 dark:text-gray-50">{value ?? '—'}</div>
     </div>
   );
 }
@@ -110,7 +110,7 @@ export function CaseDetailTextBlock({
   return (
     <div
       className={cn(
-        'max-h-40 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/90 p-3 text-sm leading-relaxed text-gray-700 whitespace-pre-wrap',
+        'max-h-40 overflow-y-auto rounded-xl border border-gray-100 bg-gray-50/90 p-3 text-sm leading-relaxed text-gray-700 whitespace-pre-wrap dark:border-[#2f4a40] dark:bg-[#15241f] dark:text-gray-200',
         className
       )}
     >
@@ -129,7 +129,7 @@ export function CaseDetailNotice({
   return (
     <p
       className={cn(
-        'rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5 text-xs italic text-emerald-900/80',
+        'rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2.5 text-xs italic text-emerald-900/80 dark:border-[#2f4a40] dark:bg-[#1a2e26] dark:text-emerald-100',
         className
       )}
     >

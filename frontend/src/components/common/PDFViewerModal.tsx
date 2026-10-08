@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { X, Download, ExternalLink, FileText, AlertCircle } from 'lucide-react';
 
@@ -19,8 +19,13 @@ export function PDFViewerModal({ isOpen, onClose, pdfUrl, fileName = 'document.p
   const [loadError, setLoadError] = useState(false);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] p-0 bg-white" style={{ height: '95vh' }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogContent hideCloseButton className="max-w-5xl max-h-[95vh] p-0 bg-white" style={{ height: '95vh' }}>
         <div className="flex flex-col h-full w-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-white">
@@ -28,14 +33,20 @@ export function PDFViewerModal({ isOpen, onClose, pdfUrl, fileName = 'document.p
               <FileText className="h-5 w-5 text-blue-600" />
               <DialogTitle className="text-lg font-semibold truncate pr-4">{fileName}</DialogTitle>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 flex-shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <DialogClose asChild>
+              <button
+                type="button"
+                aria-label="Close document preview"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onClose();
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </DialogClose>
           </div>
           <DialogDescription className="sr-only">
             PDF document viewer for {fileName}

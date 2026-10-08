@@ -32,24 +32,24 @@ function getSeverityColors(severity: NotificationSeverity) {
   switch (severity) {
     case 'important':
       return {
-        iconBg: 'bg-red-100 dark:bg-red-900/30',
-        iconText: 'text-red-600 dark:text-red-400',
-        badge: 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300',
+        iconBg: 'bg-[#FEE2E2] dark:bg-[#3f1d1d]',
+        iconText: 'text-[#DC2626] dark:text-[#FCA5A5]',
+        badge: 'border-transparent bg-[#FEE2E2] text-[#B91C1C] hover:bg-[#FEE2E2] dark:bg-[#3f1d1d] dark:text-[#FECACA] dark:hover:bg-[#3f1d1d]',
         unreadDot: 'bg-red-500'
       };
     case 'status_update':
       return {
-        iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-        iconText: 'text-amber-600 dark:text-amber-400',
-        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+        iconBg: 'bg-[#FEF3C7] dark:bg-[#3a2e14]',
+        iconText: 'text-[#D97706] dark:text-[#FCD34D]',
+        badge: 'border-transparent bg-[#FEF3C7] text-[#B45309] hover:bg-[#FEF3C7] dark:bg-[#3a2e14] dark:text-[#FDE68A] dark:hover:bg-[#3a2e14]',
         unreadDot: 'bg-amber-500'
       };
     case 'general':
     default:
       return {
-        iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-        iconText: 'text-blue-600 dark:text-blue-400',
-        badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
+        iconBg: 'bg-[#DBEAFE] dark:bg-[#1e3a5f]',
+        iconText: 'text-[#2563EB] dark:text-[#93C5FD]',
+        badge: 'border-transparent bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#DBEAFE] dark:bg-[#1e3a5f] dark:text-[#BFDBFE] dark:hover:bg-[#1e3a5f]',
         unreadDot: 'bg-blue-500'
       };
   }
@@ -273,8 +273,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
             'relative transition-all',
             isAdminVariant
               ? cn(
-                  'flex h-10 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 shadow-sm hover:border-[#1D9E75]/35 hover:bg-emerald-50/70 sm:gap-2.5 sm:px-4 [&_svg]:h-[18px] [&_svg]:w-[18px]',
-                  unreadCount > 0 && 'border-red-200 bg-red-50/60 hover:bg-red-50'
+                  'flex h-10 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 shadow-sm hover:border-[#1D9E75]/35 hover:bg-emerald-50/70 sm:gap-2.5 sm:px-4 dark:border-[#3d5c50] dark:bg-[#1c2c26] dark:text-gray-100 dark:hover:border-[#1D9E75]/50 dark:hover:bg-[#243830] [&_svg]:h-[18px] [&_svg]:w-[18px]',
+                  unreadCount > 0 && 'border-red-200 bg-red-50/60 hover:bg-red-50 dark:border-red-400/40 dark:bg-[#3a2222] dark:hover:bg-[#4a2a2a]'
                 )
               : cn(
                   'flex h-12 w-12 items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-100',
@@ -317,7 +317,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
 
           {isAdminVariant && (
             <>
-              <span className="hidden text-sm font-medium leading-none text-gray-700 sm:inline">
+              <span className="hidden text-sm font-medium leading-none text-gray-700 dark:text-gray-100 sm:inline">
                 Notifications
               </span>
               {unreadCount > 0 && (
@@ -338,10 +338,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[min(420px,calc(100vw-2rem))] p-0 border-gray-200 dark:border-gray-800 rounded-2xl"
+        className="w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-gray-200 bg-white p-0 text-gray-900 shadow-lg dark:border-[#2f4a40] dark:bg-[#18241f] dark:text-gray-100"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-[#2f4a40]">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
@@ -383,7 +383,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">You're all caught up!</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            <div className="divide-y divide-gray-100 dark:divide-[#2f4a40]">
               {notifications.map((notification) => {
                 const severity = getSeverity(notification.type, notification.priority);
                 const colors = getSeverityColors(severity);
@@ -393,7 +393,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
                 return (
                   <div
                     key={notification.id}
-                    className="group relative px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                    className="group relative cursor-pointer px-5 py-4 transition-colors hover:bg-gray-50 dark:hover:bg-[#243830]"
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start gap-3">
@@ -459,7 +459,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ variant = 'd
         </ScrollArea>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+        <div className="border-t border-gray-200 bg-gray-50 px-5 py-3 dark:border-[#2f4a40] dark:bg-[#15241f]">
           <Button
             variant="ghost"
             size="sm"

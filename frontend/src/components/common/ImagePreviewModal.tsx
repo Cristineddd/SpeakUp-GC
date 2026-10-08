@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Download, ExternalLink, Image as ImageIcon, X } from 'lucide-react';
 
@@ -16,8 +16,14 @@ export function ImagePreviewModal({
   fileName = 'image',
 }: ImagePreviewModalProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent
+        hideCloseButton
         className="flex max-h-[95vh] max-w-5xl flex-col overflow-hidden p-0 bg-white"
         style={{ height: '95vh' }}
       >
@@ -27,9 +33,20 @@ export function ImagePreviewModal({
               <ImageIcon className="h-5 w-5 shrink-0 text-emerald-600" />
               <DialogTitle className="truncate pr-4 text-lg font-semibold">{fileName}</DialogTitle>
             </div>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 shrink-0">
-              <X className="h-4 w-4" />
-            </Button>
+            <DialogClose asChild>
+              <button
+                type="button"
+                aria-label="Close image preview"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onClose();
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </DialogClose>
           </div>
           <DialogDescription className="sr-only">Image preview for {fileName}</DialogDescription>
 
